@@ -1,9 +1,9 @@
-const themeDir = './';
+const themeDir = "./";
 
 module.exports = {
   cleancss: {
     opts: {
-      compatibility: '-properties.merging',
+      compatibility: "-properties.merging",
       level: {
         1: {
           optimizeFont: false,
@@ -18,7 +18,7 @@ module.exports = {
           tidySelectors: true,
           cleanupCharsets: true,
           replaceMultipleZeros: true,
-          selectorsSortingMethod: 'standard'
+          selectorsSortingMethod: "standard",
         },
         2: {
           mergeSemantically: false,
@@ -32,87 +32,89 @@ module.exports = {
           removeDuplicateMediaBlocks: true,
           removeUnusedAtRules: false,
           restructureRules: false,
-          urlQuotes: true
-        }
-      }
-    }
+          urlQuotes: true,
+        },
+      },
+    },
   },
   rename: {
     min: {
-      suffix: '.min'
-    }
+      suffix: ".min",
+    },
   },
   browsersync: {
     // Important! If src is wrong, styles will not inject to the browser
-    src: [themeDir + 'css/**/*'],
+    src: [themeDir + "css/**/*"],
     opts: {
-      logLevel: 'debug',
+      logLevel: "debug",
       injectChanges: true,
-      proxy: 'https://airdev.test',
-      browser: 'Google Chrome',
+      proxy: "http://airdev.test",
+      browser: "Google Chrome",
       open: false,
       notify: true,
       // Generate with: mkdir -p /var/www/certs && cd /var/www/certs && mkcert localhost 192.168.x.xxx ::1
-      https: {
-        key: "/var/www/certs/localhost-key.pem",
-        cert: "/var/www/certs/localhost.pem",
-      }
+      // https: {
+      //   key: "/var/www/certs/localhost-key.pem",
+      //   cert: "/var/www/certs/localhost.pem",
+      // }
     },
   },
   styles: {
-    gutenberg: themeDir + 'sass/base/gutenberg.scss',
-    src: themeDir + 'sass/*.scss',
-    watch: themeDir + 'sass/**/*.{sass,scss}',
-    watchprod: themeDir + 'css/dev/*.css',
-    development: themeDir + 'css/dev/',
-    production: themeDir + 'css/prod/',
+    gutenberg: themeDir + "sass/base/gutenberg.scss",
+    src: themeDir + "sass/*.scss",
+    watch: themeDir + "sass/**/*.{sass,scss}",
+    watchprod: themeDir + "css/dev/*.css",
+    development: themeDir + "css/dev/",
+    production: themeDir + "css/prod/",
     stylelint: {
-      src: themeDir + 'sass/*/*.scss',
+      src: themeDir + "sass/*/*.scss",
       opts: {
         fix: false,
-        reporters: [{
-          formatter: 'string',
-          console: true,
-          failAfterError: false,
-          debug: false
-        }]
-      }
+        reporters: [
+          {
+            formatter: "string",
+            console: true,
+            failAfterError: false,
+            debug: false,
+          },
+        ],
+      },
     },
     opts: {
       development: {
         bundleExec: true,
-        outputStyle: 'expanded',
+        outputStyle: "expanded",
         debugInfo: true,
         errLogToConsole: true,
-        includePaths: [themeDir + 'node_modules/']
+        includePaths: [themeDir + "node_modules/"],
       },
       production: {
         bundleExec: true,
-        outputStyle: 'compressed',
+        outputStyle: "compressed",
         debugInfo: true,
         errLogToConsole: true,
-        includePaths: [themeDir + 'node_modules/']
-      }
-    }
+        includePaths: [themeDir + "node_modules/"],
+      },
+    },
   },
   js: {
-    src: themeDir + 'js/src/*.js',
-    watch: themeDir + 'js/src/**/*',
-    production: themeDir + 'js/prod/',
-    development: themeDir + 'js/dev/',
+    src: themeDir + "js/src/*.js",
+    watch: themeDir + "js/src/**/*",
+    production: themeDir + "js/prod/",
+    development: themeDir + "js/dev/",
   },
   php: {
     watch: [
-      themeDir + '*.php',
-      themeDir + 'inc/**/*.php',
-      themeDir + 'template-parts/**/*.php'
-    ]
+      themeDir + "*.php",
+      themeDir + "inc/**/*.php",
+      themeDir + "template-parts/**/*.php",
+    ],
   },
   phpcs: {
     opts: {
-      bin: '/usr/local/bin/phpcs',
-      standard: themeDir + 'phpcs.xml',
-      warningSeverity: 0
-    }
-  }
+      bin: "/usr/local/bin/phpcs",
+      standard: themeDir + "phpcs.xml",
+      warningSeverity: 0,
+    },
+  },
 };

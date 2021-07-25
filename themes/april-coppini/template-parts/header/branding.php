@@ -1,12 +1,4 @@
 <?php
-/**
- * Site branding & logo
- *
- * @package air-light
- */
-
-namespace Air_Light;
-
 $description = get_bloginfo( 'description', 'display' );
 ?>
 

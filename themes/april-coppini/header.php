@@ -1,21 +1,3 @@
-<?php
-/**
- * Template for header
- *
- * <head> section and everything up until <div id="content">
- *
- * @Author: Roni Laukkarinen
- * @Date: 2020-05-11 13:17:32
- * @Last Modified by:   Roni Laukkarinen
- * @Last Modified time: 2021-02-25 13:47:40
- *
- * @package air-light
- */
-
-namespace Air_Light;
-
-?>
-
 <!doctype html>
 <html <?php language_attributes(); ?>>
 
@@ -28,6 +10,7 @@ namespace Air_Light;
 </head>
 
 <body <?php body_class( 'no-js' ); ?>>
+
   <a class="skip-link screen-reader-text" href="#content"><?php echo esc_html( get_default_localization( 'Skip to content' ) ); ?></a>
 
   <?php wp_body_open(); ?>
