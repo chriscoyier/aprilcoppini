@@ -3,3 +3,12 @@ Theme Name: April Coppini Theme
 Theme URI: https://github.com/digitoimistodude/air-light
 Author: Chris Coyier
 */
+
+body {
+  height: 100vh;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font: 110%/1.4 system-ui;
+}

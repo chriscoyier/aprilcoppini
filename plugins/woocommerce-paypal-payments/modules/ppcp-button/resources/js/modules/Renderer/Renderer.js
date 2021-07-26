@@ -1,0 +1,48 @@
+class Renderer {
+    constructor(creditCardRenderer, defaultConfig) {
+        this.defaultConfig = defaultConfig;
+        this.creditCardRenderer = creditCardRenderer;
+    }
+
+    render(wrapper, hostedFieldsWrapper, contextConfig) {
+
+        this.renderButtons(wrapper, contextConfig);
+        this.creditCardRenderer.render(hostedFieldsWrapper, contextConfig);
+    }
+
+    renderButtons(wrapper, contextConfig) {
+        if (! document.querySelector(wrapper) || this.isAlreadyRendered(wrapper) || 'undefined' === typeof paypal.Buttons ) {
+            return;
+        }
+
+        const style = wrapper === this.defaultConfig.button.wrapper ? this.defaultConfig.button.style : this.defaultConfig.button.mini_cart_style;
+        paypal.Buttons({
+            style,
+            ...contextConfig,
+        }).render(wrapper);
+    }
+
+    isAlreadyRendered(wrapper) {
+        return document.querySelector(wrapper).hasChildNodes();
+    }
+
+    hideButtons(element) {
+        const domElement = document.querySelector(element);
+        if (! domElement ) {
+            return false;
+        }
+        domElement.style.display = 'none';
+        return true;
+    }
+
+    showButtons(element) {
+        const domElement = document.querySelector(element);
+        if (! domElement ) {
+            return false;
+        }
+        domElement.style.display = 'block';
+        return true;
+    }
+}
+
+export default Renderer;

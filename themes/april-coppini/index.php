@@ -2,8 +2,6 @@
 
 <main class="site-main">
 
-  test
-
   <?php get_template_part( 'template-parts/hero', get_post_type() ); ?>
   <section class="block block-blog has-light-bg">
     <div class="container">
