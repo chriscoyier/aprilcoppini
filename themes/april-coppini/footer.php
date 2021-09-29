@@ -1,9 +1,8 @@
 
-</div><!-- #content -->
-
-</div><!-- #page -->
+</main>
 
 <?php wp_footer(); ?>
+
 </body>
 
 </html>

@@ -5,19 +5,25 @@
   <meta charset="<?php bloginfo( 'charset' ); ?>">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@500&display=swap" rel="stylesheet">
+
   <?php wp_head(); ?>
 </head>
 
-<body <?php body_class( 'no-js' ); ?>>
+<body <?php body_class(); ?>>
+  
+  <header class="site-header">
+    <h1>
+      <?php the_title(); ?>
+    </h1>
 
-  <?php wp_body_open(); ?>
-  <div id="page" class="site">
+    <nav class="main-menu">
+    <?php wp_nav_menu([
+      'menu' => 17,
+    ]); ?>
+    </nav>
+  </header>
 
-    <div class="nav-container">
-      <header class="site-header">
-
-
-      </header>
-    </div><!-- .nav-container -->
-
-    <div class="site-content">
+  <main id="main-content">

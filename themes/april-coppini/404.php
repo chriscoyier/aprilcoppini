@@ -1,9 +1,5 @@
 <?php get_header(); ?>
 
-<main class="site-main">
-
-  <h1>404</h1>
-
-</main>
+<h1>404</h1>
 
 <?php wp_footer(); ?>

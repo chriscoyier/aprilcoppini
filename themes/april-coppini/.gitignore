@@ -1,14 +1,4 @@
-content/
-move_out.sh
-move_in.sh
-theme_tests.sh
-bower_components/
 node_modules/
-dandelion.yml
-sass/navigation/luxbar
-sass/navigation/_luxbar.scss
 .DS_Store
 package-lock.json
-html
-w3cErrors/
 .vscode
