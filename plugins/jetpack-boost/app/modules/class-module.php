@@ -4,6 +4,7 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Modules;
@@ -77,6 +78,7 @@ abstract class Module {
 		if ( false === $this->is_initialized() ) {
 			return new \WP_Error( __( 'Sorry, this module is not active', 'jetpack-boost' ) );
 		}
+
 		return true;
 	}
 

@@ -1,16 +1,27 @@
 <?php
+/**
+ * Provides core support for critical CSS
+ *
+ * @package automattic/jetpack-boost
+ */
 
 namespace Automattic\Jetpack_Boost\Modules\Critical_CSS\Providers;
 
 /**
- * Class WP_Core_Provider
+ * Class WP_Core_Provider.
  *
  * @package Automattic\Jetpack_Boost\Modules\Critical_CSS\Providers
  */
 class WP_Core_Provider extends Provider {
 
+	/**
+	 * Provider name.
+	 *
+	 * @var string
+	 */
 	protected static $name = 'core';
 
+	// phpcs:ignore Generic.Commenting.DocComment.MissingShort
 	/** @inheritdoc */
 	public static function get_critical_source_urls() {
 		$urls = array();
@@ -30,6 +41,7 @@ class WP_Core_Provider extends Provider {
 		return $urls;
 	}
 
+	// phpcs:ignore Generic.Commenting.DocComment.MissingShort
 	/** @inheritdoc */
 	public static function get_keys() {
 		$keys = array( 'posts_page' );
@@ -41,6 +53,7 @@ class WP_Core_Provider extends Provider {
 		return $keys;
 	}
 
+	// phpcs:ignore Generic.Commenting.DocComment.MissingShort
 	/** @inheritdoc */
 	public static function get_current_storage_keys() {
 		if ( is_home() ) {
@@ -57,6 +70,24 @@ class WP_Core_Provider extends Provider {
 		return array( self::$name . '_' . $key );
 	}
 
+	// phpcs:ignore
+	/** @inheritdoc */
+	public static function describe_key( $provider_key ) { // phpcs:ignore Generic.Commenting.DocComment.MissingShort
+		$page = substr( $provider_key, strlen( static::$name ) + 1 );
+
+		switch ( $page ) {
+			case 'posts_page':
+				return __( 'Posts page', 'jetpack-boost' );
+
+			case 'front_page':
+				return __( 'Front page', 'jetpack-boost' );
+
+			default:
+				return $provider_key;
+		}
+	}
+
+	// phpcs:ignore Generic.Commenting.DocComment.MissingShort
 	/** @inheritdoc */
 	public static function get_success_ratio() {
 		return 1;

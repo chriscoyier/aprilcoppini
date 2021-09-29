@@ -4,7 +4,7 @@ Tags: ecommerce, e-commerce, store, sales, reports, analytics, dashboard, activi
 Requires at least: 5.4.0
 Tested up to: 5.7.0
 Requires PHP: 7.0
-Stable tag: 2.4.4
+Stable tag: 2.6.5
 License: GPLv3
 License URI: https://github.com/woocommerce/woocommerce-admin/blob/main/license.txt
 
@@ -75,21 +75,51 @@ Release and roadmap notes are available on the [WooCommerce Developers Blog](htt
 
 == Unreleased ==
 
-== 2.4.4 7/21/2021 ==
-- Fix: Fix homepage stock panel regression in 2.4.3. #7389
-
-== 2.4.3 7/21/2021 ==
-- Fix: Add a new low stock products endpoint to improve the performance. #7377
-
-== 2.4.2 7/19/2021 ==
-- Fix: Add lazy loading by checking panel open status #7376
-- Fix: Add cache-control header to low stock REST API response #7364
-
-== 2.4.1 7/1/2021 ==
-- Fix: Fix and refactor explat polling to use setTimeout #7274
-
-== 2.4.0 6/29/2021 ==
+- Add: Add unit tests around extended payment gateway controller #7133
+- Add: Add payment gateway suggestion unit tests #7142
+- Add: Feature toggle to disable Analytics UI #7168
 - Add: SlotFill to Abbreviated Notification panel #7091
+- Dev: Add `woocommerce_admin_export_id` filter for customizing the export file name #7178
+- Dev: Remove old payment gateway task components #7224
+- Fix: Currency display on Orders activity card on homescreen #7181
+- Fix: Fix obsolete key property in gateway defaults #7229
+- Fix: Fixing button state logic for remote payment gateways #7200
+- Fix: Include onboarding settings on the analytic pages #7109
+- Fix: Load Analytics API only when feature is turned on #7193
+- Fix: Localize string for description #7219
+- Fix: RemoteFreeExtension hide bundle when all of its plugins are not visible #7182
+- Add: Adding tests for PaymentGatewaySuggestions > List component #7201
+- Fix: Report export filtering bug. #7165
+- Fix: Use tab char for the CSV injection prevention. #7154
+- Fix: Use saved form values if available when switching tabs #7226
+- Fix: Skip schedule customer data deletion on site deletion #7214
+- Fix: The use of gridicons for Analytics section controls. #7237
+- Fix: WCPay not working in local payments task #7151
+- Fix: WordPress 5.8 compatibility UI fixes #7255
+- Fix: CurrencyFactory constructor to use proper function #7261
+- Fix: Currency display on Orders activity card on homescreen #7181
+- Fix: Report export filtering bug. #7165
+- Fix:  Use tab char for the CSV injection prevention. #7154
+- Fix: Fix and refactor explat polling to use setTimeout #7274
+- Tweak: Remove performance indicators when Analytics Flag disabled #7234
+- Tweak: Revert Card component removal #7167
+- Tweak: Repurpose disable wc-admin filter to remove optional features #7232
+- Tweak: Removed unused feature flags #7233
+- Update: Notes to use a date range. #7222
+
+== 2.4.0 6/10/2021 ==
+- Dev: Add Jetpack Backup admin note #6738
+- Add: Adding WCPay payment configuration defaults. #7097
+- Fix: Transformer casing is incorrect and creates an error on case-sensitive systems #7104
+- Dev: Reduce the specificity and complexity of the ReportError component #6846
+- Add: Create onboarding package to house refactored WCPay card and relevant components #7058
+- Fix: Preventing redundant notices when installing plugins via payments task list. #7026
+- Fix: Autocompleter for custom Search in CompareFilter #6911
+- Fix: Include onboarding settings on the analytic pages #7109
+- Dev: Converting <SettingsForm /> component to TypeScript. #6981
+- Enhancement: Adding Slotfills for remote payments and SettingsForm component. #6932
+- Fix: Make `Search` accept synchronous `autocompleter.options`. #6884
+- Fix: Set autoload to false for all remote inbox notifications options. #7060
 - Add: Consume remote payment methods on frontend #6867
 - Add: Extend payment gateways REST endpoint #6919
 - Add: Add remote payment gateway recommendations initial docs #6962
@@ -140,10 +170,6 @@ Release and roadmap notes are available on the [WooCommerce Developers Blog](htt
 - Enhancement: Add remind me later option to task list. #6923
 - Enhancement: Enable Remote Free Extensions List #7144
 - Enhancement: Adding Slotfills for remote payments and SettingsForm component. #6932
-- Fix: Update the wordpress/babel-preset to avoid crashes in WP5.8 beta2 #7202
-- Fix: Add fallback for the select/dispatch data-controls for older WP versions #7204
-- Fix: RemoteFreeExtension hide bundle when all of its plugins are not visible #7182
-- Fix: Issue where summary stats were not showing in Analytics > Stock. #7161
 - Fix: Rule Processing Transformer to handle dotNotation default value #7009
 - Fix: Remove Navigation's uneeded SlotFill context #6832
 - Fix: Report filters expecting specific ordering. #6847
@@ -162,6 +188,7 @@ Release and roadmap notes are available on the [WooCommerce Developers Blog](htt
 - Fix: Deprecated warnings from select control @wordpress/data-controls. #7007
 - Fix: Bug with Orders Report coupon exclusion filter. #7021
 - Fix: Show Google Listing and Ads in installed marketing extensions section. #7029
+- Fix: Attribute filter bug with "any X" variations. #7046
 - Fix: Notices not dissapearing. #7077
 - Fix: Keyboard accessibility on the free features tab. #7149
 - Fix: Fix error handling when remote free extension API returns empty array. #7147
@@ -171,11 +198,9 @@ Release and roadmap notes are available on the [WooCommerce Developers Blog](htt
 - Fix: Add target to the button to open it in a new tab  #7110
 - Fix: Make `Search` accept synchronous `autocompleter.options`. #6884
 - Fix: Set autoload to false for all remote inbox notifications options. #7060
-- Fix: The use of gridicons for Analytics section controls. #7237
-- Fix: WordPress 5.8 compatibility UI fixes #7255
-- Fix: CurrencyFactory constructor to use proper function #7261
+- Fix: Issue where summary stats were not showing in Analytics > Stock. #7161
+- Tweak: Only fetch remote payment gateway recommendations when opted in #6964
 - Tweak: Setup checklist copy revert. #7015
-- Tweak: Revert Card component removal #7167
 - Update: Task list component with new Experimental Task list. #6849
 - Update: Optimize payment gateway resolution #7124
 - Update: Experimental task list import to the experimental package. #6950

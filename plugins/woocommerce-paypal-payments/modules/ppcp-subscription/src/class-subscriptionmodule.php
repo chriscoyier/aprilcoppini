@@ -44,7 +44,7 @@ class SubscriptionModule implements ModuleInterface {
 	 *
 	 * @param ContainerInterface|null $container The container.
 	 */
-	public function run( ContainerInterface $container = null ) {
+	public function run( ContainerInterface $container ): void {
 		add_action(
 			'woocommerce_scheduled_subscription_payment_' . PayPalGateway::ID,
 			function ( $amount, $order ) use ( $container ) {
@@ -80,7 +80,7 @@ class SubscriptionModule implements ModuleInterface {
 				$settings                 = $container->get( 'wcgateway.settings' );
 				$subscription_helper      = $container->get( 'subscription.helper' );
 
-				return $this->display_saved_paypal_payments( $settings, $id, $payment_token_repository, $description, $subscription_helper );
+				return $this->display_saved_paypal_payments( $settings, (string) $id, $payment_token_repository, (string) $description, $subscription_helper );
 			},
 			10,
 			2

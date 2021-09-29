@@ -4,6 +4,7 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;

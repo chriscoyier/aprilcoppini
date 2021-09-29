@@ -4,6 +4,7 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
@@ -21,7 +22,7 @@ class Connection {
 	/**
 	 * Jetpack Connection Manager.
 	 *
-	 * @var \Automattic\Jetpack\Connection\Manager $manager The connection manager.
+	 * @var Manager $manager The connection manager.
 	 */
 	private $manager;
 
@@ -38,6 +39,11 @@ class Connection {
 		$this->initialize_deactivate_disconnect();
 	}
 
+	/**
+	 * Add connection data to the array of constants
+	 *
+	 * @param array $constants The associative array of constants.
+	 */
 	public function add_connection_config_data( $constants ) {
 		$constants['connection'] = $this->get_connection_api_response();
 
@@ -186,8 +192,8 @@ class Connection {
 			JETPACK_BOOST_REST_NAMESPACE,
 			JETPACK_BOOST_REST_PREFIX . '/connection',
 			array(
-				'methods' => \WP_REST_Server::READABLE,
-				'callback' => array( $this, 'get_connection_endpoint' ),
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_connection_endpoint' ),
 				'permission_callback' => array( $this, 'can_manage_connection' ),
 			)
 		);
@@ -196,8 +202,8 @@ class Connection {
 			JETPACK_BOOST_REST_NAMESPACE,
 			JETPACK_BOOST_REST_PREFIX . '/connection',
 			array(
-				'methods' => \WP_REST_Server::EDITABLE,
-				'callback' => array( $this, 'create_connection_endpoint' ),
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'create_connection_endpoint' ),
 				'permission_callback' => array( $this, 'can_manage_connection' ),
 			)
 		);
@@ -243,7 +249,7 @@ class Connection {
 		$force_connected = apply_filters( 'jetpack_boost_connection_bypass', false );
 
 		return array(
-			'connected' => $force_connected || $this->is_connected(),
+			'connected'   => $force_connected || $this->is_connected(),
 			'wpcomBlogId' => ( $force_connected || $this->is_connected() ) ? self::wpcom_blog_id() : null,
 		);
 	}

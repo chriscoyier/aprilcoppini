@@ -4,6 +4,7 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
@@ -11,7 +12,7 @@ namespace Automattic\Jetpack_Boost\Lib;
 use Automattic\Jetpack\Connection\Client;
 
 /**
- * Class Utils.
+ * Class Utils
  */
 class Utils {
 	/**
@@ -24,21 +25,21 @@ class Utils {
 	public static function standardize_error( $error ) {
 		if ( is_wp_error( $error ) ) {
 			return array(
-				'name' => $error->get_error_code(),
+				'name'    => $error->get_error_code(),
 				'message' => $error->get_error_message(),
 			);
 		}
 
 		if ( is_string( $error ) ) {
 			return array(
-				'name' => 'Error',
+				'name'    => 'Error',
 				'message' => $error,
 			);
 		}
 
 		if ( is_object( $error ) ) {
 			return array(
-				'name' => 'Error',
+				'name'    => 'Error',
 				'message' => json_decode( wp_json_encode( $error ), true ),
 			);
 		}
@@ -49,7 +50,7 @@ class Utils {
 	/**
 	 * Convert relative url to absolute.
 	 *
-	 * @param $url
+	 * @param string $url The URL.
 	 *
 	 * @return string
 	 */
@@ -62,18 +63,52 @@ class Utils {
 	}
 
 	/**
+	 * Given a post type, look up its label (if available). Returns
+	 * raw post type string if not found.
+	 *
+	 * @param string $post_type Post type to look up.
+	 *
+	 * @return string
+	 */
+	public static function get_post_type_label( $post_type ) {
+		$post_type_object = get_post_type_object( $post_type );
+		if ( ! $post_type_object ) {
+			return $post_type;
+		}
+
+		return $post_type_object->labels->name;
+	}
+
+	/**
+	 * Given a taxonomy name, look up its label. Returns raw taxonomy name if
+	 * not found.
+	 *
+	 * @param string $taxonomy_name Taxonomy to look up.
+	 *
+	 * @return string
+	 */
+	public static function get_taxonomy_label( $taxonomy_name ) {
+		$taxonomy = get_taxonomy( $taxonomy_name );
+		if ( ! $taxonomy ) {
+			return $taxonomy_name;
+		}
+
+		return $taxonomy->label;
+	}
+
+	/**
 	 * Make a Jetpack-authenticated request to the WPCOM servers
 	 *
-	 * @param string $method Request method.
-	 * @param string $endpoint to contact.
-	 * @param array  $args request args.
-	 * @param array  $body request body.
+	 * @param string $method   Request method.
+	 * @param string $endpoint Endpoint to contact.
+	 * @param array  $args     Request args.
+	 * @param array  $body     Request body.
 	 *
 	 * @return \WP_Error|object
 	 */
 	public static function send_wpcom_request( $method, $endpoint, $args = null, $body = null ) {
 		$default_args = array(
-			'method' => $method,
+			'method'  => $method,
 			'headers' => array( 'Content-Type' => 'application/json; charset=utf-8' ),
 		);
 
@@ -101,7 +136,7 @@ class Utils {
 			);
 
 			$err_code = empty( $json->code ) ? 'http_error' : $json->code;
-			$message = empty( $json->message ) ? $default_message : $json->message;
+			$message  = empty( $json->message ) ? $default_message : $json->message;
 
 			return new \WP_Error( $err_code, $message );
 		}

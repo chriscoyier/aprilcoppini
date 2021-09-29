@@ -1,5 +1,37 @@
 *** Changelog ***
 
+= 1.5.1 - 2021-08-19 =
+* Fix - Set 3DS contingencies to "SCA_WHEN_REQUIRED". #178
+* Fix - Plugin conflict blocking line item details. #221
+* Fix - WooCommerce orders left in "Pending Payment" after a decline. #222
+* Fix - Do not send decimals when currency does not support them. #202
+* Fix - Gateway can be activated without a connected PayPal account. #205
+
+= 1.5.0 - 2021-08-09 =
+* Add - Filter to modify plugin modules list. #203
+* Add - Filters to move PayPal buttons and Pay Later messages. #203
+* Fix - Remove redirection when enabling payment gateway with setup already done. #206
+* Add - PayPal Express Checkout compatibility layer. #207
+* Fix - Use correct API to obtain credit card icons. #210
+* Fix - Hide mini cart height field when mini cart is disabled. #213
+* Fix - Address possible error on frontend pages due to an empty gateway description. #214
+
+= 1.4.0 - 2021-07-27 =
+* Add - Venmo update #169
+* Add - Pay Later Button –Global Expansion #182
+* Add - Add Canada to advanced credit and debit card #180
+* Add - Add button height setting for mini cart #181
+* Add - Add BN Code to Pay Later Messaging #183
+* Add - Add 30 seconds timeout by default to all API requests #184
+* Fix - ACDC checkout error: "Card Details not valid"; but payment completes #193
+* Fix - Incorrect API credentials cause fatal error #187
+* Fix - PayPal payment fails if a new user account is created during the checkout process #177
+* Fix - Disabled PayPal button appears when another button is loaded on the same page #192
+* Fix - [UNPROCESSABLE_ENTITY] error during checkout #172
+* Fix - Do not send customer email when order status is on hold #173
+* Fix - Remove merchant-id query parameter in JSSDK #179
+* Fix - Error on Plugin activation with Zettle POS Integration for WooCommerce #195
+
 = 1.3.2 - 2021-06-08 =
 * Fix - Improve Subscription plugin support. #161
 * Fix - Disable vault setting if vaulting feature is not available. #150

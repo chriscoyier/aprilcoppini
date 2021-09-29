@@ -4,10 +4,14 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
 
+/**
+ * Class Speed_Score
+ */
 class Speed_Score {
 
 	/**
@@ -25,8 +29,8 @@ class Speed_Score {
 			JETPACK_BOOST_REST_NAMESPACE,
 			JETPACK_BOOST_REST_PREFIX . '/speed-scores',
 			array(
-				'methods' => \WP_REST_Server::EDITABLE,
-				'callback' => array( $this, 'dispatch_speed_score_request' ),
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'dispatch_speed_score_request' ),
 				'permission_callback' => array( $this, 'can_access_speed_scores' ),
 			)
 		);
@@ -35,8 +39,8 @@ class Speed_Score {
 			JETPACK_BOOST_REST_NAMESPACE,
 			JETPACK_BOOST_REST_PREFIX . '/speed-scores',
 			array(
-				'methods' => \WP_REST_Server::DELETABLE,
-				'callback' => array( $this, 'delete_speed_score_request' ),
+				'methods'             => \WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_speed_score_request' ),
 				'permission_callback' => array( $this, 'can_access_speed_scores' ),
 			)
 		);
@@ -45,8 +49,8 @@ class Speed_Score {
 			JETPACK_BOOST_REST_NAMESPACE,
 			JETPACK_BOOST_REST_PREFIX . '/speed-scores/(?P<requestId>[^/]+)/update',
 			array(
-				'methods' => \WP_REST_Server::CREATABLE,
-				'callback' => array( $this, 'fetch_speed_score_request' ),
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'fetch_speed_score_request' ),
 				'permission_callback' => array( $this, 'can_access_speed_scores' ),
 			)
 		);
@@ -57,7 +61,7 @@ class Speed_Score {
 	 *
 	 * @param \WP_REST_Request $request The request object.
 	 *
-	 * @return string|\WP_Error An error to return or the target url
+	 * @return string|\WP_Error An error to return or the target url.
 	 */
 	private function process_url_arg( $request ) {
 		$params = $request->get_json_params();

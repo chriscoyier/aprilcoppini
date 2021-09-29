@@ -1,9 +1,0 @@
-== Changelog ==
-
-**This is a list detailing changes for all Jetpack Boost releases.**
-
-= 0.1 =
-
-Release date: TBA
-
-

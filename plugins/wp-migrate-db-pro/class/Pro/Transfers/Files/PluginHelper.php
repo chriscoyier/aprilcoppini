@@ -134,12 +134,18 @@ class PluginHelper
             'sig'      => 'string',
             'date'     => 'string',
             'timezone' => 'string',
+            'is_cli_migration' => 'int',
         );
 
         $_POST['folders']  = stripslashes($_POST['folders']);
         $_POST['excludes'] = stripslashes($_POST['excludes']);
 
         $state_data = Persistence::setRemotePostData($key_rules, __METHOD__);
+
+        // Check for CLI migration and skip enabling recursive scanner if necessary.
+        if (!isset($state_data['is_cli_migration']) || 0 === (int)$state_data['is_cli_migration']) {
+            Util::enable_scandir_bottleneck();
+        }
 
         $filtered_post = $this->http_helper->filter_post_elements(
             $state_data,
@@ -149,9 +155,9 @@ class PluginHelper
                 'folders',
                 'excludes',
                 'stage',
+                'is_cli_migration'
             )
         );
-
         $verification = $this->http_helper->verify_signature($filtered_post, $this->settings['key']);
 
         if (!$verification) {

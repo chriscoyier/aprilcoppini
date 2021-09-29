@@ -1,10 +1,17 @@
 <?php
+/**
+ * Jetpack compatibility for Boost
+ *
+ * @package automattic/jetpack-boost
+ */
 
 namespace Automattic\Jetpack_Boost\Compatibility\Jetpack;
 
 /**
  * Exclude Jetpack likes scripts from deferred JS. They are already in the footer,
  * and are sensitive to having their order changed relative to their companion iframe.
+ *
+ * @param array $exclusions The default array of scripts to exclude from deferral.
  */
 function exclude_jetpack_likes_scripts_defer( $exclusions ) {
 	static $likes_enabled = null;

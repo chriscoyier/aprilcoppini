@@ -4,6 +4,7 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
@@ -35,18 +36,18 @@ class Viewport {
 	 */
 	const DEFAULT_VIEWPORT_SIZES = array(
 		0 => array(
-			'type' => 'phone',
-			'width' => 640,
+			'type'   => 'phone',
+			'width'  => 640,
 			'height' => 480,
 		),
 		1 => array(
-			'type' => 'tablet',
-			'width' => 1200,
+			'type'   => 'tablet',
+			'width'  => 1200,
 			'height' => 800,
 		),
 		2 => array(
-			'type' => 'desktop',
-			'width' => 1600,
+			'type'   => 'desktop',
+			'width'  => 1600,
 			'height' => 1050,
 		),
 	);
@@ -91,13 +92,13 @@ class Viewport {
 	 */
 	public static function viewport_tracker() {
 		$domain = wp_parse_url( site_url(), PHP_URL_HOST );
-		$path = wp_parse_url( site_url(), PHP_URL_PATH );
+		$path   = wp_parse_url( site_url(), PHP_URL_PATH );
 
 		if ( ! $path ) {
 			$path = '/';
 		}
 
-		$max_age = 10 * \YEAR_IN_SECONDS;
+		$max_age       = 10 * \YEAR_IN_SECONDS;
 		$script_source = <<<SCRIPT_SOURCE
 			( function(doc) {
 				var debouncer;
@@ -131,7 +132,7 @@ SCRIPT_SOURCE;
 	 * Gets the size of the current viewport.
 	 */
 	public static function get_viewport_size() {
-		$data = null;
+		$data         = null;
 		$cookie_value = filter_input( INPUT_COOKIE, self::VIEWPORT_COOKIE );
 
 		if ( $cookie_value ) {
@@ -139,13 +140,13 @@ SCRIPT_SOURCE;
 
 			if ( 2 === count( $raw_data ) ) {
 				$data = array(
-					'width' => intval( $raw_data[0] ) * 10,
+					'width'  => intval( $raw_data[0] ) * 10,
 					'height' => intval( $raw_data[1] ) * 10,
 				);
 			}
 		} else {
 			$device_type = Device_Detection::is_phone() ? self::DEVICE_MOBILE : self::DEVICE_DESKTOP;
-			$data = self::get_default_viewport_size_for_device( $device_type );
+			$data        = self::get_default_viewport_size_for_device( $device_type );
 		}
 
 		return apply_filters( 'jetpack_boost_viewport_size', $data, self::VIEWPORT_COOKIE, $cookie_value );
@@ -168,7 +169,7 @@ SCRIPT_SOURCE;
 	 * @return array Viewport width and height.
 	 */
 	public static function get_default_viewport_size_for_device( $device_type ) {
-		$viewport_sizes = apply_filters( 'jetpack_boost_critical_css_viewport_sizes', self::DEFAULT_VIEWPORT_SIZES );
+		$viewport_sizes    = apply_filters( 'jetpack_boost_critical_css_viewport_sizes', self::DEFAULT_VIEWPORT_SIZES );
 		$default_viewports = apply_filters( 'jetpack_boost_critical_css_default_viewports', self::DEFAULT_VIEWPORTS );
 
 		foreach ( $default_viewports as $default ) {
@@ -178,6 +179,7 @@ SCRIPT_SOURCE;
 				}
 			}
 		}
+
 		return self::get_max_viewport( $viewport_sizes );
 	}
 
@@ -224,7 +226,7 @@ SCRIPT_SOURCE;
 
 			// Current viewport and the best match have the same width, let's decide based on height.
 			$current_is_tall_enough = $viewport_size['height'] >= $height;
-			$best_is_tall_enough = $best_size['height'] >= $height;
+			$best_is_tall_enough    = $best_size['height'] >= $height;
 
 			if ( $current_is_tall_enough && ! $best_is_tall_enough ) {
 				$best_size = $viewport_size; // Best match isn't tall enough, but the current match is.
@@ -241,6 +243,7 @@ SCRIPT_SOURCE;
 				continue;
 			}
 		}
+
 		return apply_filters( 'jetpack_boost_pick_viewport', $best_size, $width, $height, $viewport_sizes );
 	}
 
@@ -264,10 +267,11 @@ SCRIPT_SOURCE;
 						$carry = $item;
 					}
 				}
+
 				return $carry;
 			},
 			array(
-				'width' => 0,
+				'width'  => 0,
 				'height' => 0,
 			)
 		);

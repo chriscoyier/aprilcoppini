@@ -4,6 +4,7 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
@@ -13,7 +14,7 @@ namespace Automattic\Jetpack_Boost\Lib;
  */
 class Url {
 
-	const PARAMS_TO_EXCLUDE = array( 'utm_campaign', 'utm_medium', 'utm_source', 'utm_content', 'fbclid', '_ga', 'jb-disable-modules' );
+	const PARAMS_TO_EXCLUDE   = array( 'utm_campaign', 'utm_medium', 'utm_source', 'utm_content', 'fbclid', '_ga', 'jb-disable-modules' );
 	const PARAMS_TO_NORMALIZE = array( 's' => '' );
 
 	/**
@@ -43,8 +44,8 @@ class Url {
 
 		if ( isset( $_SERVER ) && is_array( $_SERVER ) ) {
 			$scheme = isset( $_SERVER['HTTPS'] ) && 'on' === $_SERVER['HTTPS'] ? 'https' : 'http';
-			$host = ! empty( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : null;
-			$path = ! empty( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+			$host   = ! empty( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : null;
+			$path   = ! empty( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
 
 			// Support for local plugin development and testing using ngrok.
 			if ( ! empty( $_SERVER['HTTP_X_ORIGINAL_HOST'] ) && false !== strpos( $_SERVER['HTTP_X_ORIGINAL_HOST'], 'ngrok.io' ) ) {
@@ -55,6 +56,7 @@ class Url {
 				$current_url = sprintf( '%s://%s%s', $scheme, $host, $path );
 			}
 		}
+
 		return apply_filters( 'jetpack_boost_current_url', $current_url );
 	}
 
@@ -86,7 +88,7 @@ class Url {
 			}
 			ksort( $args );
 			$sorted_query = http_build_query( $args );
-			$url = str_replace( '?' . $parsed_url['query'], '?' . $sorted_query, $url );
+			$url          = str_replace( '?' . $parsed_url['query'], '?' . $sorted_query, $url );
 		}
 
 		return $url;

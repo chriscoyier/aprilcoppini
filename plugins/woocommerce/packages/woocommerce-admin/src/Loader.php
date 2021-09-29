@@ -390,6 +390,7 @@ class Loader {
 			'wc-currency',
 			'wc-date',
 			'wc-components',
+			'wc-customer-effort-score',
 			WC_ADMIN_APP,
 		);
 
@@ -1257,6 +1258,16 @@ class Loader {
 	 * Registers WooCommerce specific user data to the WordPress user API.
 	 */
 	public static function register_user_data() {
+		register_rest_field(
+			'user',
+			'is_super_admin',
+			array(
+				'get_callback' => function() {
+					return is_super_admin();
+				},
+				'schema'       => null,
+			)
+		);
 		register_rest_field(
 			'user',
 			'woocommerce_meta',

@@ -11,6 +11,7 @@ namespace WooCommerce\PayPalCommerce\WcGateway\Settings;
 
 use WooCommerce\PayPalCommerce\ApiClient\Authentication\Bearer;
 use WooCommerce\PayPalCommerce\ApiClient\Authentication\PayPalBearer;
+use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\Cache;
 use WooCommerce\PayPalCommerce\Onboarding\State;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
@@ -147,11 +148,27 @@ class SettingsListener {
 			return;
 		}
 
-		$token = $this->bearer->bearer();
-		if ( ! $token->vaulting_available() ) {
+		try {
+			$token = $this->bearer->bearer();
+			if ( ! $token->vaulting_available() ) {
+				$this->settings->set( 'vault_enabled', false );
+				$this->settings->persist();
+				return;
+			}
+		} catch ( RuntimeException $exception ) {
 			$this->settings->set( 'vault_enabled', false );
 			$this->settings->persist();
-			return;
+
+			add_action(
+				'admin_notices',
+				function () use ( $exception ) {
+					printf(
+						'<div class="notice notice-error"><p>%1$s</p><p>%2$s</p></div>',
+						esc_html__( 'Authentication with PayPal failed: ', 'woocommerce-paypal-payments' ) . esc_attr( $exception->getMessage() ),
+						wp_kses_post( __( 'Please verify your API Credentials and try again to connect your PayPal business account. Visit the <a href="https://docs.woocommerce.com/document/woocommerce-paypal-payments/" target="_blank">plugin documentation</a> for more information about the setup.', 'woocommerce-paypal-payments' ) )
+					);
+				}
+			);
 		}
 
 		/**
@@ -315,6 +332,7 @@ class SettingsListener {
 					$settings[ $key ] = isset( $raw_data[ $key ] );
 					break;
 				case 'text':
+				case 'number':
 				case 'ppcp-text-input':
 				case 'ppcp-password':
 					$settings[ $key ] = isset( $raw_data[ $key ] ) ? sanitize_text_field( $raw_data[ $key ] ) : '';

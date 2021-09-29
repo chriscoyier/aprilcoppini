@@ -3,9 +3,9 @@ Contributors: automattic, xwp, thingalon, pyronaur, davidlonjon, danwalmsley, lu
 Donate link: https://automattic.com
 Tags: performance, speed, pagespeed, web vitals, critical css, optimize, defer
 Requires at least: 5.5
-Tested up to: 5.7
+Tested up to: 5.8
 Requires PHP: 7.0
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,8 +13,7 @@ Speed up your website by optimizing page performance with Jetpack Boost!
 
 == Description ==
 
-Jetpack Boost provides one-click optimizations that supercharge your WordPress site’s performance and improve web vitals
- scores for better SEO.
+Jetpack Boost provides one-click optimizations that supercharge your WordPress site’s performance and improve web vitals scores for better SEO.
 
 ### Performance Modules
 
@@ -54,6 +53,31 @@ We'd also like to give a special THANK YOU to the XWP team who provided help wit
 
 == Frequently Asked Questions ==
 
+= What does the Jetpack Boost plugin do to help speed up my site? =
+
+Jetpack Boost makes small changes to the way that data is sent from your WordPress site to your users’ browser, to enable the browser to display your site faster.
+
+Jetpack Boost includes a few separate features which can be turned on individually to improve your site’s performance. These include:
+
+* **Optimize CSS Loading**: This feature determines the most important CSS that your site needs to display your site’s initial content as quickly as possible, and embeds it directly into your site header.
+* **Defer Non-Essential JavaScript**: This feature forces all of the JavaScript which is not deemed essential to displaying your site to load after your site’s main content has been loaded.
+* **Lazy Image Loading**: This feature delays loading images on your site until they are scrolled into view, allowing the browser to load the first content that the user will see first.
+
+= What speed improvements can I expect when using Jetpack Boost? =
+
+Website Performance is complicated and can be affected by a number of factors. As a result, it is difficult to accurately predict how much impact it will have on each site.
+
+Generally, the lower your speed score is to begin with, the more Jetpack Boost may impact your performance. We have seen user reports of up to 25 Speed Score points improvement simply by installing and using Jetpack Boost.
+
+However, as performance can be impacted by so many factors, it is also possible for Jetpack Boost to have a small negative performance impact in some rare cases.
+
+We recommend that you install Jetpack Boost, and try it for yourself. It includes a tool for measuring your Speed Score, to check what impact it has on your site.
+
+= Can I also defer non-essential CSS with Jetpack Boost? =
+
+Jetpack Boost automatically defers non-essential CSS if its “Optimize CSS Loading” feature is enabled.
+
+The “Optimize CSS Loading” feature identifies the most important CSS rules your site needs to display your pages as quickly as possible (commonly called “Critical CSS”), and defers all other CSS rules from loading until your main content has loaded.
 
 = What are Web Vitals? =
 
@@ -61,6 +85,25 @@ Web Vitals are the measurements that Google uses to better understand the user e
 
 You can read more about Web Vitals on [web.dev](https://web.dev/vitals/)
 
+= How does Jetpack Boost plugin improve Core Web Vitals? =
+
+Each Core Web Vital relates to an aspect of how quickly your site can load and appear on new visitors’ screens.
+
+Jetpack Boost makes small changes to the way that data is sent from your WordPress site to your users’ browsers, to enable your content to load faster. As a result, it can improve your Core Web Vitals scores.
+
+For example, our “Optimize CSS Loading” feature ensures the most important CSS rules are sent to users’ browsers as early as possible, improving both First Contentful Paint (FCP) and Cumulative Layout Shift (CLS) scores.
+
+= Does this plugin require Jetpack? =
+
+Jetpack Boost is a part of the Jetpack brand, but it doesn’t require Jetpack plugin to run. This is a separate plugin from Jetpack and it will always remain that way.
+
+= Will this plugin be able to improve performance on any website? = 
+
+This plugin includes a range of performance improvements, which can help almost any WordPress site perform better.
+
+However, if your site is already extremely well optimized, Jetpack Boost may not have much room to improve it.
+
+Jetpack Boost includes a tool for measuring your site’s Speed Score - we encourage users to try it out and see what impact it can have for them.
 
 = How do I know if it's working? =
 
@@ -73,12 +116,42 @@ Every site is different and so performance benefits for each module may vary fro
 
 Google PageSpeed measurements are built-in the Jetpack Boost dashboard.
 
+= Is Speed Optimization with Jetpack Boost safe? = 
+
+Yes, it’s safe to try Jetpack Boost on any WordPress site.
+
+Jetpack Boost does not alter your site’s content, it only modifies the way the content is sent to the user’s browser to allow it to display faster.
+
+As a result, all of Jetpack Boost’s features can safely be turned off in the event of an incompatibility with your other plugins.
+
+= How does Jetpack Boost compare with other speed optimization plugins? =
+
+Speed Optimization plugins for WordPress can be complicated and opaque for users. They often offer columns of checkboxes with little explanation, and don’t include tools to measure the impact of each change or choice users make.
+
+Jetpack Boost aims to be as easy to use as possible, and includes a Speed Score indicator to help users immediately measure the impact of their choices.
+
 = Does it work with static page cache? =
+
 Absolutely! If you have plugins like WP Super Cache or W3 Total Cache installed - Jetpack Boost is only going to help increase the performance benefits! Keep in mind that you need to wait for the cache to clear for Jetpack Boost improvements to show up.
 
-= Does this plugin require Jetpack? =
+= Can Jetpack Boost make my website load faster if I have a large database? =
 
-Jetpack Boost is a part of the Jetpack brand, but it doesn’t require Jetpack plugin to run. This is a separate plugin from Jetpack and it will always remain that way.
+Jetpack Boost does not include any optimizations that target large databases at this time. However, watch this space - we are always looking for new ways to help our users perform better.
+
+= Does Jetpack Boost help with image optimization? =
+
+Jetpack Boost can help sites with large images perform better through lazy-loading, preventing images from loading until they are scrolled into view. 
+
+However, it currently does not have any Image Format Optimization features. We are always looking for ways to improve the plugin, so watch this space for more features in the near future.
+
+= Is Jetpack Boost compatible with other caching and speed optimization plugins? = 
+
+With few exceptions, Jetpack Boost has no problems running alongside most caching and speed optimization plugins. As a guideline, we don’t recommend enabling the same feature in multiple optimization plugins.
+
+For example, if two plugins attempt to defer your non-essential JavaScripts, then they may end up conflicting with each other and cause display problems on your site.
+
+If you run into compatibility issues, please do let us know. You can drop us a line on [the Jetpack Boost Support Forums](https://wordpress.org/support/plugin/jetpack-boost/) at any time.
+
 
 
 == Installation ==
@@ -92,52 +165,18 @@ Jetpack Boost is a part of the Jetpack brand, but it doesn’t require Jetpack p
 1. Manage your Jetpack Boost settings
 
 == Changelog ==
+### 1.2.0 - 2021-08-12
+#### Added
+- Critical CSS: Added a new Advanced Critical CSS recommendations page.
 
-= 1.1.0 =
-* Update: User connection is no longer required for Speed Scores.
-* Update: Completely revamped how site speed scores are retreived.
-* Update: Reduced backend dashboard JavaScript bundle size.
-* Update: Added a message to explain how site score is calculated.
-* Update: Added "Offline Mode" to allow testing Jetpack Boost on local environments easily.
-* Update: Improved error handling and the error messages provided.
-* Update: Improved Critical CSS Generation stability.
-* Update: Remove animations from Critical CSS.
-* Fix: Incompatibility with UsersWP and similar plugins that might introduce redirects during Critical CSS Generation.
+#### Changed
+- Critical CSS: Updated error reporting for Critical CSS to offer more users more guidance.
+- Tooling: Moved all development to the Jetpack monorepo.
+- Boost is now compatible with WordPress 5.8.
 
-= 1.0.6 =
-* Fix: Failed to execute 'json' errors
-* Fix: Connection UI Border issues
-* Update: Improve Jetpack compatibility
-* Update: Improve Critical CSS Compatibility with caching and minification plugins
-* Update: Clean up JavaScript dependencies
+#### Fixed
+- Tooling: Fix PHP unit testing dependency on later versions of PHP.
+- Critical CSS: Ensure generator library uses cache-busting to load the latest version after updates.
+--------
 
-= 1.0.5 =
-* Fixed: Defer JavaScript compatibility with XML Requests
-
-= 1.0.4 =
-* Fixed: Web Stories compatibility
-* Improved: "Defer Non-Essential Javascript" module compatibility with other plugins
-
-= 1.0.3 =
-* Updated: Support for AMP Plugin 2.0+
-* Updated: No longer defer JavaScript on POST, AJAX, Cron requests and sitemaps.
-
-= 1.0.2 =
-* Improved: HTML Media tag handling
-* Fixed: Metrics timeout caused by caching in the REST API
-
-= 1.0.1 =
-* Fixed: An issue where the connection iframe would sometimes break
-* Updated: On connection: showing an XML RPC Error instead of HTTP 500 when XML-RPC is disabled
-
-= 1.0.0 =
-- This update brings a lot of stability improvements.
-- We've been hard at work to get here and Jetpack Boost v1.0.0 is finally here! 🎉
-
-= 0.9.19 =
-
-- We've refactored the plugin quite a bit, starting from the UI to stability fixes.
-
-= 0.9.1 =
-
-- First public alpha release
+[See the previous changelogs here](https://github.com/Automattic/jetpack/blob/master/projects/plugins/boost/CHANGELOG.md#changelog) 

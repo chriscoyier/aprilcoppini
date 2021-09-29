@@ -58,13 +58,6 @@ class Settings
         }
 
         $existing_settings['plugins']         = $this->filesystem->get_local_plugins();
-        $existing_settings['plugin_disabled'] = false;
-
-        // If pretty permalinks are not enabled, disable the plugin
-        // @TODO fix me - this only works for multisites with 1 as the BLOG_ID_CURRENT_SITE
-        if (empty(get_option('permalink_structure'))){
-            $existing_settings['plugin_disabled'] = true;
-        }
 
         return $existing_settings;
     }

@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitaecc6639e7d13d121bee20e729219d36
+class ComposerStaticInitb1e77e6231d50e7663f84529b6a3dfda_jetpack_boostⓥ1_2_0
 {
     public static $files = array (
         'bce4ecd6aabb2a2948e06d0e2c4ea9a6' => __DIR__ . '/..' . '/automattic/jetpack-connection/legacy/load-ixr.php',
@@ -48,6 +48,7 @@ class ComposerStaticInitaecc6639e7d13d121bee20e729219d36
         'Automattic\\Jetpack\\Connection\\Manager' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-manager.php',
         'Automattic\\Jetpack\\Connection\\Manager_Interface' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/interface-manager.php',
         'Automattic\\Jetpack\\Connection\\Nonce_Handler' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-nonce-handler.php',
+        'Automattic\\Jetpack\\Connection\\Package_Version' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-package-version.php',
         'Automattic\\Jetpack\\Connection\\Plugin' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-plugin.php',
         'Automattic\\Jetpack\\Connection\\Plugin_Storage' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-plugin-storage.php',
         'Automattic\\Jetpack\\Connection\\REST_Connector' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-rest-connector.php',
@@ -69,6 +70,41 @@ class ComposerStaticInitaecc6639e7d13d121bee20e729219d36
         'Automattic\\Jetpack\\Status' => __DIR__ . '/..' . '/automattic/jetpack-status/src/class-status.php',
         'Automattic\\Jetpack\\Terms_Of_Service' => __DIR__ . '/..' . '/automattic/jetpack-terms-of-service/src/class-terms-of-service.php',
         'Automattic\\Jetpack\\Tracking' => __DIR__ . '/..' . '/automattic/jetpack-tracking/src/class-tracking.php',
+        'Automattic\\Jetpack_Boost\\Admin\\Admin' => __DIR__ . '/../..' . '/app/admin/class-admin.php',
+        'Automattic\\Jetpack_Boost\\Admin\\Admin_Notice' => __DIR__ . '/../..' . '/app/admin/class-admin-notice.php',
+        'Automattic\\Jetpack_Boost\\Jetpack_Boost' => __DIR__ . '/../..' . '/app/class-jetpack-boost.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Analytics' => __DIR__ . '/../..' . '/app/lib/class-analytics.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Assets' => __DIR__ . '/../..' . '/app/lib/class-assets.php',
+        'Automattic\\Jetpack_Boost\\Lib\\CLI' => __DIR__ . '/../..' . '/app/lib/class-cli.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Cacheable' => __DIR__ . '/../..' . '/app/lib/class-cacheable.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Config' => __DIR__ . '/../..' . '/app/lib/class-config.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Connection' => __DIR__ . '/../..' . '/app/lib/class-connection.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Debug' => __DIR__ . '/../..' . '/app/lib/class-debug.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Environment_Change_Detector' => __DIR__ . '/../..' . '/app/lib/class-environment-change-detector.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Minify' => __DIR__ . '/../..' . '/app/lib/class-minify.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Nonce' => __DIR__ . '/../..' . '/app/lib/class-nonce.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Output_Filter' => __DIR__ . '/../..' . '/app/lib/class-output-filter.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Speed_Score' => __DIR__ . '/../..' . '/app/lib/class-speed-score.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Speed_Score_Request' => __DIR__ . '/../..' . '/app/lib/class-speed-score-request.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Storage_Post_Type' => __DIR__ . '/../..' . '/app/lib/class-storage-post-type.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Transient' => __DIR__ . '/../..' . '/app/lib/class-transient.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Url' => __DIR__ . '/../..' . '/app/lib/class-url.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Utils' => __DIR__ . '/../..' . '/app/lib/class-utils.php',
+        'Automattic\\Jetpack_Boost\\Lib\\Viewport' => __DIR__ . '/../..' . '/app/lib/class-viewport.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Admin_Bar_Css_Compat' => __DIR__ . '/../..' . '/app/modules/critical-css/class-admin-bar-css-compat.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Critical_CSS' => __DIR__ . '/../..' . '/app/modules/critical-css/class-critical-css.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Critical_CSS_State' => __DIR__ . '/../..' . '/app/modules/critical-css/class-critical-css-state.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Critical_CSS_Storage' => __DIR__ . '/../..' . '/app/modules/critical-css/class-critical-css-storage.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Providers\\Archive_Provider' => __DIR__ . '/../..' . '/app/modules/critical-css/providers/class-archive-provider.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Providers\\Post_ID_Provider' => __DIR__ . '/../..' . '/app/modules/critical-css/providers/class-post-id-provider.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Providers\\Provider' => __DIR__ . '/../..' . '/app/modules/critical-css/providers/class-provider.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Providers\\Singular_Post_Provider' => __DIR__ . '/../..' . '/app/modules/critical-css/providers/class-singular-post-provider.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Providers\\Taxonomy_Provider' => __DIR__ . '/../..' . '/app/modules/critical-css/providers/class-taxonomy-provider.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Providers\\WP_Core_Provider' => __DIR__ . '/../..' . '/app/modules/critical-css/providers/class-wp-core-provider.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Critical_CSS\\Regenerate_Admin_Notice' => __DIR__ . '/../..' . '/app/modules/critical-css/class-regenerate-admin-notice.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Lazy_Images\\Lazy_Images' => __DIR__ . '/../..' . '/app/modules/lazy-images/class-lazy-images.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Module' => __DIR__ . '/../..' . '/app/modules/class-module.php',
+        'Automattic\\Jetpack_Boost\\Modules\\Render_Blocking_JS\\Render_Blocking_JS' => __DIR__ . '/../..' . '/app/modules/render-blocking-js/class-render-blocking-js.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'JShrink\\Minifier' => __DIR__ . '/..' . '/tedivm/jshrink/src/JShrink/Minifier.php',
         'Jetpack_IXR_Client' => __DIR__ . '/..' . '/automattic/jetpack-connection/legacy/class-jetpack-ixr-client.php',
@@ -83,10 +119,10 @@ class ComposerStaticInitaecc6639e7d13d121bee20e729219d36
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitaecc6639e7d13d121bee20e729219d36::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitaecc6639e7d13d121bee20e729219d36::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitaecc6639e7d13d121bee20e729219d36::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInitaecc6639e7d13d121bee20e729219d36::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitb1e77e6231d50e7663f84529b6a3dfda_jetpack_boostⓥ1_2_0::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitb1e77e6231d50e7663f84529b6a3dfda_jetpack_boostⓥ1_2_0::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInitb1e77e6231d50e7663f84529b6a3dfda_jetpack_boostⓥ1_2_0::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInitb1e77e6231d50e7663f84529b6a3dfda_jetpack_boostⓥ1_2_0::$classMap;
 
         }, null, ClassLoader::class);
     }

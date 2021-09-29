@@ -482,7 +482,7 @@ class ProPluginManager extends PluginManagerBase
     }
 
     /**
-     * Adds settings link to plugin page
+     * Adds profiles and settings links to plugin page
      *
      * @param array $links
      *
@@ -490,10 +490,12 @@ class ProPluginManager extends PluginManagerBase
      */
     function plugin_action_links($links)
     {
-        $link = sprintf('<a href="%s">%s</a>', network_admin_url($this->props->plugin_base) . '#settings', _x('Settings', 'Plugin configuration and preferences', 'wp-migrate-db'));
-        array_unshift($links, $link);
+        $start_links = array(
+            'profiles'   => sprintf('<a href="%s">%s</a>', network_admin_url($this->props->plugin_base) , __('Migrate', 'wp-migrate-db')), 
+            'settings'   => sprintf('<a href="%s">%s</a>', network_admin_url($this->props->plugin_base) . '#settings', _x('Settings', 'Plugin configuration and preferences', 'wp-migrate-db')) 
+        );
 
-        return $links;
+        return $start_links + $links;
     }
 
     /**

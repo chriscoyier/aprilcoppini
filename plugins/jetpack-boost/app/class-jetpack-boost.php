@@ -7,6 +7,7 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost;
@@ -39,8 +40,8 @@ use Automattic\Jetpack_Boost\Modules\Render_Blocking_JS\Render_Blocking_JS;
 class Jetpack_Boost {
 
 	const MODULES = array(
-		Critical_CSS::MODULE_SLUG => Critical_CSS::class,
-		Lazy_Images::MODULE_SLUG => Lazy_Images::class,
+		Critical_CSS::MODULE_SLUG       => Critical_CSS::class,
+		Lazy_Images::MODULE_SLUG        => Lazy_Images::class,
 		Render_Blocking_JS::MODULE_SLUG => Render_Blocking_JS::class,
 	);
 
@@ -64,35 +65,32 @@ class Jetpack_Boost {
 	 * The unique identifier of this plugin.
 	 *
 	 * @since    1.0.0
-	 * @access   protected
 	 * @var      string $plugin_name The string used to uniquely identify this plugin.
 	 */
-	protected $plugin_name;
+	private $plugin_name;
 
 	/**
 	 * The current version of the plugin.
 	 *
 	 * @since    1.0.0
-	 * @access   protected
 	 * @var      string $version The current version of the plugin.
 	 */
-	protected $version;
+	private $version;
 
 	/**
 	 * The config
 	 *
 	 * @since    1.0.0
-	 * @access   protected
-	 * @var      Config $config The configuration object
+	 * @var      Config|null $config The configuration object
 	 */
-	protected $config;
+	private $config;
 
 	/**
 	 * Store all plugin module instances here
 	 *
 	 * @var array
 	 */
-	protected $modules = array();
+	private $modules = array();
 
 	/**
 	 * The Jetpack Boost Connection manager instance.
@@ -113,8 +111,7 @@ class Jetpack_Boost {
 	 * @since    1.0.0
 	 */
 	public function __construct() {
-
-		$this->version = JETPACK_BOOST_VERSION;
+		$this->version     = JETPACK_BOOST_VERSION;
 		$this->plugin_name = 'jetpack-boost';
 
 		$this->connection = new Connection();
@@ -171,6 +168,7 @@ class Jetpack_Boost {
 		$this->clear_cache();
 		Admin::clear_dismissed_notices();
 		Critical_CSS::clear_reset_reason();
+		Critical_CSS::clear_dismissed_recommendations();
 	}
 
 	/**
@@ -189,6 +187,9 @@ class Jetpack_Boost {
 		add_action( 'jetpack_boost_clear_cache', array( $this, 'record_clear_cache_event' ) );
 	}
 
+	/**
+	 * Record the clear cache event.
+	 */
 	public function record_clear_cache_event() {
 		Analytics::record_user_event( 'clear_cache' );
 	}
@@ -215,7 +216,6 @@ class Jetpack_Boost {
 		}
 
 		foreach ( self::MODULES as $module_slug => $module_class ) {
-
 			// Don't register modules that have been forcibly disabled from the url 'jb-disable-modules' query string parameter.
 			if ( in_array( $module_slug, $forced_disabled_modules, true ) ) {
 				continue;
@@ -231,7 +231,7 @@ class Jetpack_Boost {
 				continue;
 			}
 
-			$module = new $module_class();
+			$module                        = new $module_class();
 			$this->modules[ $module_slug ] = $module;
 		}
 
@@ -296,6 +296,7 @@ class Jetpack_Boost {
 	 */
 	public function get_module_status( $module_slug ) {
 		$default_module_status = in_array( $module_slug, self::ENABLED_MODULES_DEFAULT, true );
+
 		return apply_filters( 'jetpack_boost_module_enabled', $default_module_status, $module_slug );
 	}
 
@@ -309,6 +310,7 @@ class Jetpack_Boost {
 	 */
 	public function is_module_enabled( $is_enabled, $module_slug ) {
 		do_action( 'jetpack_boost_pre_is_module_enabled', $is_enabled, $module_slug );
+
 		return $this->config()->get_value( "$module_slug/enabled", $is_enabled );
 	}
 
@@ -409,19 +411,19 @@ class Jetpack_Boost {
 				Render_Blocking_JS::MODULE_SLUG => array(
 					'enabled' => false,
 				),
-				Critical_CSS::MODULE_SLUG => array(
-					'enabled' => false,
+				Critical_CSS::MODULE_SLUG       => array(
+					'enabled'  => false,
 					'settings' => array(
-						'viewport_sizes' => Viewport::DEFAULT_VIEWPORT_SIZES,
+						'viewport_sizes'    => Viewport::DEFAULT_VIEWPORT_SIZES,
 						'default_viewports' => Viewport::DEFAULT_VIEWPORTS,
-						'css-ignore-rules' => array(
+						'css-ignore-rules'  => array(
 							// TODO: Define if we need any default CSS ignore rules
 							// Example regex, exclude all css where there is a url inside.
 							'url\(',
 						),
 					),
 				),
-				Lazy_Images::MODULE_SLUG => array(
+				Lazy_Images::MODULE_SLUG        => array(
 					'enabled' => false,
 				),
 			)
@@ -437,8 +439,8 @@ class Jetpack_Boost {
 			$jetpack_config->ensure(
 				'connection',
 				array(
-					'slug' => 'jetpack-boost',
-					'name' => 'Jetpack Boost',
+					'slug'     => 'jetpack-boost',
+					'name'     => 'Jetpack Boost',
 					'url_info' => '', // Optional, URL of the plugin.
 				)
 			);
@@ -468,7 +470,7 @@ class Jetpack_Boost {
 	 */
 	public function display_meta_field_module_ready() {
 		?>
-		<meta name="jetpack-boost-ready" content="<?php echo apply_filters( 'jetpack_boost_url_ready', true ) ? 'true' : 'false'; ?>"/>
+		<meta name="jetpack-boost-ready" content="<?php echo apply_filters( 'jetpack_boost_url_ready', true ) ? 'true' : 'false'; ?>" />
 		<?php
 	}
 
@@ -476,8 +478,8 @@ class Jetpack_Boost {
 	 * The name of the plugin used to uniquely identify it within the context of
 	 * WordPress and to define internationalization functionality.
 	 *
-	 * @since     1.0.0
 	 * @return    string    The name of the plugin.
+	 * @since     1.0.0
 	 */
 	public function get_plugin_name() {
 		return $this->plugin_name;
@@ -486,8 +488,8 @@ class Jetpack_Boost {
 	/**
 	 * Retrieve the version number of the plugin.
 	 *
-	 * @since     1.0.0
 	 * @return    string    The version number of the plugin.
+	 * @since     1.0.0
 	 */
 	public function get_version() {
 		return $this->version;

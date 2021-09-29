@@ -9,6 +9,7 @@ class Command extends \DeliciousBrains\WPMDB\Common\Cli\Command
 	{
 		\WP_CLI::add_command('migratedb', 'DeliciousBrains\WPMDB\Pro\Cli\Command');
 	}
+
 	/**
 	 * Export local DB to file.
 	 *
@@ -36,6 +37,23 @@ class Command extends \DeliciousBrains\WPMDB\Common\Cli\Command
 	 *
 	 *     Should be used in conjunction with the --find=<strings> argument, see it's
 	 *     documentation for further explanation of the find & replace functionality.
+	 *
+	 * [--regex-find]
+	 * : A regex pattern to match against when performing a string find
+	 * and replace across the database.
+	 *
+	 * [--regex-replace]
+	 * : A replace string that may contain references of the form \n or $n, with the latter
+	 * form being the preferred one. Every such reference will be replaced by the text captured by the n'th
+	 * parenthesized pattern used in the --regex-find pattern.
+	 *
+	 * [--case-sensitive-find]
+	 * : A comma separated list of strings to find when performing a string find
+	 * and replace across the database.
+	 *
+	 * [--case-sensitive-replace]
+	 * : A comma separated list of replace value strings to implement when
+	 * performing a string find & replace across the database.
 	 *
 	 * [--include-tables=<tables>]
 	 * : The comma separated list of tables to migrate. Excluding this parameter
@@ -102,6 +120,28 @@ class Command extends \DeliciousBrains\WPMDB\Common\Cli\Command
 	 *
 	 *     Should be used in conjunction with the --find=<strings> argument, see it's
 	 *     documentation for further explanation of the find & replace functionality.
+	 *
+	 * [--regex-find]
+	 * : A regex pattern to match against when performing a string find
+	 * and replace across the database.
+	 *
+	 * [--regex-replace]
+	 * : A replace string that may contain references of the form \n or $n, with the latter
+	 * form being the preferred one. Every such reference will be replaced by the text captured by the n'th
+	 * parenthesized pattern used in the --regex-find pattern.
+	 *
+	 * [--case-sensitive-find]
+	 * : A comma separated list of strings to find when performing a string find
+	 * and replace across the database.
+	 *
+	 * [--case-sensitive-replace]
+	 * : A comma separated list of replace value strings to implement when
+	 * performing a string find & replace across the database.
+	 *
+	 * [--include-tables=<tables>]
+	 * : The comma separated list of tables to migrate. Excluding this parameter
+	 * will migrate all tables in your database that begin with your
+	 * installation's table prefix, e.g. wp_.
 	 *
 	 * [--include-tables=<tables>]
 	 * : The comma separated list of tables to search. Excluding this parameter

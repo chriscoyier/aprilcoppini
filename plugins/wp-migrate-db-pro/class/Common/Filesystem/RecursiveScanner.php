@@ -352,7 +352,7 @@ class RecursiveScanner
     {
         if ($this->is_root_item($abs_path)) {
             $this->manifest[$abs_path]['completed'] = $completed;
-            $this->manifest[$abs_path]['offset'] = $offset;
+            $this->manifest[$abs_path]['offset'] += $offset;
         }
     }
 

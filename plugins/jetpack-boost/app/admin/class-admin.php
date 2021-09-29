@@ -2,8 +2,8 @@
 /**
  * The admin-specific functionality of the plugin.
  *
- * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Admin;
@@ -14,12 +14,7 @@ use Automattic\Jetpack_Boost\Lib\Environment_Change_Detector;
 use Automattic\Jetpack_Boost\Lib\Speed_Score;
 
 /**
- * The admin-specific functionality of the plugin.
- *
- * Defines the plugin name, version, and two examples hooks for how to
- * enqueue the admin-specific stylesheet and JavaScript.
- *
- * @author     Automattic <support@jetpack.com>
+ * Class Admin
  */
 class Admin {
 
@@ -38,14 +33,14 @@ class Admin {
 	 *
 	 * @var Jetpack_Boost Plugin.
 	 */
-	protected $jetpack_boost;
+	private $jetpack_boost;
 
 	/**
 	 * Speed_Score class instance.
 	 *
-	 * @var \Automattic\Jetpack_Boost\Lib\Speed_Score instance.
+	 * @var Speed_Score instance.
 	 */
-	protected $speed_score;
+	private $speed_score;
 
 	/**
 	 * Initialize the class and set its properties.
@@ -56,7 +51,7 @@ class Admin {
 	 */
 	public function __construct( Jetpack_Boost $jetpack_boost ) {
 		$this->jetpack_boost = $jetpack_boost;
-		$this->speed_score = new Speed_Score();
+		$this->speed_score   = new Speed_Score();
 		Environment_Change_Detector::init();
 
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
@@ -148,17 +143,17 @@ class Admin {
 
 		// Prepare configuration constants for JavaScript.
 		$constants = array(
-			'version' => JETPACK_BOOST_VERSION,
-			'api' => array(
+			'version'             => JETPACK_BOOST_VERSION,
+			'api'                 => array(
 				'namespace' => JETPACK_BOOST_REST_NAMESPACE,
-				'prefix' => JETPACK_BOOST_REST_PREFIX,
+				'prefix'    => JETPACK_BOOST_REST_PREFIX,
 			),
-			'modules' => $this->jetpack_boost->get_available_modules(),
-			'config' => $this->jetpack_boost->config()->get_data(),
-			'locale' => get_locale(),
-			'site' => array(
-				'url' => get_site_url(),
-				'online' => ! ( new Status() )->is_offline_mode(),
+			'modules'             => $this->jetpack_boost->get_available_modules(),
+			'config'              => $this->jetpack_boost->config()->get_data(),
+			'locale'              => get_locale(),
+			'site'                => array(
+				'url'       => get_site_url(),
+				'online'    => ! ( new Status() )->is_offline_mode(),
 				'assetPath' => plugins_url( $internal_path, JETPACK_BOOST_PATH ),
 			),
 			'shownAdminNoticeIds' => $this->get_shown_admin_notice_ids(),
@@ -178,6 +173,11 @@ class Admin {
 		wp_enqueue_script( $admin_js_handle );
 	}
 
+	/**
+	 * Get settings link.
+	 *
+	 * @param array $links the array of links.
+	 */
 	public function plugin_page_settings_link( $links ) {
 		$settings_link = '<a href="' . admin_url( '?page=jetpack-boost' ) . '">' . esc_html__( 'Settings', 'jetpack-boost' ) . '</a>';
 		array_unshift( $links, $settings_link );
@@ -193,7 +193,7 @@ class Admin {
 			$this->jetpack_boost->get_plugin_name() . '-admin',
 			'wpApiSettings',
 			array(
-				'root' => esc_url_raw( rest_url() ),
+				'root'  => esc_url_raw( rest_url() ),
 				'nonce' => wp_create_nonce( 'wp_rest' ),
 			)
 		);
@@ -203,7 +203,7 @@ class Admin {
 	}
 
 	/**
-	 * Check for permissions
+	 * Check for permissions.
 	 *
 	 * @return bool
 	 */
@@ -222,8 +222,8 @@ class Admin {
 			JETPACK_BOOST_REST_NAMESPACE,
 			JETPACK_BOOST_REST_PREFIX . '/module/(?P<slug>[a-z\-]+)/status',
 			array(
-				'methods' => \WP_REST_Server::EDITABLE,
-				'callback' => array( $this, 'set_module_status' ),
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'set_module_status' ),
 				'permission_callback' => array( $this, 'check_for_permissions' ),
 			)
 		);
@@ -261,11 +261,11 @@ class Admin {
 		// Determine if we're already on the settings page.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$on_settings_page = isset( $_GET['page'] ) && self::MENU_SLUG === $_GET['page'];
-		$notices = $this->jetpack_boost->get_admin_notices();
+		$notices          = $this->jetpack_boost->get_admin_notices();
 
 		// Filter out any that have been dismissed, unless newer than the dismissal.
 		$dismissed_notices = \get_option( self::DISMISSED_NOTICE_OPTION, array() );
-		$notices = array_filter(
+		$notices           = array_filter(
 			$notices,
 			function ( $notice ) use ( $dismissed_notices ) {
 				$notice_slug = $notice->get_slug();
@@ -293,7 +293,7 @@ class Admin {
 	 */
 	private function get_shown_admin_notice_ids() {
 		$notices = $this->jetpack_boost->get_admin_notices();
-		$ids = array();
+		$ids     = array();
 		foreach ( $notices as $notice ) {
 			$ids[] = $notice->get_id();
 		}
@@ -333,6 +333,8 @@ class Admin {
 
 	/**
 	 * Clear a specific admin notice.
+	 *
+	 * @param string $notice_slug The notice slug.
 	 */
 	public static function clear_dismissed_notice( $notice_slug ) {
 		$dismissed_notices = \get_option( self::DISMISSED_NOTICE_OPTION, array() );

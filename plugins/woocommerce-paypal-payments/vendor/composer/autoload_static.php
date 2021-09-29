@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37
+class ComposerStaticInitfd327382102db5a22440815e53142caa
 {
     public static $files = array (
         '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
@@ -28,7 +28,6 @@ class ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37
             'Dhii\\Factory\\' => 13,
             'Dhii\\Exception\\' => 15,
             'Dhii\\Data\\Container\\' => 20,
-            'Dhii\\Data\\' => 10,
             'Dhii\\Container\\' => 15,
             'Dhii\\Collection\\' => 16,
         ),
@@ -70,10 +69,6 @@ class ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37
         'Dhii\\Data\\Container\\' => 
         array (
             0 => __DIR__ . '/..' . '/dhii/data-container-interface/src',
-        ),
-        'Dhii\\Data\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/dhii/data-key-value-aware-interface/src',
         ),
         'Dhii\\Container\\' => 
         array (
@@ -182,6 +177,12 @@ class ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37
         'WooCommerce\\PayPalCommerce\\Button\\Helper\\MessagesApply' => __DIR__ . '/../..' . '/modules/ppcp-button/src/Helper/class-messagesapply.php',
         'WooCommerce\\PayPalCommerce\\Button\\Helper\\MessagesDisclaimers' => __DIR__ . '/../..' . '/modules/ppcp-button/src/Helper/class-messagesdisclaimers.php',
         'WooCommerce\\PayPalCommerce\\Button\\Helper\\ThreeDSecure' => __DIR__ . '/../..' . '/modules/ppcp-button/src/Helper/class-threedsecure.php',
+        'WooCommerce\\PayPalCommerce\\Compat\\CompatModule' => __DIR__ . '/../..' . '/modules/ppcp-compat/src/class-compatmodule.php',
+        'WooCommerce\\PayPalCommerce\\Compat\\PPEC\\DeactivateNote' => __DIR__ . '/../..' . '/modules/ppcp-compat/src/PPEC/class-deactivatenote.php',
+        'WooCommerce\\PayPalCommerce\\Compat\\PPEC\\MockGateway' => __DIR__ . '/../..' . '/modules/ppcp-compat/src/PPEC/class-mockgateway.php',
+        'WooCommerce\\PayPalCommerce\\Compat\\PPEC\\PPECHelper' => __DIR__ . '/../..' . '/modules/ppcp-compat/src/PPEC/class-ppechelper.php',
+        'WooCommerce\\PayPalCommerce\\Compat\\PPEC\\SettingsImporter' => __DIR__ . '/../..' . '/modules/ppcp-compat/src/PPEC/class-settingsimporter.php',
+        'WooCommerce\\PayPalCommerce\\Compat\\PPEC\\SubscriptionsHandler' => __DIR__ . '/../..' . '/modules/ppcp-compat/src/PPEC/class-subscriptionshandler.php',
         'WooCommerce\\PayPalCommerce\\Onboarding\\Assets\\OnboardingAssets' => __DIR__ . '/../..' . '/modules/ppcp-onboarding/src/Assets/class-onboardingassets.php',
         'WooCommerce\\PayPalCommerce\\Onboarding\\Endpoint\\LoginSellerEndpoint' => __DIR__ . '/../..' . '/modules/ppcp-onboarding/src/Endpoint/class-loginsellerendpoint.php',
         'WooCommerce\\PayPalCommerce\\Onboarding\\Environment' => __DIR__ . '/../..' . '/modules/ppcp-onboarding/src/class-environment.php',
@@ -194,6 +195,8 @@ class ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37
         'WooCommerce\\PayPalCommerce\\Session\\Cancellation\\CancelView' => __DIR__ . '/../..' . '/modules/ppcp-session/src/Cancellation/class-cancelview.php',
         'WooCommerce\\PayPalCommerce\\Session\\SessionHandler' => __DIR__ . '/../..' . '/modules/ppcp-session/src/class-sessionhandler.php',
         'WooCommerce\\PayPalCommerce\\Session\\SessionModule' => __DIR__ . '/../..' . '/modules/ppcp-session/src/class-sessionmodule.php',
+        'WooCommerce\\PayPalCommerce\\StatusReport\\Renderer' => __DIR__ . '/../..' . '/modules/ppcp-status-report/src/class-renderer.php',
+        'WooCommerce\\PayPalCommerce\\StatusReport\\StatusReportModule' => __DIR__ . '/../..' . '/modules/ppcp-status-report/src/class-statusreportmodule.php',
         'WooCommerce\\PayPalCommerce\\Subscription\\Helper\\SubscriptionHelper' => __DIR__ . '/../..' . '/modules/ppcp-subscription/src/Helper/class-subscriptionhelper.php',
         'WooCommerce\\PayPalCommerce\\Subscription\\RenewalHandler' => __DIR__ . '/../..' . '/modules/ppcp-subscription/src/class-renewalhandler.php',
         'WooCommerce\\PayPalCommerce\\Subscription\\Repository\\PaymentTokenRepository' => __DIR__ . '/../..' . '/modules/ppcp-subscription/src/Repository/class-paymenttokenrepository.php',
@@ -235,14 +238,15 @@ class ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37
         'WooCommerce\\WooCommerce\\Logging\\WooCommerceLoggingModule' => __DIR__ . '/../..' . '/modules/woocommerce-logging/src/class-woocommerceloggingmodule.php',
         'Woocommerce\\PayPalCommerce\\ApiClient\\Entity\\Capture' => __DIR__ . '/../..' . '/modules/ppcp-api-client/src/Entity/class-capture.php',
         'Woocommerce\\PayPalCommerce\\WcGateway\\Helper\\DccProductStatus' => __DIR__ . '/../..' . '/modules/ppcp-wc-gateway/src/Helper/class-dccproductstatus.php',
+        'Woocommerce\\PayPalCommerce\\WcGateway\\Helper\\SettingsStatus' => __DIR__ . '/../..' . '/modules/ppcp-wc-gateway/src/Helper/class-settingsstatus.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit676d4bb90dad167891cc9fe8fa075f37::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitfd327382102db5a22440815e53142caa::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitfd327382102db5a22440815e53142caa::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInitfd327382102db5a22440815e53142caa::$classMap;
 
         }, null, ClassLoader::class);
     }

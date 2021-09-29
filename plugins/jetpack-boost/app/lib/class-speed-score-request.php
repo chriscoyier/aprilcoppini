@@ -4,12 +4,13 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
 
 /**
- * Class Speed_Score_Request.
+ * Class Speed_Score_Request
  */
 class Speed_Score_Request extends Cacheable {
 	/**
@@ -56,13 +57,15 @@ class Speed_Score_Request extends Cacheable {
 	public function __construct( $url, $created = null, $scores = null, $error = null ) {
 		$this->set_cache_id( self::generate_cache_id_from_url( $url ) );
 
-		$this->url = Url::normalize( $url );
+		$this->url     = Url::normalize( $url );
 		$this->created = is_null( $created ) ? microtime( true ) : $created;
-		$this->scores = $scores;
-		$this->error = $error;
+		$this->scores  = $scores;
+		$this->error   = $error;
 	}
 
 	/**
+	 * Generate the cache ID from the URL.
+	 *
 	 * @param string $url The URL to get the Speed Scores for.
 	 *
 	 * @return string
@@ -78,11 +81,11 @@ class Speed_Score_Request extends Cacheable {
 	 */
 	public function jsonSerialize() {
 		return array(
-			'id' => $this->get_cache_id(),
-			'url' => $this->url,
+			'id'      => $this->get_cache_id(),
+			'url'     => $this->url,
 			'created' => $this->created,
-			'scores' => $this->scores,
-			'error' => $this->error,
+			'scores'  => $this->scores,
+			'error'   => $this->error,
 		);
 	}
 
@@ -131,7 +134,7 @@ class Speed_Score_Request extends Cacheable {
 			null,
 			array(
 				'request_id' => $this->get_cache_id(),
-				'url' => $this->url,
+				'url'        => $this->url,
 			)
 		);
 
@@ -142,6 +145,9 @@ class Speed_Score_Request extends Cacheable {
 		return true;
 	}
 
+	/**
+	 * Is this request pending?
+	 */
 	public function is_pending() {
 		return empty( $this->error ) && empty( $this->score );
 	}

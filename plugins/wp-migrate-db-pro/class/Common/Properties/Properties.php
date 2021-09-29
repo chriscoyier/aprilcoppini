@@ -106,6 +106,8 @@ class Properties
             $this->core_slug;
         }
 
-        $this->plugin_version = $GLOBALS['wpmdb_meta'][$this->core_slug]['version'];
+        if (isset($GLOBALS['wpmdb_meta'][$this->core_slug])) {
+            $this->plugin_version = $GLOBALS['wpmdb_meta'][$this->core_slug]['version'];
+        }
     }
 }

@@ -77,7 +77,8 @@ class Util
         $data['folders']  = serialize($directories);
         $data['excludes'] = serialize($excludes);
         $data['stage']    = $state_data['stage'];
-        $data['sig'] = $this->http_helper->create_signature($data, $state_data['key']);
+        $data['is_cli_migration'] = isset($state_data['is_cli_migration']) ? (int)$state_data['is_cli_migration'] : 0;
+        $data['sig']              = $this->http_helper->create_signature($data, $state_data['key']);
 
         if (!is_null($date)) {
             $data['date'] = $date;

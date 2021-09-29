@@ -25,6 +25,7 @@
  *
  * @link       https://automattic.com
  * @since      0.2.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
@@ -44,21 +45,21 @@ class Output_Filter {
 	 *
 	 * @var array
 	 */
-	protected $callbacks = array();
+	private $callbacks = array();
 
 	/**
 	 * One chunk always remains in the buffer to allow for cross-seam matching.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	protected $buffered_chunk;
+	private $buffered_chunk;
 
 	/**
 	 * Whether we allow the callbacks to filter incoming chunks of output.
 	 *
 	 * @var boolean
 	 */
-	protected $is_filtering = false;
+	private $is_filtering = false;
 
 	/**
 	 * Add an output filtering callback.
@@ -97,22 +98,22 @@ class Output_Filter {
 
 		if ( ! isset( $this->buffered_chunk ) ) {
 			$this->buffered_chunk = $buffer;
+
 			return '';
 		}
 
 		$buffer_start = $this->buffered_chunk;
-		$buffer_end = $buffer;
+		$buffer_end   = $buffer;
 
 		foreach ( $this->callbacks as $callback ) {
 			list( $buffer_start, $buffer_end ) = call_user_func( $callback, $buffer_start, $buffer_end );
 		}
 		$this->buffered_chunk = $buffer_end;
-		$joint_buffer = $buffer_start . $buffer_end;
+		$joint_buffer         = $buffer_start . $buffer_end;
 
 		// If the second part of the buffer is the last chunk,
 		// merge the buffer back together to ensure whole output.
 		if ( PHP_OUTPUT_HANDLER_END === $phase ) {
-
 			// If more buffer chunks arrive, don't apply callbacks to them.
 			$this->is_filtering = false;
 

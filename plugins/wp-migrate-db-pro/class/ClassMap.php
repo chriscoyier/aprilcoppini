@@ -29,6 +29,7 @@ use DeliciousBrains\WPMDB\Common\Sql\TableHelper;
 use DeliciousBrains\WPMDB\Common\UI\Notice;
 use DeliciousBrains\WPMDB\Common\UI\TemplateBase;
 use DeliciousBrains\WPMDB\Common\Migration\Flush;
+use DeliciousBrains\WPMDB\Common\Replace\PairFactory;
 
 class ClassMap
 {
@@ -67,6 +68,8 @@ class ClassMap
     public $cli;
     public $WPMDBRestAPIServer;
     public $flush;
+    public $pair_factory;
+
     /**
      * @var ProfileImporter
      */
@@ -146,13 +149,19 @@ class ClassMap
             $this->properties
         );
 
+        $this->pair_factory = new PairFactory();
+
         $this->replace = new Replace(
             $this->migration_state_manager,
             $this->table_helper,
             $this->error_log,
             $this->util,
             $this->form_data,
-            $this->properties
+            $this->properties,
+            $this->pair_factory,
+            $this->WPMDBRestAPIServer,
+            $this->http_helper,
+            $this->http
         );
 
         // Notice

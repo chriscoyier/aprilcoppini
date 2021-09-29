@@ -4,6 +4,7 @@
  *
  * @link       https://automattic.com
  * @since      0.2
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Modules\Render_Blocking_JS;
@@ -29,7 +30,7 @@ class Render_Blocking_JS extends Module {
 	 * HTML attribute name to be added to <script> tag to make it
 	 * ignored by this class.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
 	private $ignore_attribute;
 
@@ -44,7 +45,7 @@ class Render_Blocking_JS extends Module {
 	/**
 	 * Utility class that supports output filtering.
 	 *
-	 * @var \Automattic\Jetpack_Boost\Lib\Output_Filter
+	 * @var Output_Filter
 	 */
 	private $output_filter = null;
 
@@ -64,7 +65,7 @@ class Render_Blocking_JS extends Module {
 		// Set up the ignore attribute value.
 		$this->ignore_attribute = apply_filters( 'jetpack_boost_render_blocking_js_ignore_attribute', 'data-jetpack-boost' );
 
-		add_action( 'template_redirect', array( $this, 'start_output_filtering' ), PHP_INT_MIN );
+		add_action( 'template_redirect', array( $this, 'start_output_filtering' ), -999999 );
 	}
 
 	/**
@@ -154,7 +155,7 @@ class Render_Blocking_JS extends Module {
 	 */
 	public function handle_output_stream( $buffer_start, $buffer_end ) {
 		$joint_buffer = $this->ignore_scripts_in_comments( $buffer_start . $buffer_end );
-		$script_tags = $this->get_script_tags( $joint_buffer );
+		$script_tags  = $this->get_script_tags( $joint_buffer );
 
 		if ( ! $script_tags ) {
 			if ( $this->is_opened_script ) {
@@ -172,7 +173,7 @@ class Render_Blocking_JS extends Module {
 
 		foreach ( $script_tags as $script_tag ) {
 			$this->buffered_script_tags[] = $script_tag[0];
-			$buffer_start = str_replace( $script_tag[0], '', $buffer_start );
+			$buffer_start                 = str_replace( $script_tag[0], '', $buffer_start );
 		}
 
 		// Detect a lingering opened script.
@@ -229,7 +230,7 @@ class Render_Blocking_JS extends Module {
 	 * @return array
 	 */
 	protected function recalculate_buffer_split( $buffer, $script_tags ) {
-		$last_script_tag_index = count( $script_tags ) - 1;
+		$last_script_tag_index        = count( $script_tags ) - 1;
 		$last_script_tag_end_position = strrpos( $buffer, $script_tags[ $last_script_tag_index ][0] ) + strlen( $script_tags[ $last_script_tag_index ][0] );
 
 		// Bundle all script tags into the first buffer.

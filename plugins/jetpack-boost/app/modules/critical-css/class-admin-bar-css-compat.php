@@ -1,15 +1,16 @@
 <?php
 /**
+ * Admin bar CSS compatibility
+ *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Modules\Critical_CSS;
 
 /**
- * Class Admin_Bat_Css_Compat
- *
- * @package Automattic\Jetpack_Boost\Modules\Critical_CSS
+ * Class Admin_Bar_Css_Compat
  */
 class Admin_Bar_Css_Compat {
 

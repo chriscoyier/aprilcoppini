@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Dhii\Modular\Module\Exception;
 
 use Dhii\Modular\Module\ModuleAwareInterface;
-use Dhii\Exception\ThrowableInterface;
+use Throwable;
 
 /**
  * Represents an exception that is thrown in relation to a module.
  *
- * @since [*next-version*]
+ * @since 0.2
  */
 interface ModuleExceptionInterface extends
-    ThrowableInterface,
+    Throwable,
     ModuleAwareInterface
 {
 }

@@ -104,10 +104,20 @@ class License
 		add_action( 'wp_ajax_wpmdb_reactivate_licence', array( $this, 'ajax_reactivate_licence' ) );
 		add_action( 'wp_ajax_nopriv_wpmdb_copy_licence_to_remote_site', array( $this, 'respond_to_copy_licence_to_remote_site' ) );
 
-		$this->license_response_messages = $this->setup_license_responses( $this->props->plugin_base );
-
 		// REST endpoints
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
+
+		// Init license response messages
+		add_action('admin_init', [$this, 'init_license_response_messages']);
+	}
+
+	/**
+	 * Initializes license response messages.
+	 * Hooked to admin_init
+	 */
+	public function init_license_response_messages()
+	{
+		$this->license_response_messages = $this->setup_license_responses( $this->props->plugin_base );
 	}
 
 	public function register_rest_routes()

@@ -67,6 +67,9 @@ class Export extends Cli
 	{
 		$args[] = 'include-tables';
 		$args[] = 'exclude-post-types';
+		$args[] = 'include-tables';
+		$args[] = 'regex-find';
+		$args[] = 'regex-replace';
 
 		return $args;
 	}

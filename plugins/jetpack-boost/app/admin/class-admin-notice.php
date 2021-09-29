@@ -1,9 +1,14 @@
 <?php
+/**
+ * Admin notice base class. Override this to implement each admin notice Jetpack Boost may show.
+ *
+ * @package automattic/jetpack-boost
+ */
 
 namespace Automattic\Jetpack_Boost\Admin;
 
 /**
- * Admin notice base class. Override this to implement each admin notice Jetpack Boost may show.
+ * Class Admin_Notice
  */
 abstract class Admin_Notice {
 
@@ -47,10 +52,16 @@ abstract class Admin_Notice {
 	 */
 	abstract protected function render_message( $on_settings_page );
 
+	/**
+	 * Get settings link text.
+	 */
 	protected function get_settings_link_text() {
 		return __( 'Go to the Jetpack Boost Settings page', 'jetpack-boost' );
 	}
 
+	/**
+	 * Dismiss link text.
+	 */
 	protected function get_dismiss_link_text() {
 		return __( 'Dismiss notice', 'jetpack-boost' );
 	}

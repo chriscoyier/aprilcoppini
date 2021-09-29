@@ -219,55 +219,6 @@
             "install-path": "../dhii/data-container-interface"
         },
         {
-            "name": "dhii/data-key-value-aware-interface",
-            "version": "v0.1",
-            "version_normalized": "0.1.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Dhii/data-key-value-aware-interface.git",
-                "reference": "220232bc9040fab78a6c039f5a4a5f9542317bdc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Dhii/data-key-value-aware-interface/zipball/220232bc9040fab78a6c039f5a4a5f9542317bdc",
-                "reference": "220232bc9040fab78a6c039f5a4a5f9542317bdc",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^5.3 | ^7.0"
-            },
-            "require-dev": {
-                "codeclimate/php-test-reporter": "<=0.3.2",
-                "dhii/php-cs-fixer-config": "dev-php-5.3",
-                "phpunit/phpunit": "4.*",
-                "ptrofimov/xpmock": "^1.1"
-            },
-            "time": "2017-01-21T17:35:30+00:00",
-            "type": "library",
-            "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "Dhii\\Data\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Dhii Team",
-                    "email": "development@dhii.co"
-                }
-            ],
-            "description": "Interfaces that aim to increase interoperability of value objects",
-            "support": {
-                "issues": "https://github.com/Dhii/data-key-value-aware-interface/issues",
-                "source": "https://github.com/Dhii/data-key-value-aware-interface/tree/master"
-            },
-            "install-path": "../dhii/data-key-value-aware-interface"
-        },
-        {
             "name": "dhii/exception-interface",
             "version": "v0.2",
             "version_normalized": "0.2.0.0",
@@ -382,38 +333,34 @@
         },
         {
             "name": "dhii/module-interface",
-            "version": "v0.1",
-            "version_normalized": "0.1.0.0",
+            "version": "v0.3.0-alpha1",
+            "version_normalized": "0.3.0.0-alpha1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Dhii/module-interface.git",
-                "reference": "a4271f2040e54f81cb7c4d5b3f18cb4a7532c277"
+                "reference": "e93feaf37e183ac22114e3fd86650bd987fa83d1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Dhii/module-interface/zipball/a4271f2040e54f81cb7c4d5b3f18cb4a7532c277",
-                "reference": "a4271f2040e54f81cb7c4d5b3f18cb4a7532c277",
+                "url": "https://api.github.com/repos/Dhii/module-interface/zipball/e93feaf37e183ac22114e3fd86650bd987fa83d1",
+                "reference": "e93feaf37e183ac22114e3fd86650bd987fa83d1",
                 "shasum": ""
             },
             "require": {
-                "dhii/data-key-value-aware-interface": "^0.1",
-                "dhii/exception-interface": "^0.1 | ^0.2",
-                "dhii/factory-interface": "^0.1-alpha1",
-                "php": "^5.3 | ^7.0"
+                "container-interop/service-provider": "^0.4",
+                "php": "^7.1 | ^8.0",
+                "psr/container": "^1.0"
             },
             "require-dev": {
-                "codeclimate/php-test-reporter": "<=0.3.2",
-                "dhii/php-cs-fixer-config": "dev-php-5.3",
-                "dhii/stringable-interface": "^0.1",
-                "phpunit/phpunit": "^4.8",
-                "psr/container": "^1.0",
-                "ptrofimov/xpmock": "^1.1"
+                "phpunit/phpunit": "^7.0 | ^8.0 | ^9.0",
+                "slevomat/coding-standard": "^6.0",
+                "vimeo/psalm": "^3.11.7 | ^4.0"
             },
-            "time": "2019-11-05T18:25:12+00:00",
+            "time": "2021-01-14T19:21:28+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-develop": "0.1.x-dev"
+                    "dev-develop": "0.3.x-dev"
                 }
             },
             "installation-source": "dist",
@@ -435,7 +382,7 @@
             "description": "Interfaces for modules",
             "support": {
                 "issues": "https://github.com/Dhii/module-interface/issues",
-                "source": "https://github.com/Dhii/module-interface/tree/master"
+                "source": "https://github.com/Dhii/module-interface/tree/v0.3.0-alpha1"
             },
             "install-path": "../dhii/module-interface"
         },

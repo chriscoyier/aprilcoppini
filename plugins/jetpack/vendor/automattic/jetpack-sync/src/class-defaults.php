@@ -168,6 +168,7 @@ class Defaults {
 		'wp_mobile_featured_images',
 		'wp_mobile_app_promos',
 		'wp_page_for_privacy_policy',
+		'wpcom_is_fse_activated',
 		'wpcom_publish_posts_with_markdown',
 		'wpcom_publish_comments_with_markdown',
 	);
@@ -303,6 +304,7 @@ class Defaults {
 		'paused_plugins'                   => array( 'Automattic\\Jetpack\\Sync\\Functions', 'get_paused_plugins' ),
 		'theme_support'                    => array( 'Automattic\\Jetpack\\Sync\\Functions', 'get_theme_support' ),
 		'wp_get_environment_type'          => 'wp_get_environment_type',
+		'is_fse_theme'                     => array( 'Automattic\\Jetpack\\Sync\\Functions', 'get_is_fse_theme' ),
 	);
 
 	/**

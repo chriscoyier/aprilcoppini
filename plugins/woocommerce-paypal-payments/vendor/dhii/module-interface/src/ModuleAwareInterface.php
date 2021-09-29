@@ -1,20 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Dhii\Modular\Module;
 
 /**
  * Something that can have a module instance retrieved.
  *
- * @since [*next-version*]
+ * @since 0.2
  */
 interface ModuleAwareInterface
 {
     /**
      * Retrieves the module that is associated with this instance.
      *
-     * @since [*next-version*]
+     * @since 0.2
      *
      * @return ModuleInterface|null The module, if applicable; otherwise, null.
      */
-    public function getModule();
+    public function getModule(): ?ModuleInterface;
 }

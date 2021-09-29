@@ -558,18 +558,22 @@ class Table
         }
 
         $this->pre_process_data($table, $target_table_name, $temp_table_name, $fp, $state_data);
-        $to_search  = isset($state_data['find_replace_pairs']['replace_old']) ? $state_data['find_replace_pairs']['replace_old'] : '';
-        $to_replace = isset($state_data['find_replace_pairs']['replace_new']) ? $state_data['find_replace_pairs']['replace_new'] : '';
+        $to_search                     = isset($state_data['find_replace_pairs']['replace_old']) ? $state_data['find_replace_pairs']['replace_old'] : '';
+        $to_replace                    = isset($state_data['find_replace_pairs']['replace_new']) ? $state_data['find_replace_pairs']['replace_new'] : '';
+        $search_replace_regex          = isset($state_data['find_replace_pairs']['regex']) ? $state_data['find_replace_pairs']['regex'] : '';
+        $search_replace_case_sensitive = isset($state_data['find_replace_pairs']['case_sensitive']) ? $state_data['find_replace_pairs']['case_sensitive'] : '';
 
         $replacer = $this->replace->register(array(
-            'table'        => ('find_replace' === $state_data['stage']) ? $temp_table_name : $table,
-            'search'       => $to_search,
-            'replace'      => $to_replace,
-            'intent'       => $state_data['intent'],
-            'base_domain'  => $this->multisite->get_domain_replace(),
-            'site_domain'  => $this->multisite->get_domain_current_site(),
-            'wpmdb'        => $this,
-            'site_details' => $site_details,
+            'table'          => ('find_replace' === $state_data['stage']) ? $temp_table_name : $table,
+            'search'         => $to_search,
+            'replace'        => $to_replace,
+            'regex'          => $search_replace_regex,
+            'case_sensitive' => $search_replace_case_sensitive,
+            'intent'         => $state_data['intent'],
+            'base_domain'    => $this->multisite->get_domain_replace(),
+            'site_domain'    => $this->multisite->get_domain_current_site(),
+            'wpmdb'          => $this,
+            'site_details'   => $site_details,
         ));
 
         $table_data = null;

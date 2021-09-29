@@ -1,9 +1,16 @@
 <?php
+/**
+ * Compatibility functions for WooCommerce
+ *
+ * @package automattic/jetpack-boost
+ */
 
 namespace Automattic\Jetpack_Boost\Compatibility\Woocommerce;
 
 /**
  * Exclude special Woocommerce pages from standard "single page" Critical CSS.
+ *
+ * @param object $args the query args.
  */
 function exclude_woocommerce_pages_from_query( $args ) {
 
@@ -26,13 +33,16 @@ function exclude_woocommerce_pages_from_query( $args ) {
 	return $args;
 }
 
+/**
+ * Get those ol' WooCommerce page IDs
+ */
 function get_woocommerce_page_ids() {
 	if ( ! function_exists( 'wc_get_page_id' ) ) {
 		return array();
 	}
 	$page_slugs = array( 'myaccount', 'edit_address', 'shop', 'cart', 'checkout', 'pay', 'view_order', 'terms' );
-	$ids = array_map( 'wc_get_page_id', $page_slugs );
-	$ids = array_filter(
+	$ids        = array_map( 'wc_get_page_id', $page_slugs );
+	$ids        = array_filter(
 		$ids,
 		function ( $value ) {
 			return $value > 0;

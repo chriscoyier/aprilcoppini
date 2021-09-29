@@ -1,17 +1,16 @@
 <?php
 /**
- * Cacheable abstract class
+ * Base abstract class for cacheable value objects.
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
 
 /**
  * Class Cacheable.
- *
- * Base class for cacheable value objects.
  */
 abstract class Cacheable implements \JsonSerializable {
 
@@ -23,7 +22,7 @@ abstract class Cacheable implements \JsonSerializable {
 	/**
 	 * The ID of this object, if cached as a transient.
 	 *
-	 * @var string $cache_id Cache id.
+	 * @var string|null $cache_id Cache id.
 	 */
 	private $cache_id;
 
@@ -74,11 +73,12 @@ abstract class Cacheable implements \JsonSerializable {
 		if ( ! $data ) {
 			return null;
 		}
-		$class = get_called_class();
+		$class  = get_called_class();
 		$object = $class::jsonUnserialize( $data, $id );
 		if ( $object ) {
 			$object->set_cache_id( $id );
 		}
+
 		return $object;
 	}
 
@@ -111,6 +111,8 @@ abstract class Cacheable implements \JsonSerializable {
 
 	/**
 	 * Delete the cache entry for the given cache id.
+	 *
+	 * @param string $cache_id The cache ID.
 	 */
 	public static function delete_by_cache_id( $cache_id ) {
 		Transient::delete( static::cache_prefix() . $cache_id );

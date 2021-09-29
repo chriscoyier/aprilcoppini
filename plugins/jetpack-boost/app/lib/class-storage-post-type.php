@@ -4,6 +4,7 @@
  *
  * @link       https://automattic.com
  * @since      1.0.0
+ * @package    automattic/jetpack-boost
  */
 
 namespace Automattic\Jetpack_Boost\Lib;
@@ -13,16 +14,26 @@ namespace Automattic\Jetpack_Boost\Lib;
  */
 class Storage_Post_Type {
 
+	/**
+	 * The name.
+	 *
+	 * @var string
+	 */
 	private $name;
 
 	/**
 	 * Storage_Post_type constructor.
+	 *
+	 * @param string $name The name.
 	 */
 	public function __construct( $name ) {
 		$this->name = sanitize_title( $name );
 		$this->init();
 	}
 
+	/**
+	 * Get the post type slug.
+	 */
 	public function post_type_slug() {
 		return 'jb_store_' . $this->name;
 	}
@@ -30,8 +41,7 @@ class Storage_Post_Type {
 	/**
 	 * Static initialization.
 	 */
-	protected function init() {
-
+	private function init() {
 		// Check if post type already registered.
 		if ( post_type_exists( $this->post_type_slug() ) ) {
 			return;
@@ -39,11 +49,11 @@ class Storage_Post_Type {
 		register_post_type(
 			$this->post_type_slug(),
 			array(
-				'description' => 'Cache entries for the Jetpack Boost plugin.',
-				'public' => false,
-				'show_in_rest' => true,
-				'rewrite' => false,
-				'can_export' => false,
+				'description'      => 'Cache entries for the Jetpack Boost plugin.',
+				'public'           => false,
+				'show_in_rest'     => true,
+				'rewrite'          => false,
+				'can_export'       => false,
 				'delete_with_user' => false,
 			)
 		);
@@ -60,21 +70,21 @@ class Storage_Post_Type {
 	 */
 	public function set( $key, $value, $expiry = 0 ) {
 		$data_post_data = array(
-			'post_type' => $this->post_type_slug(),
-			'post_title' => $key,
-			'post_name' => $key,
+			'post_type'   => $this->post_type_slug(),
+			'post_title'  => $key,
+			'post_name'   => $key,
 			'post_status' => 'publish',
 		);
 
-		$data_post = $this->get_post_by_name( $key );
+		$data_post        = $this->get_post_by_name( $key );
 		$expiry_timestamp = 0;
 
 		if ( $expiry ) {
 			$expiry_timestamp = time() + $expiry;
 		}
 
-		$value = array(
-			'data' => $value,
+		$value                          = array(
+			'data'   => $value,
 			'expiry' => $expiry_timestamp,
 		);
 		$data_post_data['post_content'] = base64_encode( maybe_serialize( $value ) ); // phpcs:disable WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
@@ -97,7 +107,6 @@ class Storage_Post_Type {
 	 * @return mixed
 	 */
 	public function get( $key, $default ) {
-
 		$cached = wp_cache_get( $key, $this->post_type_slug() );
 		if ( $cached ) {
 			return $cached;
@@ -168,12 +177,12 @@ class Storage_Post_Type {
 	public function get_post_by_name( $post_name ) {
 		$post_query = new \WP_Query(
 			array(
-				'name' => $post_name,
-				'post_type' => $this->post_type_slug(),
-				'post_status' => 'publish',
-				'posts_per_page' => 1,
-				'ignore_sticky_posts' => true,
-				'no_found_rows' => true,
+				'name'                   => $post_name,
+				'post_type'              => $this->post_type_slug(),
+				'post_status'            => 'publish',
+				'posts_per_page'         => 1,
+				'ignore_sticky_posts'    => true,
+				'no_found_rows'          => true,
 				'update_post_meta_cache' => false,
 				'update_post_term_cache' => false,
 			)
@@ -190,7 +199,7 @@ class Storage_Post_Type {
 	}
 
 	/**
-	 * We're not using any taxonomies with our storage post type at the moment
+	 * We're not using any taxonomies with our storage post type at the moment,
 	 * so it's not necessary to do anything more complex
 	 * than a simple delete DB Query.
 	 *

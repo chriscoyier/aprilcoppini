@@ -15,7 +15,6 @@ return array(
     'Dhii\\Factory\\' => array($vendorDir . '/dhii/factory-interface/src'),
     'Dhii\\Exception\\' => array($vendorDir . '/dhii/exception-interface/src'),
     'Dhii\\Data\\Container\\' => array($vendorDir . '/dhii/data-container-interface/src'),
-    'Dhii\\Data\\' => array($vendorDir . '/dhii/data-key-value-aware-interface/src'),
     'Dhii\\Container\\' => array($vendorDir . '/dhii/containers/src'),
     'Dhii\\Collection\\' => array($vendorDir . '/dhii/collections-interface/src'),
 );
