@@ -16,13 +16,13 @@
   
   <header class="site-header">
     <h1>
-      <?php the_title(); ?>
+      <a href="/">April Coppini</a>
     </h1>
 
     <nav class="main-menu">
-    <?php wp_nav_menu([
-      'menu' => 17,
-    ]); ?>
+      <?php wp_nav_menu([
+        'menu' => 17,
+      ]); ?>
     </nav>
   </header>
 
