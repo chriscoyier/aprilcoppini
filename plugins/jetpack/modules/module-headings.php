@@ -1018,14 +1018,14 @@ function jetpack_get_module_info( $key ) {
 	    'introduced' => '2.5',
 	    'changed' => '',
 	    'deactivate' => '',
-	    'free' => 'false',
+	    'free' => '',
 	    'requires_connection' => 'Yes',
 	    'requires_user_connection' => '',
 	    'auto_activate' => '',
 	    'module_tags' => 'Photos and Videos',
 	    'feature' => 'Writing',
 	    'additional_search_queries' => 'video, videos, videopress, video gallery, video player, videoplayer, mobile video, vimeo, youtube, html5 video, stream',
-	    'plan_classes' => 'business, premium, security, complete',
+	    'plan_classes' => '',
 	  ),
 	  'widget-visibility' => 
 	  array (
@@ -1138,11 +1138,10 @@ function jetpack_get_all_module_header_names() {
 function jetpack_has_no_module_info( $slug ) {
 	$no_info_slugs = array (
 	  0 => 'geo-location',
-	  1 => 'minileven',
-	  2 => 'module-extras',
-	  3 => 'module-info',
-	  4 => 'plugin-search',
-	  5 => 'theme-tools',
+	  1 => 'module-extras',
+	  2 => 'module-info',
+	  3 => 'plugin-search',
+	  4 => 'theme-tools',
 	);
 
 	return in_array( $slug, $no_info_slugs, true );

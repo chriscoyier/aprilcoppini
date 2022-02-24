@@ -116,16 +116,6 @@
 		currentMenuItem.focus();
 	}
 
-	function setFocusOnActiveMenuItem() {
-		var currentMenuItem = document.querySelector( '.wp-submenu .current > a' );
-
-		if ( ! currentMenuItem ) {
-			return;
-		}
-
-		currentMenuItem.focus();
-	}
-
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', init );
 	} else {
