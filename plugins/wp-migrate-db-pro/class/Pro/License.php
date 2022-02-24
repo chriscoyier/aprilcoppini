@@ -462,10 +462,7 @@ class License
 
 	public static function get_license()
 	{
-		$settings = self::$static_settings;
-		$license  = defined( 'WPMDB_LICENCE' ) ? WPMDB_LICENCE : $settings['licence'];
-
-		return $license;
+		return self::$license_key;
 	}
 
 	public function setup_license_responses( $plugin_base )
@@ -654,7 +651,7 @@ class License
 			}
 		}
 
-		return json_decode( $this->check_licence( $licence ), true );
+		return json_decode( $this->check_licence( $licence, get_current_user_id() ), true );
 	}
 
 	/**

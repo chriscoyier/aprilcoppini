@@ -117,7 +117,7 @@ class RemoteUpdatesManager {
 
         $data = array(
             'action'  => 'wpmdb_remote_update_plugin',
-            'referer' => $this->util->get_short_home_address_from_url(home_url()),
+            'referer' => $this->util->get_short_home_address_from_url(Util::home_url()),
             'version' => $this->props->plugin_version,
             'slug'    => $state_data['slug']
         );

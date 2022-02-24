@@ -180,8 +180,9 @@ class InitiateMigration
         // Otherwise ensure it is set with own site_url so that we always return one.
         $return['site_url'] = (empty($return['site_url'])) ? site_url() : $return['site_url'];
 
-        $return['find_replace_pairs'] = Replace::parse_find_replace_pairs($state_data['intent'], $return['site_url']);
-
+        $return['find_replace_pairs']   = Replace::parse_find_replace_pairs($state_data['intent'], $return['site_url']);
+        $return['source_prefix']        = ('push' === $state_data['intent']) ? $state_data['site_details']['local']['prefix'] : $state_data['site_details']['remote']['prefix'];
+        $return['destination_prefix']   = ('push' === $state_data['intent']) ? $state_data['site_details']['remote']['prefix'] : $state_data['site_details']['local']['prefix'];
         // Store current migration state.
         $state = array_merge($state_data, $return);
         Persistence::saveStateData($state);

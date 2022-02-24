@@ -319,6 +319,9 @@ class ProductQuery {
 		if ( $wp_query->get( 'stock_status' ) ) {
 			$args['join']   = $this->append_product_sorting_table_join( $args['join'] );
 			$args['where'] .= ' AND wc_product_meta_lookup.stock_status IN ("' . implode( '","', array_map( 'esc_sql', $wp_query->get( 'stock_status' ) ) ) . '")';
+		} elseif ( 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) ) {
+			$args['join']   = $this->append_product_sorting_table_join( $args['join'] );
+			$args['where'] .= ' AND wc_product_meta_lookup.stock_status NOT IN ("outofstock")';
 		}
 
 		if ( $wp_query->get( 'min_price' ) || $wp_query->get( 'max_price' ) ) {
@@ -446,6 +449,16 @@ class ProductQuery {
 
 		// If prices are shown incl. tax, we want to remove the taxes from the filter amount to match prices stored excl. tax.
 		if ( 'incl' === $tax_display ) {
+			/**
+			 * Filters if taxes should be removed from locations outside the store base location.
+			 *
+			 * The woocommerce_adjust_non_base_location_prices filter can stop base taxes being taken off when dealing
+			 * with out of base locations. e.g. If a product costs 10 including tax, all users will pay 10
+			 * regardless of location and taxes.
+			 *
+			 * @param boolean $adjust_non_base_location_prices True by default.
+			 * @return boolean
+			 */
 			$taxes = apply_filters( 'woocommerce_adjust_non_base_location_prices', true ) ? WC_Tax::calc_tax( $price_filter, $base_tax_rates, true ) : WC_Tax::calc_tax( $price_filter, $tax_rates, true );
 			return $price_filter - array_sum( $taxes );
 		}

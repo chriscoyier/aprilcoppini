@@ -9,7 +9,7 @@ import { Icon, discussion } from '@woocommerce/icons';
  * Internal dependencies
  */
 import '../editor.scss';
-import Editor from './edit';
+import edit from './edit';
 import sharedAttributes from '../attributes';
 import save from '../save.js';
 import { example } from '../example';
@@ -19,10 +19,15 @@ import { example } from '../example';
  * This block lists all product reviews.
  */
 registerBlockType( 'woocommerce/all-reviews', {
+	apiVersion: 2,
 	title: __( 'All Reviews', 'woocommerce' ),
 	icon: {
-		src: <Icon srcElement={ discussion } />,
-		foreground: '#96588a',
+		src: (
+			<Icon
+				srcElement={ discussion }
+				className="wc-block-editor-components-block-icon"
+			/>
+		),
 	},
 	category: 'woocommerce',
 	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],
@@ -32,6 +37,12 @@ registerBlockType( 'woocommerce/all-reviews', {
 	),
 	supports: {
 		html: false,
+		color: {
+			background: false,
+		},
+		typography: {
+			fontSize: true,
+		},
 	},
 	example: {
 		...example,
@@ -72,17 +83,6 @@ registerBlockType( 'woocommerce/all-reviews', {
 		],
 	},
 
-	/**
-	 * Renders and manages the block.
-	 *
-	 * @param {Object} props Props to pass to block.
-	 */
-	edit( props ) {
-		return <Editor { ...props } />;
-	},
-
-	/**
-	 * Save the props to post content.
-	 */
+	edit,
 	save,
 } );

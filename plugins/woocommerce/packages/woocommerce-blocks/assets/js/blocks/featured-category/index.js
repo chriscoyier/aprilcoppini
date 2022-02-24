@@ -21,8 +21,12 @@ import { example } from './example';
 registerBlockType( 'woocommerce/featured-category', {
 	title: __( 'Featured Category', 'woocommerce' ),
 	icon: {
-		src: <Icon srcElement={ folderStarred } />,
-		foreground: '#96588a',
+		src: (
+			<Icon
+				srcElement={ folderStarred }
+				className="wc-block-editor-components-block-icon"
+			/>
+		),
 	},
 	category: 'woocommerce',
 	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],

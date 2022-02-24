@@ -14,8 +14,12 @@ import edit from './edit.js';
 registerBlockType( 'woocommerce/price-filter', {
 	title: __( 'Filter Products by Price', 'woocommerce' ),
 	icon: {
-		src: <Icon srcElement={ bill } />,
-		foreground: '#96588a',
+		src: (
+			<Icon
+				srcElement={ bill }
+				className="wc-block-editor-components-block-icon"
+			/>
+		),
 	},
 	category: 'woocommerce',
 	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],

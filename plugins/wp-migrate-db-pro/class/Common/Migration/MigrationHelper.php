@@ -80,7 +80,7 @@ class MigrationHelper
 
         return [
             'connection_info'             => array(site_url('', 'https'), $this->settings['key']),
-            'this_url'                    => esc_html(addslashes(home_url())),
+            'this_url'                    => esc_html(addslashes(Util::home_url())),
             'this_path'                   => esc_html(addslashes($this->util->get_absolute_root_file_path())),
             'this_domain'                 => esc_html($this->multisite->get_domain_current_site()),
             'this_tables'                 => $this->tables->get_tables(),

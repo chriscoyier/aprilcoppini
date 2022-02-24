@@ -999,6 +999,11 @@ class Filesystem
                 $network_plugins = array_keys($network_plugins);
                 $active_plugins  = array_merge($active_plugins, $network_plugins);
             }
+            $sites = get_sites();
+            foreach($sites as $site) {
+                $site_plugins = get_blog_option($site->blog_id, 'active_plugins'); 
+                $active_plugins  = array_merge($active_plugins, $site_plugins);
+            } 
         }
 
         return $active_plugins;

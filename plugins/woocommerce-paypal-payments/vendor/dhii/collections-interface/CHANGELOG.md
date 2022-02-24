@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [[*next-version*]] - YYYY-MM-DD
 
+## [0.3.0] - 2021-10-06
+Stable release.
+
 ## [0.3.0-alpha4] - 2021-03-09
 ### Fixed
 - Order of `extends` use to cause problems with newer versions

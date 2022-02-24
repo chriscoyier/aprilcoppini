@@ -119,7 +119,7 @@ class Local
 	    $data = array(
 		    'action'  => 'wpmdb_verify_connection_to_remote_site',
 		    'intent'  => $state_data['intent'],
-		    'referer' => $this->util->get_short_home_address_from_url( home_url() ),
+		    'referer' => $this->util->get_short_home_address_from_url( Util::home_url() ),
 		    'version' => $this->props->plugin_version,
 	    );
 

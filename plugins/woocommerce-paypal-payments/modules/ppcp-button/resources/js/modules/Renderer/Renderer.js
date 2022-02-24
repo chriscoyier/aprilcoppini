@@ -1,7 +1,8 @@
 class Renderer {
-    constructor(creditCardRenderer, defaultConfig) {
+    constructor(creditCardRenderer, defaultConfig, onSmartButtonClick) {
         this.defaultConfig = defaultConfig;
         this.creditCardRenderer = creditCardRenderer;
+        this.onSmartButtonClick = onSmartButtonClick;
     }
 
     render(wrapper, hostedFieldsWrapper, contextConfig) {
@@ -19,6 +20,7 @@ class Renderer {
         paypal.Buttons({
             style,
             ...contextConfig,
+            onClick: this.onSmartButtonClick,
         }).render(wrapper);
     }
 
@@ -42,6 +44,14 @@ class Renderer {
         }
         domElement.style.display = 'block';
         return true;
+    }
+
+    disableCreditCardFields() {
+        this.creditCardRenderer.disableFields();
+    }
+
+    enableCreditCardFields() {
+        this.creditCardRenderer.enableFields();
     }
 }
 

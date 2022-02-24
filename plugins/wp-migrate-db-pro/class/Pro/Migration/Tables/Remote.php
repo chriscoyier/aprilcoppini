@@ -105,6 +105,8 @@ class Remote
             'domain_current_site' => 'text',
             'prefix'              => 'string',
             'sig'                 => 'string',
+            'source_prefix'       => 'string',
+            'destination_prefix'  => 'string',
         );
 
         $state_data = Persistence::setRemotePostData($key_rules, __METHOD__);
@@ -117,6 +119,8 @@ class Remote
         $state_data['form_data']          = base64_decode($state_data['form_data']);
         $state_data['site_details']       = unserialize(base64_decode($state_data['site_details']));
         $state_data['primary_keys']       = base64_decode($state_data['primary_keys']);
+        $state_data['source_prefix']      = base64_decode($state_data['source_prefix']);
+        $state_data['destination_prefix'] = base64_decode($state_data['destination_prefix']);
 
         $this->form_data->parse_and_save_migration_form_data($state_data['form_data']);
 
@@ -145,12 +149,14 @@ class Remote
                 'path_current_site',
                 'domain_current_site',
                 'prefix',
+                'source_prefix',
+                'destination_prefix',
             )
         );
 
         $sig_data = $filtered_post;
         // find_replace_pairs and form_data weren't used to create the migration signature
-        unset ($sig_data['find_replace_pairs'], $sig_data['form_data']);
+        unset ($sig_data['find_replace_pairs'], $sig_data['form_data'], $sig_data['source_prefix'], $sig_data['destination_prefix']);
 
 
         if (!$this->http_helper->verify_signature($sig_data, $this->settings['key'])) {
@@ -281,7 +287,7 @@ class Remote
             'table'               => 'string',
             'form_data'           => 'string',
             'stage'               => 'key',
-            //            'prefix'              => 'string',
+            'prefix'              => 'string',
             'current_row'         => 'string',
             'last_table'          => 'string',
             'gzip'                => 'string',

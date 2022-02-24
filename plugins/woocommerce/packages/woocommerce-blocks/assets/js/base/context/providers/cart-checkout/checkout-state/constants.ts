@@ -26,15 +26,15 @@ export enum STATUS {
 	AFTER_PROCESSING = 'after_processing',
 }
 
-const preloadedApiRequests = getSetting( 'preloadedApiRequests', {} ) as Record<
+const preloadedCheckoutData = getSetting( 'checkoutData', {} ) as Record<
 	string,
-	{ body: Record< string, unknown > }
+	unknown
 >;
 
 const checkoutData = {
 	order_id: 0,
 	customer_id: 0,
-	...( preloadedApiRequests[ '/wc/store/checkout' ]?.body || {} ),
+	...( preloadedCheckoutData || {} ),
 };
 
 export const DEFAULT_CHECKOUT_STATE_DATA: CheckoutStateContextType = {
@@ -48,6 +48,7 @@ export const DEFAULT_CHECKOUT_STATE_DATA: CheckoutStateContextType = {
 		setCustomerId: ( id ) => void id,
 		setOrderId: ( id ) => void id,
 		setOrderNotes: ( orderNotes ) => void orderNotes,
+		setExtensionData: ( extensionData ) => void extensionData,
 	},
 	onSubmit: () => void null,
 	isComplete: false,
@@ -69,6 +70,7 @@ export const DEFAULT_CHECKOUT_STATE_DATA: CheckoutStateContextType = {
 	isCart: false,
 	shouldCreateAccount: false,
 	setShouldCreateAccount: ( value ) => void value,
+	extensionData: {},
 };
 
 export const DEFAULT_STATE: CheckoutStateContextState = {
@@ -81,4 +83,5 @@ export const DEFAULT_STATE: CheckoutStateContextState = {
 	customerId: checkoutData.customer_id,
 	shouldCreateAccount: false,
 	processingResponse: null,
+	extensionData: {},
 };

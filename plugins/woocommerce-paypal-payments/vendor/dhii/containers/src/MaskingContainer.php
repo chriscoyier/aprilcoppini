@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Dhii\Container;
 
 use Dhii\Collection\ContainerInterface;
 use Dhii\Container\Exception\NotFoundException;
 use Dhii\Container\Util\StringTranslatingTrait;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
+
 use function array_key_exists;
 
 /**
@@ -45,7 +48,7 @@ class MaskingContainer implements ContainerInterface
      * @param bool[]                $mask        A mapping of keys to booleans, such that `true` exposes the mapped key
      *                                           and `false` hides the mapped key.
      */
-    public function __construct(PsrContainerInterface $inner, $defaultMask, array $mask)
+    public function __construct(PsrContainerInterface $inner, bool $defaultMask, array $mask)
     {
         $this->inner = $inner;
         $this->defMask = $defaultMask;
@@ -63,9 +66,7 @@ class MaskingContainer implements ContainerInterface
             throw new NotFoundException(
                 $this->__('Inner key "%1$s" is not exposed', [$key]),
                 0,
-                null,
-                $this,
-                $key
+                null
             );
         }
 
@@ -91,7 +92,7 @@ class MaskingContainer implements ContainerInterface
      *
      * @return bool True if the key is exposed, false if the key is hidden.
      */
-    protected function isExposed($key)
+    protected function isExposed(string $key): bool
     {
         return array_key_exists($key, $this->mask)
             ? $this->mask[$key] !== false

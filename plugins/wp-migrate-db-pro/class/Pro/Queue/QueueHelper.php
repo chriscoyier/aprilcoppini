@@ -175,8 +175,8 @@ class QueueHelper
         } else {
             $folder_key = $state_data['folders'];
         }
-
-        if (empty($folder_key)) {
+        $current_option = $state_data[$state_data['stage']. '_option'];
+        if (empty($folder_key) && $current_option !== 'except') {
             return $this->transfer_util->ajax_error(__('Error: empty folder list supplied.', 'wp-migrate-db'));
         }
 

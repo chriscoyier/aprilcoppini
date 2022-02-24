@@ -64,6 +64,9 @@ class FileProcessor
         $scan_completed = false;
         $directories = $this->recursive_scanner->unset_manifest_file($directories);
         $dirs_count = count($directories);
+        if ($dirs_count === 0 ) {
+            $scan_completed = true;
+        }
 
         $this->recursive_scanner->set_excludes($excludes);
         $this->recursive_scanner->set_intent($intent);

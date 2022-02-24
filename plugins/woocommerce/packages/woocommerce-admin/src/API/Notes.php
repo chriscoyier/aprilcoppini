@@ -34,6 +34,15 @@ class Notes extends \WC_REST_CRUD_Controller {
 	protected $rest_base = 'admin/notes';
 
 	/**
+	 * Allowed promo notes for experimental-activate-promo.
+	 *
+	 * @var array
+	 */
+	protected $allowed_promo_notes = array(
+		'wcpay-promo-2021-6-incentive-2',
+	);
+
+	/**
 	 * Register the routes for admin notes.
 	 */
 	public function register_routes() {
@@ -96,6 +105,18 @@ class Notes extends \WC_REST_CRUD_Controller {
 					'methods'             => \WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_all_items' ),
 					'permission_callback' => array( $this, 'update_items_permissions_check' ),
+					'args'                => array(
+						'status' => array(
+							'description'       => __( 'Status of note.', 'woocommerce' ),
+							'type'              => 'array',
+							'sanitize_callback' => 'wp_parse_slug_list',
+							'validate_callback' => 'rest_validate_request_arg',
+							'items'             => array(
+								'enum' => Note::get_allowed_statuses(),
+								'type' => 'string',
+							),
+						),
+					),
 				),
 				'schema' => array( $this, 'get_public_item_schema' ),
 			)
@@ -121,6 +142,19 @@ class Notes extends \WC_REST_CRUD_Controller {
 				array(
 					'methods'             => \WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'batch_update_items' ),
+					'permission_callback' => array( $this, 'update_items_permissions_check' ),
+				),
+				'schema' => array( $this, 'get_public_item_schema' ),
+			)
+		);
+
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/experimental-activate-promo/(?P<promo_note_name>[\w-]+)',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::EDITABLE,
+					'callback'            => array( $this, 'activate_promo_note' ),
 					'permission_callback' => array( $this, 'update_items_permissions_check' ),
 				),
 				'schema' => array( $this, 'get_public_item_schema' ),
@@ -165,17 +199,62 @@ class Notes extends \WC_REST_CRUD_Controller {
 
 		$notes = NotesRepository::get_notes( 'edit', $query_args );
 
+		$is_tasklist_experiment_assigned_treatment = $this->is_tasklist_experiment_assigned_treatment();
+
 		$data = array();
 		foreach ( (array) $notes as $note_obj ) {
+			// Hide selected notes for users not in experiment.
+			if ( ! $is_tasklist_experiment_assigned_treatment ) {
+				if ( 'wc-admin-complete-store-details' === $note_obj['name'] ) {
+					continue;
+				}
+
+				if ( 'wc-admin-update-store-details' === $note_obj['name'] ) {
+					continue;
+				}
+			}
 			$note   = $this->prepare_item_for_response( $note_obj, $request );
 			$note   = $this->prepare_response_for_collection( $note );
 			$data[] = $note;
 		}
 
 		$response = rest_ensure_response( $data );
-		$response->header( 'X-WP-Total', NotesRepository::get_notes_count( $query_args['type'], $query_args['status'] ) );
+		$response->header( 'X-WP-Total', count( $data ) );
 
 		return $response;
+	}
+
+	/**
+	 * Checks if user is in tasklist experiment.
+	 *
+	 * @return bool Whether remote inbox notifications are enabled.
+	 */
+	private function is_tasklist_experiment_assigned_treatment() {
+		$anon_id        = isset( $_COOKIE['tk_ai'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['tk_ai'] ) ) : '';
+		$allow_tracking = 'yes' === get_option( 'woocommerce_allow_tracking' );
+		$abtest         = new \WooCommerce\Admin\Experimental_Abtest(
+			$anon_id,
+			'woocommerce',
+			$allow_tracking
+		);
+
+		$date = new \DateTime();
+		$date->setTimeZone( new \DateTimeZone( 'UTC' ) );
+
+		$experiment_name = sprintf(
+			'woocommerce_tasklist_progression_headercard_%s_%s',
+			$date->format( 'Y' ),
+			$date->format( 'm' )
+		);
+
+		$experiment_name_2col = sprintf(
+			'woocommerce_tasklist_progression_headercard_2col_%s_%s',
+			$date->format( 'Y' ),
+			$date->format( 'm' )
+		);
+
+		return $abtest->get_variation( $experiment_name ) === 'treatment' ||
+			$abtest->get_variation( $experiment_name_2col ) === 'treatment';
 	}
 
 	/**
@@ -291,7 +370,11 @@ class Notes extends \WC_REST_CRUD_Controller {
 	 * @return WP_REST_Request|WP_Error
 	 */
 	public function delete_all_items( $request ) {
-		$notes = NotesRepository::delete_all_notes();
+		$args = array();
+		if ( isset( $request['status'] ) ) {
+			$args['status'] = $request['status'];
+		}
+		$notes = NotesRepository::delete_all_notes( $args );
 		$data  = array();
 		foreach ( (array) $notes as $note_obj ) {
 			$data[] = $this->prepare_note_data_for_response( $note_obj, $request );
@@ -335,6 +418,11 @@ class Notes extends \WC_REST_CRUD_Controller {
 		if ( ! is_null( $request->get_param( 'is_deleted' ) ) ) {
 			$requested_updates['is_deleted'] = $request->get_param( 'is_deleted' );
 		}
+
+		if ( ! is_null( $request->get_param( 'is_read' ) ) ) {
+			$requested_updates['is_read'] = $request->get_param( 'is_read' );
+		}
+
 		return $requested_updates;
 	}
 
@@ -378,6 +466,51 @@ class Notes extends \WC_REST_CRUD_Controller {
 		$response = rest_ensure_response( $data );
 		$response->header( 'X-WP-Total', NotesRepository::get_notes_count( array( 'info', 'warning' ), array() ) );
 		return $response;
+	}
+
+	/**
+	 * Activate a promo note, create if not exist.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Request|WP_Error
+	 */
+	public function activate_promo_note( $request ) {
+		$promo_note_name = $request->get_param( 'promo_note_name' );
+
+		if ( ! in_array( $promo_note_name, $this->allowed_promo_notes, true ) ) {
+			return new \WP_Error(
+				'woocommerce_note_invalid_promo_note_name',
+				__( 'Please provide a valid promo note name.', 'woocommerce' ),
+				array( 'status' => 422 )
+			);
+		}
+
+		$data_store = NotesRepository::load_data_store();
+		$note_ids   = $data_store->get_notes_with_name( $promo_note_name );
+
+		if ( empty( $note_ids ) ) {
+			// Promo note doesn't exist, this could happen in cases where
+			// user might have disabled RemoteInboxNotications via disabling
+			// marketing suggestions. Thus we'd have to manually add the note.
+			$note = new Note();
+			$note->set_name( $promo_note_name );
+			$note->set_status( Note::E_WC_ADMIN_NOTE_ACTIONED );
+			$data_store->create( $note );
+		} else {
+			$note = NotesRepository::get_note( $note_ids[0] );
+			NotesRepository::update_note(
+				$note,
+				[
+					'status' => Note::E_WC_ADMIN_NOTE_ACTIONED,
+				]
+			);
+		}
+
+		return rest_ensure_response(
+			array(
+				'success' => true,
+			)
+		);
 	}
 
 	/**
@@ -457,6 +590,7 @@ class Notes extends \WC_REST_CRUD_Controller {
 		$data['content']           = stripslashes( $data['content'] );
 		$data['is_snoozable']      = (bool) $data['is_snoozable'];
 		$data['is_deleted']        = (bool) $data['is_deleted'];
+		$data['is_read']           = (bool) $data['is_read'];
 		foreach ( (array) $data['actions'] as $key => $value ) {
 			$data['actions'][ $key ]->label  = stripslashes( $data['actions'][ $key ]->label );
 			$data['actions'][ $key ]->url    = $this->maybe_add_nonce_to_url(

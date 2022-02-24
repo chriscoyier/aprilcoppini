@@ -190,10 +190,6 @@ class PluginHelper
             $folders = apply_filters('wpmdb_mf_remote_uploads_folder', $folders, $state_data);
         }
 
-        if (empty($folders)) {
-            return $this->http->end_ajax(new \WP_Error('wpmdb_empty_folder_list', __('Empty folder path provided.', 'wp-migrate-db')));
-        }
-
         $items = $folders;
 
         if ($stage === 'media_files' && isset($folders[0])) {
@@ -316,7 +312,9 @@ class PluginHelper
             'intent'          => 'string',
             'folders'         => 'array',
             'theme_folders'   => 'array',
+            'themes_option'   => 'string',
             'plugin_folders'  => 'array',
+            'plugins_option'  => 'string',
             'sig'             => 'string',
         );
 

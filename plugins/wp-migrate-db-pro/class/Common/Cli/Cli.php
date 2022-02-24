@@ -246,6 +246,7 @@ class Cli
 			return $this->profile;
 		}
 
+		$this->profile = apply_filters('wpmdb_cli_filter_before_migration', $this->profile, $this->post_data);
 		do_action('wpmdb_cli_before_migration', $this->post_data, $this->profile);
 		$this->migration = $this->cli_initiate_migration();
 

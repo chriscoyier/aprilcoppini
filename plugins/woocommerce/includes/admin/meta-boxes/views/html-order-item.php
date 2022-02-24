@@ -59,18 +59,43 @@ $row_class    = apply_filters( 'woocommerce_admin_html_order_item_class', ! empt
 			<?php
 			echo '<small class="times">&times;</small> ' . esc_html( $item->get_quantity() );
 
-			$refunded_qty = $order->get_qty_refunded_for_item( $item_id );
+			$refunded_qty = -1 * $order->get_qty_refunded_for_item( $item_id );
 
 			if ( $refunded_qty ) {
-				echo '<small class="refunded">-' . esc_html( $refunded_qty * -1 ) . '</small>';
+				echo '<small class="refunded">' . esc_html( $refunded_qty * -1 ) . '</small>';
 			}
 			?>
 		</div>
+		<?php
+			$step = apply_filters( 'woocommerce_quantity_input_step', '1', $product );
+
+			/**
+			* Filter to change the product quantity stepping in the order editor of the admin area.
+			*
+			* @since   5.8.0
+			* @param   string      $step    The current step amount to be used in the quantity editor.
+			* @param   WC_Product  $product The product that is being edited.
+			* @param   string      $context The context in which the quantity editor is shown, 'edit' or 'refund'.
+			*/
+			$step_edit   = apply_filters( 'woocommerce_quantity_input_step_admin', $step, $product, 'edit' );
+			$step_refund = apply_filters( 'woocommerce_quantity_input_step_admin', $step, $product, 'refund' );
+
+			/**
+			* Filter to change the product quantity minimum in the order editor of the admin area.
+			*
+			* @since   5.8.0
+			* @param   string      $step    The current minimum amount to be used in the quantity editor.
+			* @param   WC_Product  $product The product that is being edited.
+			* @param   string      $context The context in which the quantity editor is shown, 'edit' or 'refund'.
+			*/
+			$min_edit   = apply_filters( 'woocommerce_quantity_input_min_admin', '0', $product, 'edit' );
+			$min_refund = apply_filters( 'woocommerce_quantity_input_min_admin', '0', $product, 'refund' );
+		?>
 		<div class="edit" style="display: none;">
-			<input type="number" step="<?php echo esc_attr( apply_filters( 'woocommerce_quantity_input_step', '1', $product ) ); ?>" min="0" autocomplete="off" name="order_item_qty[<?php echo absint( $item_id ); ?>]" placeholder="0" value="<?php echo esc_attr( $item->get_quantity() ); ?>" data-qty="<?php echo esc_attr( $item->get_quantity() ); ?>" size="4" class="quantity" />
+			<input type="number" step="<?php echo esc_attr( $step_edit ); ?>" min="<?php echo esc_attr( $min_edit ); ?>" autocomplete="off" name="order_item_qty[<?php echo absint( $item_id ); ?>]" placeholder="0" value="<?php echo esc_attr( $item->get_quantity() ); ?>" data-qty="<?php echo esc_attr( $item->get_quantity() ); ?>" size="4" class="quantity" />
 		</div>
 		<div class="refund" style="display: none;">
-			<input type="number" step="<?php echo esc_attr( apply_filters( 'woocommerce_quantity_input_step', '1', $product ) ); ?>" min="0" max="<?php echo absint( $item->get_quantity() ); ?>" autocomplete="off" name="refund_order_item_qty[<?php echo absint( $item_id ); ?>]" placeholder="0" size="4" class="refund_order_item_qty" />
+			<input type="number" step="<?php echo esc_attr( $step_refund ); ?>" min="<?php echo esc_attr( $min_refund ); ?>" max="<?php echo absint( $item->get_quantity() ); ?>" autocomplete="off" name="refund_order_item_qty[<?php echo absint( $item_id ); ?>]" placeholder="0" size="4" class="refund_order_item_qty" />
 		</div>
 	</td>
 	<td class="line_cost" width="1%" data-sort-value="<?php echo esc_attr( $item->get_total() ); ?>">
@@ -83,10 +108,10 @@ $row_class    = apply_filters( 'woocommerce_admin_html_order_item_class', ! empt
 				echo '<span class="wc-order-item-discount">' . sprintf( esc_html__( '%s discount', 'woocommerce' ), wc_price( wc_format_decimal( $item->get_subtotal() - $item->get_total(), '' ), array( 'currency' => $order->get_currency() ) ) ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 
-			$refunded = $order->get_total_refunded_for_item( $item_id );
+			$refunded = -1 * $order->get_total_refunded_for_item( $item_id );
 
 			if ( $refunded ) {
-				echo '<small class="refunded">-' . wc_price( $refunded, array( 'currency' => $order->get_currency() ) ) . '</small>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				echo '<small class="refunded">' . wc_price( $refunded, array( 'currency' => $order->get_currency() ) ) . '</small>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 			?>
 		</div>
@@ -131,10 +156,10 @@ $row_class    = apply_filters( 'woocommerce_admin_html_order_item_class', ! empt
 						echo '&ndash;';
 					}
 
-					$refunded = $order->get_tax_refunded_for_item( $item_id, $tax_item_id );
+					$refunded = -1 * $order->get_tax_refunded_for_item( $item_id, $tax_item_id );
 
 					if ( $refunded ) {
-						echo '<small class="refunded">-' . wc_price( $refunded, array( 'currency' => $order->get_currency() ) ) . '</small>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+						echo '<small class="refunded">' . wc_price( $refunded, array( 'currency' => $order->get_currency() ) ) . '</small>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}
 					?>
 				</div>

@@ -17,10 +17,15 @@ import { example } from '../example';
  * Register and run the "Reviews by category" block.
  */
 registerBlockType( 'woocommerce/reviews-by-category', {
+	apiVersion: 2,
 	title: __( 'Reviews by Category', 'woocommerce' ),
 	icon: {
-		src: <Icon srcElement={ review } />,
-		foreground: '#96588a',
+		src: (
+			<Icon
+				srcElement={ review }
+				className="wc-block-editor-components-block-icon"
+			/>
+		),
 	},
 	category: 'woocommerce',
 	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],
@@ -30,6 +35,12 @@ registerBlockType( 'woocommerce/reviews-by-category', {
 	),
 	supports: {
 		html: false,
+		color: {
+			background: false,
+		},
+		typography: {
+			fontSize: true,
+		},
 	},
 	example: {
 		...example,
