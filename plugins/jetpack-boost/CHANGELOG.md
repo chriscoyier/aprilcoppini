@@ -5,7 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.1-beta] - 2021-12-02
+## [1.5.2-alpha] - unreleased
+
+This is an alpha version! The changes listed here are not final.
+
+## [1.5.1] - 2022-06-29
+### Fixed
+- General: Fix caching of purchased plan features to reduce calls to wpcom api
+
+## [1.5.0] - 2022-06-27
+### Added
+- Cloud CSS: Added support for generating Critical CSS in the cloud.
+- Critical CSS: Added an explanation for Console output during Critical CSS Generation.
+- General: Added an option to purchase a premium Jetpack Boost plan.
+- General: Added option to contact premium support for paid users.
+- Speed Scores: Added prompt for reaching out to support when the speed score decreases.
+
+### Changed
+- General: Remove soft disconnect.
+- General: Remove use of `pnpx` in preparation for pnpm 7.0.
+- General: Renamed hook `handle_theme_change` to `handle_environment_change`
+- General: Updated external links to use Jetpack Redirects.
+
+### Fixed
+- General: Clean up use of FILTER_SANITIZE_STRING as it is deprecated in PHP 8.1
+- Stability: Fix broken SQL query on uninstall.
+
+## [1.4.2] - 2022-04-11
+### Fixed
+- Fixed critical CSS generation failure while using a CDN to serve CSS
+
+## [1.4.1] - 2022-04-06
+### Changed
+- Critical CSS: Tidied up Critical CSS class structure.
+- Critical CSS: Updated Critical CSS generation to exclude animation keyframes.
+- Deferred JS: Updated exclusion attribute to allow quotes.
+- General: Tested compatibility with WordPress 5.9.
+- General: Updated Boost Dashboard heading logo.
+- Lazy Loading: Updated Image Lazy Loading to reflect Jetpack's Lazy Loading setting.
+
+## 1.4.0 - 2022-02-28
+### Added
+- UI: Adds My Jetpack functionality for consistent UI across all Jetpack plugins.
+
+## 1.3.1 - 2021-12-02
 ### Added
 - Critical CSS: Added a filter to allow stylesheets to load synchronously, to avoid CLS issues on certain setups.
 - Critical CSS: Exclude "library" posts from Elementor plugin when generating Critical CSS.
@@ -28,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor UI fixes for small screens and tooltip display.
 - Speed Scores: Do not show comparative scores when no modules are active.
 
-## [1.3.0-beta] - 2021-10-04
+## 1.3.0 - 2021-10-04
 ### Security
 - Critical CSS: Add permissions checks to AJAX endpoints used when dismissing Critical CSS Recommendations.
 
@@ -48,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Critical CSS: Ensure generator process is resumed after module deactivated and reactivated without reload.
 - Speed Scores: Clear speed score on plugin deactivation and uninstallation.
 
-## [1.2.0] - 2021-08-12
+## 1.2.0 - 2021-08-12
 ### Added
 - Critical CSS: Added a new Advanced Critical CSS recommendations page.
 
@@ -121,3 +164,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.3.1-beta]: https://github.com/Automattic/jetpack-boost-production/compare/v1.3.0-beta...v1.3.1-beta
 [1.3.0-beta]: https://github.com/Automattic/jetpack-boost-production/compare/v1.2.0...v1.3.0-beta
 [1.2.0]: https://github.com/Automattic/jetpack-boost-production/compare/v1.1.0...v1.2.0-beta
+[1.4.3-beta]: https://github.com/Automattic/jetpack-boost-production/compare/v1.4.2...v1.4.3-beta
+[1.5.2-alpha]: https://github.com/Automattic/jetpack-boost-production/compare/v1.5.1...v1.5.2-alpha
+[1.5.1]: https://github.com/Automattic/jetpack-boost-production/compare/v1.5.0...v1.5.1
+[1.5.0]: https://github.com/Automattic/jetpack-boost-production/compare/v1.4.1...v1.5.0
+[1.4.2]: https://github.com/Automattic/jetpack-boost-production/compare/v1.4.1...v1.4.2
+[1.4.1]: https://github.com/Automattic/jetpack-boost-production/compare/v1.4.0...v1.4.1

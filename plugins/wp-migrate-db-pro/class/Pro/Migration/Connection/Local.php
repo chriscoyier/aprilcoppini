@@ -151,6 +151,9 @@ class Local
 		    );
 	    }
 
+        if (isset($response['wpe_cookie'])) {
+            Persistence::storeRemoteWPECookie($response['wpe_cookie']);
+        }
         $data['scheme'] = $url_bits['scheme'];
 	    $data += $response;
 

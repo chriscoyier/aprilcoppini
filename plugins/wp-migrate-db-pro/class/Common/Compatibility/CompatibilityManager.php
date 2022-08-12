@@ -102,7 +102,7 @@ class CompatibilityManager {
 		$this->util            = $util;
 
 		//Version of the compatibility plugin, to force an update of the MU plugin, increment this value
-		$this->compatibility_plugin_version = '1.2';
+		$this->compatibility_plugin_version = '1.3';
 
 		$this->mu_plugin_dir    = $this->props->mu_plugin_dir;
 		$this->mu_plugin_source = $this->props->mu_plugin_source;
@@ -200,7 +200,7 @@ class CompatibilityManager {
 		//Rename muplugin in header
 		if ( ! $this->props->is_pro ) {
 			$mu_contents = file_get_contents( $this->mu_plugin_dest );
-			$mu_contents = str_replace( 'Plugin Name: WP Migrate DB Pro Compatibility', 'Plugin Name: WP Migrate DB Compatibility', $mu_contents );
+			$mu_contents = str_replace( 'Plugin Name: WP Migrate Compatibility', 'Plugin Name: WP Migrate DB Compatibility', $mu_contents );
 			file_put_contents( $this->mu_plugin_dest, $mu_contents );
 		}
 

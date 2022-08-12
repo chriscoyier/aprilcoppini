@@ -21,6 +21,16 @@ class Compatibility {
 		$this->muplugin_class_dir = plugin_dir_path( __FILE__ );
 		$this->muplugin_dir       = ( defined( 'WPMU_PLUGIN_DIR' ) && defined( 'WPMU_PLUGIN_URL' ) ) ? WPMU_PLUGIN_DIR : trailingslashit( WP_CONTENT_DIR ) . 'mu-plugins';
 
+		
+	}
+
+	/**
+	 * Registers action and filter hooks
+	 *
+	 * @return void
+	 **/
+	public function register()
+	{
 		add_action( 'admin_init', array( $this, 'wpmdbc_tgmpa_compatibility' ), 1 );
 		add_filter( 'option_active_plugins', array( $this, 'wpmdbc_include_plugins' ) );
 		add_filter( 'site_option_active_sitewide_plugins', array( $this, 'wpmdbc_include_site_plugins' ) );
@@ -65,7 +75,7 @@ class Compatibility {
 		$force_enable_theme = apply_filters( 'wpmdb_compatibility_enable_theme', false );
 
 		if ( $this->wpmdbc_is_compatibility_mode_request() && ! $force_enable_theme ) {
-			$theme_dir  = realpath( dirname( __FILE__ ) . '/../compatibility' );
+			$theme_dir  = realpath( dirname( __FILE__ ) . '/../Compatibility' );
 			$stylesheet = 'temp-theme';
 			$theme_root = "$theme_dir/$stylesheet";
 

@@ -121,7 +121,17 @@ class RemotePost extends Http
         );
 
         $args['method'] = 'POST';
-
+        $remote_cookie = Persistence::getRemoteWPECookie();
+        if (false !== $remote_cookie) {
+            $cookies         = [];
+            $cookie_args     = [
+                'name' => 'wpe-auth',
+                'value' => $remote_cookie,
+            ];
+            $cookie          = new \WP_Http_Cookie($cookie_args);
+            $cookies[]       = $cookie;
+            $args['cookies'] = $cookies;
+        }
         if (!isset($args['body'])) {
             $args['body'] = $this->array_to_multipart($data);
         }
@@ -322,7 +332,7 @@ class RemotePost extends Http
             case self::RESPONSE_MDB_INACTIVE:
                 return new \WP_Error(
                     self::RESPONSE_MDB_INACTIVE,
-                    sprintf(__('WP Migrate DB Pro does not seem to be installed or active on the remote site. (#131 - scope: %s)', 'wp-migrate-db'), $scope)
+                    sprintf(__('WP Migrate does not seem to be installed or active on the remote site. (#131 - scope: %s)', 'wp-migrate-db'), $scope)
                 );
             case self::RESPONSE_EMPTY_RESPONSE:
                 return new \WP_Error(

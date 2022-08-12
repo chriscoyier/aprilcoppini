@@ -7,7 +7,8 @@ class Command
 
 	public static function register()
 	{
-		\WP_CLI::add_command('migratedb', 'DeliciousBrains\WPMDB\Common\Cli\Command');
+		\WP_CLI::add_command('migratedb', self::class);
+		\WP_CLI::add_command('migrate', self::class);
 	}
 
 	/**
@@ -74,7 +75,7 @@ class Command
 	{
 
 		$assoc_args['action']      = 'savefile';
-		$assoc_args['export_dest'] = trim($args[0]);
+		$assoc_args['export_dest'] = sanitize_file_name($args[0]);
 
 		if (empty($assoc_args['export_dest'])) {
 			\WP_CLI::error(Cli::cleanup_message(__('You must provide a destination filename.', 'wp-migrate-db-cli')));
@@ -201,7 +202,7 @@ class Command
 		}
 
 		if (empty($wpmdb_cli)) {
-			\WP_CLI::error(__('WP Migrate DB CLI class not available.', 'wp-migrate-db-cli'));
+			\WP_CLI::error(__('WP Migrate CLI class not available.', 'wp-migrate-db-cli'));
 
 			return;
 		}

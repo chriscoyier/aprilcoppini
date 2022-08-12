@@ -1,10 +1,10 @@
 === Advanced Custom Fields ===
-Contributors: deliciousbrains, bradt, elliotcondon
+Contributors: deliciousbrains, wpengine, bradt, elliotcondon, mattshaw, lgladdy, antpb, mindctrl, modernnerd, rfmeier
 Tags: acf, fields, custom fields, meta, repeater
 Requires at least: 4.7
-Tested up to: 5.9
+Tested up to: 6.0.1
 Requires PHP: 5.6
-Stable tag: 5.12
+Stable tag: 5.12.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -75,6 +75,31 @@ From your WordPress dashboard
 
 
 == Changelog ==
+
+= 5.12.3 =
+*Release Date 14th July 2022*
+
+* Security Fix - Inputs for basic file uploads are now nonced to prevent an issue which could allow arbitrary file uploads to forms with ACF fields (Thanks to James Golovich from Pritect, Inc.)
+
+= 5.12.2 =
+*Release Date 6th April 2022*
+
+* Fix - Cloned fields in custom named options pages now behave correctly
+* Fix - Default values and the `acf/load_value` filter are now applied if a field value load [fails security validation](https://www.advancedcustomfields.com/resources/acf-field-functions/#non-acf-data)
+* Fix - The ACF field is no longer present in REST responses if the ACF REST API setting is disabled
+* Fix - Duplicating a flexible content layout or repeater row now also replaces the field ID in `for` attributes
+
+= 5.12.1 =
+*Release Date 23rd March 2022*
+
+* New - REST API now supports the comment route for displaying ACF fields.
+* Fix - ACF now validates access to option page field values when accessing via field keys the same way as field names. [View More](https://www.advancedcustomfields.com/resources/acf-field-functions/#non-acf-data)
+* Fix - REST API now correctly validates fields for POST update requests
+* Fix - Fixed an issue where invalid field types caused an error during REST API requests
+* Fix - Fixed a PHP warning when duplicating an empty field group
+* Fix - Fixed a bug preventing block duplication detection changing an ACF Block’s ID if it was nested deeper than one level inside another block
+* Fix - Fixed a bug where the `acf-block-preview` wrapper might not appear around a block if it was saved in edit mode
+* i18n - Updated several translations from user contributions (Thanks to Dariusz Zielonka, Mikko Kekki and Alberto!)
 
 = 5.12 =
 *Release Date 23rd February 2022*

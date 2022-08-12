@@ -141,6 +141,10 @@ class Receiver {
 			];
 		}
 
+		if ( method_exists('WpeCommon', 'get_wpe_auth_cookie_value') ) {
+			return $return;
+		}
+
 		if ( ! $this->filesystem->touch( $test_file ) ) {
 			$message = sprintf( __( 'File transfer error - Unable to create a PHP file on the server. (%s)', 'wp-migrate-db' ), $test_file );
 			$this->error_log->log_error( $message );
