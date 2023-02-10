@@ -1,13 +1,14 @@
 <?php
 namespace DeliciousBrains\WPMDB\Pro\TPF;
 
-use DeliciousBrains\WPMDB\Pro\Addon\AddonManagerInterface;
+use DeliciousBrains\WPMDB\Common\TPF\ThemePluginFilesAddon;
+use DeliciousBrains\WPMDB\Common\TPF\ThemePluginFilesLocal;
 use DeliciousBrains\WPMDB\WPMDBDI;
 use DeliciousBrains\WPMDB\Pro\TPF\Cli\ThemePluginFilesCli;
 
-class Manager implements AddonManagerInterface {
+class Manager extends \DeliciousBrains\WPMDB\Common\TPF\Manager {
 
-    public function register()
+    public function register($licensed)
     {
         global $wpmdbpro_theme_plugin_files;
 
@@ -17,18 +18,16 @@ class Manager implements AddonManagerInterface {
 
 
         $container = WPMDBDI::getInstance();
-        $container->get(ThemePluginFilesAddon::class)->register();
+        $theme_plugin = $container->get(ThemePluginFilesAddon::class);
+        $theme_plugin->register();
+        $theme_plugin->set_licensed($licensed);
+
         $container->get(ThemePluginFilesLocal::class)->register();
         $container->get(ThemePluginFilesRemote::class)->register();
         $container->get(ThemePluginFilesCli::class)->register();
 
         add_filter('wpmdb_addon_registered_tpf', '__return_true');
 
-        return $container->get(ThemePluginFilesAddon::class);
-    }
-
-    public function get_license_response_key()
-    {
-        return 'wp-migrate-db-pro-theme-plugin-files';
+        return $theme_plugin;
     }
 }

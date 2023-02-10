@@ -2,8 +2,13 @@
 
 namespace DeliciousBrains\WPMDB\Pro;
 
+use DeliciousBrains\WPMDB\Common\Upgrades\UpgradeRoutinesManager;
+use DeliciousBrains\WPMDB\Pro\Addon\Addon;
+use DeliciousBrains\WPMDB\Common\Error\Logger;
 use DeliciousBrains\WPMDB\Common\Filesystem\RecursiveScanner;
 use DeliciousBrains\WPMDB\Pro\Addon\AddonsFacade;
+use DeliciousBrains\WPMDB\Common\MF\MediaFilesAddon;
+use DeliciousBrains\WPMDB\Common\MF\MediaFilesLocal;
 use DeliciousBrains\WPMDB\Pro\Backups\BackupsManager;
 use DeliciousBrains\WPMDB\Pro\Beta\BetaManager;
 use DeliciousBrains\WPMDB\Pro\Cli\Export;
@@ -11,8 +16,6 @@ use DeliciousBrains\WPMDB\Pro\Cli\Extra\Cli;
 use DeliciousBrains\WPMDB\Pro\Cli\Extra\CliAddon;
 use DeliciousBrains\WPMDB\Pro\Cli\Extra\Setting;
 use DeliciousBrains\WPMDB\Pro\MF\CliCommand\MediaFilesCli;
-use DeliciousBrains\WPMDB\Pro\MF\MediaFilesAddon;
-use DeliciousBrains\WPMDB\Pro\MF\MediaFilesLocal;
 use DeliciousBrains\WPMDB\Pro\MF\MediaFilesRemote;
 use DeliciousBrains\WPMDB\Pro\Migration\Flush;
 use DeliciousBrains\WPMDB\Pro\Migration\Connection;
@@ -23,21 +26,22 @@ use DeliciousBrains\WPMDB\Pro\MST\CliCommand\MultisiteToolsAddonCli;
 use DeliciousBrains\WPMDB\Pro\MST\MediaFilesCompat;
 use DeliciousBrains\WPMDB\Pro\MST\MultisiteToolsAddon;
 use DeliciousBrains\WPMDB\Pro\Plugin\ProPluginManager;
-use DeliciousBrains\WPMDB\Pro\Queue\Manager;
-use DeliciousBrains\WPMDB\Pro\Queue\QueueHelper;
+use DeliciousBrains\WPMDB\Common\Queue\Manager;
+use DeliciousBrains\WPMDB\Common\Queue\QueueHelper;
 use DeliciousBrains\WPMDB\Pro\TPF\Cli\ThemePluginFilesCli;
-use DeliciousBrains\WPMDB\Pro\TPF\ThemePluginFilesAddon;
-use DeliciousBrains\WPMDB\Pro\TPF\ThemePluginFilesFinalize;
-use DeliciousBrains\WPMDB\Pro\TPF\ThemePluginFilesLocal;
+use DeliciousBrains\WPMDB\Common\TPF\ThemePluginFilesAddon;
+use DeliciousBrains\WPMDB\Common\TPF\ThemePluginFilesFinalize;
+use DeliciousBrains\WPMDB\Common\TPF\ThemePluginFilesLocal;
 use DeliciousBrains\WPMDB\Pro\TPF\ThemePluginFilesRemote;
-use DeliciousBrains\WPMDB\Pro\TPF\TransferCheck;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\Chunker;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\Excludes;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\FileProcessor;
+use DeliciousBrains\WPMDB\Common\TPF\TransferCheck;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\Chunker;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\Excludes;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\FileProcessor;
+use DeliciousBrains\WPMDB\Pro\Transfers\Files\IncrementalSizeController;
 use DeliciousBrains\WPMDB\Pro\Transfers\Files\Payload;
 use DeliciousBrains\WPMDB\Pro\Transfers\Files\PluginHelper;
 use DeliciousBrains\WPMDB\Pro\Transfers\Files\TransferManager;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\Util;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\Util;
 use DeliciousBrains\WPMDB\Pro\Transfers\Receiver;
 use DeliciousBrains\WPMDB\Pro\Transfers\Sender;
 use DeliciousBrains\WPMDB\Pro\UI\Template;
@@ -56,6 +60,7 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
     public $template;
     public $pro_plugin_manager;
     public $usage_tracking;
+    public $logger;
     public $beta_manager;
     public $connection;
     public $finalize_complete;
@@ -127,6 +132,11 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
      */
     public $addons_facade;
 
+    /**
+     * @var IncrementalSizeController
+     */
+    private $incremental_size_controller;
+
     public function __construct()
     {
         parent::__construct();
@@ -149,15 +159,17 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
             $this->settings
         );
 
-        $this->addon = new Addon\Addon(
-            $this->download,
+        $this->addon = new Addon(
             $this->error_log,
             $this->settings,
-            $this->properties
+            $this->properties,
+            $this->download
         );
 
         $this->common_flush = new \DeliciousBrains\WPMDB\Common\Migration\Flush($this->http_helper, $this->util, $this->remote_post, $this->http);
         $this->flush = new Flush($this->http_helper, $this->util, $this->remote_post, $this->http);
+
+        $this->upgrade_routines_manager = new UpgradeRoutinesManager($this->assets, $this->profile_manager);
 
         $this->pro_plugin_manager = new ProPluginManager(
             $this->settings,
@@ -175,7 +187,8 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
             $this->http_helper,
             $this->template_base,
             $this->notice,
-            $this->profile_manager
+            $this->profile_manager,
+            $this->upgrade_routines_manager
         );
 
         $this->template = new Template(
@@ -204,6 +217,8 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
             $this->http_helper,
             $this->WPMDBRestAPIServer
         );
+
+        $this->logger = new Logger();
 
         $this->api = new Api(
             $this->util,
@@ -377,14 +392,18 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
             $this->form_data
         );
 
+        $this->incremental_size_controller = new IncrementalSizeController();
+
         $this->transfers_manager = new TransferManager(
             $this->queue_manager,
             $this->transfers_payload,
             $this->transfers_util,
+            $this->incremental_size_controller,
             $this->http_helper,
             $this->http,
             $this->transfers_receiver,
-            $this->transfers_sender
+            $this->transfers_sender,
+            $this->full_site_export
         );
 
         $this->recursive_scanner = new RecursiveScanner($this->filesystem, $this->transfers_util);
@@ -406,10 +425,10 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
             $this->transfers_file_processor,
             $this->transfers_util,
             $this->queue_manager,
-            $this->transfers_sender,
-            $this->transfers_receiver,
             $this->queue_manager,
-            $this->state_data_container
+            $this->state_data_container,
+            $this->transfers_sender,
+            $this->transfers_receiver
         );
 
         $this->transfers_queue_helper = new QueueHelper(
@@ -423,13 +442,6 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
 
         /* Start MF Section */
 
-        $this->media_files_addon = new MediaFilesAddon(
-            $this->addon,
-            $this->properties,
-            $this->util,
-            $this->transfers_util,
-            $this->filesystem
-        );
 
         $this->media_files_addon_local = new MediaFilesLocal(
             $this->form_data,
@@ -465,30 +477,6 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
         /* End MF Section */
 
         /* Start TPF Section */
-        $this->tp_addon_finalize = new ThemePluginFilesFinalize(
-            $this->form_data,
-            $this->filesystem,
-            $this->transfers_util,
-            $this->error_log,
-            $this->http,
-            $this->state_data_container,
-            $this->queue_manager,
-            $this->migration_state_manager,
-            $this->transfers_plugin_helper
-        );
-
-        $this->tp_addon = new ThemePluginFilesAddon(
-            $this->addon,
-            $this->properties,
-            $this->template,
-            $this->filesystem,
-            $this->profile_manager,
-            $this->util,
-            $this->transfers_util,
-            $this->transfers_receiver,
-            $this->tp_addon_finalize,
-            $this->transfers_plugin_helper
-        );
 
         $this->tp_addon_transfer_check = new TransferCheck(
             $this->form_data,
@@ -502,7 +490,6 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
             $this->transfers_file_processor,
             $this->queue_manager,
             $this->transfers_manager,
-            $this->transfers_receiver,
             $this->migration_state_manager,
             $this->http,
             $this->filesystem,

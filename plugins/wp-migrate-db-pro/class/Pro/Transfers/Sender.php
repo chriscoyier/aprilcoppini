@@ -2,6 +2,10 @@
 
 namespace DeliciousBrains\WPMDB\Pro\Transfers;
 
+use DeliciousBrains\WPMDB\Common\MigrationPersistence\Persistence;
+use DeliciousBrains\WPMDB\Pro\Transfers\Files\Payload;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\Util;
+
 class Sender {
 
 	static $end_sig = '###WPMDB_EOF###';
@@ -19,12 +23,12 @@ class Sender {
 	/**
 	 * Sender constructor.
 	 *
-	 * @param Files\Util    $util
-	 * @param Files\Payload $payload
+	 * @param Util    $util
+	 * @param Payload $payload
 	 */
 	public function __construct(
-		Files\Util $util,
-		Files\Payload $payload
+		Util $util,
+		Payload $payload
 	) {
 		$this->util    = $util;
 		$this->payload = $payload;
@@ -38,11 +42,38 @@ class Sender {
 	 *
 	 * @return \Requests_Response
 	 */
-	public function post_payload( $payload, $url = '' ) {
+	public function post_payload( $payload, $state_data, $url = '' ) {
 		$requests_options = $this->util->get_requests_options();
 		$options          = apply_filters( 'wpmdb_transfers_requests_options', $requests_options );
 
-		return \Requests::post( $url, array(), $payload, $options );
+		//Prepare to send file as a stream
+        $meta_data = stream_get_meta_data($payload);
+        $filename  = $meta_data["uri"];
+
+		//Encode state data as json to prevent issues with CURL
+		$payload_data = [
+			'state_data' => base64_encode(json_encode($state_data)),
+			'action'     => $state_data['action']
+		];
+		//Attach the payload to the request as an octet stream to be received in $_FILES
+		$payload_data['content'] = new \CURLFile($filename, 'application/octet-stream', 'payload');
+
+		$hooks = new \Requests_Hooks();
+		$hooks->register( 'curl.before_send', function ( $handle ) use ($payload_data) {
+			curl_setopt($handle, CURLOPT_POSTFIELDS, $payload_data);
+		} );
+
+		$options['hooks'] = $hooks;
+
+		//Set WPE Cookie if it exists
+		$remote_cookie = Persistence::getRemoteWPECookie();
+		if (false !== $remote_cookie) {
+			$options['cookies'] = [
+				'wpe-auth'   => $remote_cookie
+			];
+		}
+
+		return \Requests::post( $url, array(), null, $options );
 	}
 
 	/**
@@ -56,7 +87,7 @@ class Sender {
 			throw new \Exception( __( '$_POST[\'batch\'] is empty.', 'wp-migrate-db' ) );
 		}
 
-		$batch = filter_var( $_POST['batch'], FILTER_SANITIZE_STRING );
+		$batch = filter_var( $_POST['batch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS );
 		$batch = unserialize( str_rot13( base64_decode( $batch ) ) );
 
 		if ( ! $batch || ! \is_array( $batch ) ) {

@@ -2,6 +2,7 @@
 
 namespace DeliciousBrains\WPMDB\Pro;
 
+use DeliciousBrains\WPMDB\Common\Error\Logger;
 use DeliciousBrains\WPMDB\Common\Compatibility\CompatibilityManager;
 use DeliciousBrains\WPMDB\Common\Filesystem\Filesystem;
 use DeliciousBrains\WPMDB\Common\Migration\MigrationManager;
@@ -11,6 +12,7 @@ use DeliciousBrains\WPMDB\Common\Plugin\PluginManagerBase;
 use DeliciousBrains\WPMDB\Common\Properties\Properties;
 use DeliciousBrains\WPMDB\Common\Util\Util;
 use DeliciousBrains\WPMDB\Pro\Addon\Addon;
+use DeliciousBrains\WPMDB\Pro\Addon\AddonsFacade;
 use DeliciousBrains\WPMDB\Pro\Backups\BackupsManager;
 use DeliciousBrains\WPMDB\Pro\Beta\BetaManager;
 use DeliciousBrains\WPMDB\Pro\Cli\Export;
@@ -33,6 +35,10 @@ class RegisterPro
      * @var UsageTracking
      */
     private $usage_tracking;
+     /**
+     * @var Logger
+     */
+    private $logger;
     /**
      * @var Template
      */
@@ -91,6 +97,11 @@ class RegisterPro
      */
     private $flush;
 
+    /**
+     * @var AddonsFacade|mixed
+     */
+    private $addons_facade;
+
     public function register()
     {
         $container = WPMDBDI::getInstance();
@@ -120,15 +131,18 @@ class RegisterPro
         $this->license                = $container->get(License::class);
         $this->import                 = $container->get(Import::class);
         $this->addon                  = $container->get(Addon::class);
+        $this->addons_facade          = $container->get(AddonsFacade::class);
         $this->beta_manager           = $container->get(BetaManager::class);
         $this->pro_plugin_manager     = $container->get(ProPluginManager::class);
         $this->menu                   = $container->get(Menu::class);
         $this->usage_tracking         = $container->get(UsageTracking::class);
+        $this->logger                 = $container->get(Logger::class);
         $this->backups_manager        = $container->get(BackupsManager::class);
         $this->cli_export             = $container->get(Export::class);
         $this->remote_updates_manager = $container->get(RemoteUpdatesManager::class);
 
         // Register other class actions and filters
+        $this->addons_facade->register();
         $this->local_connection->register();
         $this->remote_connection->register();
         $this->remote_table->register();
@@ -142,6 +156,7 @@ class RegisterPro
         $this->pro_plugin_manager->register();
         $this->menu->register();
         $this->usage_tracking->register();
+        $this->logger->register();
         $this->backups_manager->register();
         $this->remote_updates_manager->register();
 

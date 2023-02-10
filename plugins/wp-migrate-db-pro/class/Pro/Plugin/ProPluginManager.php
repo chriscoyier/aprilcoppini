@@ -2,6 +2,7 @@
 
 namespace DeliciousBrains\WPMDB\Pro\Plugin;
 
+use DeliciousBrains\WPMDB\Common\Addon\Addon;
 use DeliciousBrains\WPMDB\Common\Helpers;
 use DeliciousBrains\WPMDB\Common\Http\Helper;
 use DeliciousBrains\WPMDB\Common\Http\WPMDBRestAPIServer;
@@ -17,8 +18,8 @@ use DeliciousBrains\WPMDB\Common\Settings\Settings;
 use DeliciousBrains\WPMDB\Common\Sql\Table;
 use DeliciousBrains\WPMDB\Common\UI\Notice;
 use DeliciousBrains\WPMDB\Common\UI\TemplateBase;
+use DeliciousBrains\WPMDB\Common\Upgrades\UpgradeRoutinesManager;
 use DeliciousBrains\WPMDB\Common\Util\Util;
-use DeliciousBrains\WPMDB\Pro\Addon\Addon;
 use DeliciousBrains\WPMDB\Pro\Api;
 use DeliciousBrains\WPMDB\Pro\Beta\BetaManager;
 use DeliciousBrains\WPMDB\Pro\Download;
@@ -70,7 +71,8 @@ class ProPluginManager extends PluginManagerBase
         Helper $http_helper,
         TemplateBase $template,
         Notice $notice,
-        ProfileManager $profile_manager
+        ProfileManager $profile_manager,
+        UpgradeRoutinesManager $upgrade_routines_manager
     ) {
         parent::__construct(
             $settings,
@@ -86,7 +88,8 @@ class ProPluginManager extends PluginManagerBase
             $http_helper,
             $template,
             $notice,
-            $profile_manager
+            $profile_manager,
+            $upgrade_routines_manager
         );
 
         $this->addon    = $addon;
@@ -632,8 +635,8 @@ class ProPluginManager extends PluginManagerBase
     public function ajax_get_local_site_details() {
         return $this->http->end_ajax([
             'mst_available' => (string)((int)(Util::isPro() && Util::is_addon_registered('mst'))),
-            'tpf_available' => (string)((int)(Util::isPro() && Util::is_addon_registered('tpf'))),
-            'mf_available' => (string)((int)(Util::isPro() && Util::is_addon_registered('mf'))),
+            'tpf_available' => (string)Util::is_addon_registered('tpf'),
+            'mf_available'  => (string)Util::is_addon_registered('mf'),
         ]);
     }
 }

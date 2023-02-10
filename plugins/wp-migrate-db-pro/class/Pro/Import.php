@@ -427,6 +427,29 @@ class Import
     }
 
     /**
+     * Check that SplFileObject key and fgets are aligned
+     *
+     * Some versions of PHP $file->key returns 0 twice 
+     *
+     * @return bool
+     **/
+    protected function has_aligned_keys()
+    {
+        $file = new \SplTempFileObject();
+
+        for ($i = 0; $i < 3; $i++) {
+            $file->fwrite($i . PHP_EOL);
+        }
+        $file->rewind();
+        while (!$file->eof()) {
+            if ($file->key() !== intval($file->fgets())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Returns the number of chunks in a SQL file
      *
      * @param $file
@@ -460,7 +483,10 @@ class Import
         global $wpdb;
 
         $start = $chunk * $this->chunk_size;
-        $start = ($start > 0) ? $start - 1 : $start;
+        if (false === $this->has_aligned_keys() && $start > 0 ) {
+            $start = $start - 1;
+        }
+        
         $lines = 0;
         $file  = $this->get_file_object($file, $start);
 

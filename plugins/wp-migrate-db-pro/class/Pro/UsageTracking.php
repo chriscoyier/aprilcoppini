@@ -127,10 +127,11 @@ class UsageTracking
 
         // REST endpoints
         add_action('rest_api_init', [$this, 'register_rest_routes']);
-        add_action('wp_ajax_nopriv_wpmdb_track_migration_complete', [$this, 'send_migration_complete']);
-        add_action('wp_ajax_wpmdb_track_migration_complete', [$this, 'send_migration_complete']);
-
-        add_filter('wpmdb_notification_strings', array($this, 'template_notice_enable_usage_tracking'));
+        add_action('wp_ajax_nopriv_wpmdb_track_migration_complete', [$this, 'log_migration_complete']);
+        add_action('wp_ajax_wpmdb_track_migration_complete', [$this, 'log_migration_complete']);
+        add_action('wpmdb_cancellation', [$this, 'log_migration_cancellation'], 50);
+        add_action('wpmdb_error_migration', [$this, 'log_migration_error'], 10, 1);
+        add_filter('wpmdb_notification_strings', [$this, 'template_notice_enable_usage_tracking']);
     }
 
     public function register_rest_routes()
@@ -143,19 +144,20 @@ class UsageTracking
             ]
         );
 
-//        $this->rest_API_server->registerRestRoute(
-//            '/log-migration-complete',
-//            [
-//                'methods'  => 'POST',
-//                'callback' => [$this, 'send_migration_complete'],
-//            ]
-//        );
     }
 
-
-    public function send_migration_complete()
+    /**
+     * Send migration update to usage DB 
+     *
+     * @param  string $status complete|error|cancelled
+     * @param array $data
+     * @throws error
+     **/
+    public function send_migration_update($status = 'complete', $data = [])
     {
-        $this->http->check_ajax_referer('flush');
+        if ('complete' === $status) {
+            $this->http->check_ajax_referer('flush');
+        }
 
         $key_rules = array(
             'complete'     => 'bool',
@@ -181,11 +183,18 @@ class UsageTracking
             return false;
         }
 
-        $migration_guid = $state_data['migration_id'];
-
+        $migration_guid = isset($state_data['migration_id']) ? $state_data['migration_id'] : '';
+        if ($migration_guid === '') {
+            $form_data = json_decode($state_data['form_data']);
+            $migration_guid = $form_data->current_migration->migration_id;
+        }
+       
         $log_data = [
             'migration_complete_time' => time(),
             'migration_guid'          => $migration_guid,
+            'migration_status'        => $status,
+            'last_stage'              => isset($state_data['stage']) ? $state_data['stage'] : null,
+            'error_text'              => isset($data['error_text']) ? $data['error_text'] : null
         ];
 
         $remote_post_args = array(
@@ -212,10 +221,50 @@ class UsageTracking
         $this->http->end_ajax($result['body']);
     }
 
+     /**
+     * Log migration cacellation
+     *
+     * Fires on 'wpmdb_track_migration_complete' hook
+     *
+     **/
+    public function log_migration_complete()
+    {
+        $this->send_migration_update('complete');
+    }
+
+    /**
+     * Log migration cacellation
+     *
+     * Fires on 'wpmdb_cancellation' hook
+     *
+     **/
+    public function log_migration_cancellation()
+    {
+        $this->send_migration_update('cancelled');
+    }
+
+    /**
+     * Logs migration error
+     *
+     * Fires on 'wpmdb_error_migration' hook
+     *
+     **/
+    public function log_migration_error($error_text)
+    {
+        $this->send_migration_update('error', ['error_text' => $error_text]);
+    }
+
+    /**
+     * Log Migration Event
+     * 
+     * Callback for log-migration endpoint called at start of Migration
+     *
+     * @return void
+     */
     public function log_migration_event()
     {
-        $_POST   = $this->http_helper->convert_json_body_to_post();
-        $license = WPMDBDI::getInstance()->get(License::class);
+        $_POST       = $this->http_helper->convert_json_body_to_post();
+        $license     = WPMDBDI::getInstance()->get(License::class);
 
         $license_key = $license->get_licence_key();
         if (empty($license_key)) {
@@ -233,18 +282,19 @@ class UsageTracking
         $state_data          += $existing_state_data;
 
         $settings = $this->settings;
-
+        do_action('wpmdb_log_migration_event', $state_data);
         if (true !== $settings['allow_tracking']) {
             return false;
         }
 
-        $api_url = $this->api_url . '/event';
-
+        $api_url  = $this->api_url . '/event';
+        $cookie   = false === Persistence::getRemoteWPECookie() ? 0 : 1;
         $log_data = array(
             'local_timestamp'                        => time(),
             'licence_key'                            => $license_key,
             'cli'                                    => $this->dynamic_props->doing_cli_migration,
             'setting-compatibility_plugin_installed' => $this->filesystem->file_exists($this->props->mu_plugin_dest),
+            'remote_cookie'                          => $cookie
         );
 
         // ***+=== @TODO - revisit usage of parse_migration_form_data

@@ -75,7 +75,7 @@ class BackupsManager
 			return false;
 		}
 
-		$backup = filter_input(INPUT_GET, 'wpmdb-download-backup', FILTER_SANITIZE_STRING);
+		$backup = filter_input(INPUT_GET, 'wpmdb-download-backup', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 		$is_compressed = (bool) filter_input(INPUT_GET, 'wpmdb-compressed-backup', FILTER_VALIDATE_BOOLEAN);
 		if (empty($backup)) {
 			wp_die(__('Backup not found.', 'wp-migrate-db'));

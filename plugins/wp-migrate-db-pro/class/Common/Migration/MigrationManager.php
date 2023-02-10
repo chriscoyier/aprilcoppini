@@ -7,6 +7,7 @@ use DeliciousBrains\WPMDB\Common\Error\ErrorLog;
 use DeliciousBrains\WPMDB\Common\Error\HandleRemotePostError;
 use DeliciousBrains\WPMDB\Common\Filesystem\Filesystem;
 use DeliciousBrains\WPMDB\Common\FormData\FormData;
+use DeliciousBrains\WPMDB\Common\FullSite\FullSiteExport;
 use DeliciousBrains\WPMDB\Common\Http\Helper;
 use DeliciousBrains\WPMDB\Common\Http\Http;
 use DeliciousBrains\WPMDB\Common\Http\RemotePost;
@@ -115,6 +116,10 @@ class MigrationManager
      * @var Flush
      */
     private $flush;
+    /**
+     * @var FullSiteExport
+     */
+    private $full_site_export;
 
     public function __construct(
         MigrationStateManager $migration_state_manager,
@@ -134,7 +139,8 @@ class MigrationManager
         FinalizeMigration $finalize_migration,
         Properties $properties,
         WPMDBRestAPIServer $rest_API_server,
-        MigrationHelper $migration_helper
+        MigrationHelper $migration_helper,
+        FullSiteExport $full_site_export
     ) {
         $this->migration_state_manager = $migration_state_manager;
         $this->table                   = $table;
@@ -156,6 +162,7 @@ class MigrationManager
         $this->finalize_migration      = $finalize_migration;
         $this->rest_API_server         = $rest_API_server;
         $this->migration_helper        = $migration_helper;
+        $this->full_site_export        = $full_site_export;
     }
 
     public function register()
@@ -180,6 +187,11 @@ class MigrationManager
         $this->rest_API_server->registerRestRoute('/cancel-migration', [
             'methods'  => 'POST',
             'callback' => [$this, 'ajax_cancel_migration'],
+        ]);
+
+        $this->rest_API_server->registerRestRoute('/error-migration', [
+            'methods'  => 'POST',
+            'callback' => [$this, 'error_migration'],
         ]);
     }
 
@@ -253,11 +265,11 @@ class MigrationManager
             if (isset($state_data['bottleneck'])) {
                 $this->dynamic_props->maximum_chunk_size = (int)$state_data['bottleneck'];
             }
-
+            $is_full_site_export = isset($state_data['full_site_export']) ? $state_data['full_site_export'] : false;
             if ('savefile' === $state_data['intent']) {
                 $sql_dump_file_name = $this->filesystem->get_upload_info('path') . DIRECTORY_SEPARATOR;
                 $sql_dump_file_name .= $this->table_helper->format_dump_name($state_data['dump_filename']);
-                $fp                 = $this->filesystem->open($sql_dump_file_name);
+                $fp                 = $this->filesystem->open($sql_dump_file_name, 'a', $is_full_site_export);
             }
 
             if (!empty($state_data['db_version'])) {
@@ -281,7 +293,7 @@ class MigrationManager
             $result = $this->table->process_table($state_data['table'], $fp, $state_data);
 
             if (\is_resource($fp) && $state_data['intent'] === 'savefile') {
-                $this->filesystem->close($fp);
+                $this->filesystem->close($fp, $is_full_site_export);
             }
 
             return $this->http->end_ajax($result);
@@ -350,7 +362,8 @@ class MigrationManager
 
             // returned data is just a big string like this query;query;query;33
             // need to split this up into a chunk and row_tracker
-            $row_information = trim(substr(strrchr($response, "\n"), 1));
+            // only strip the last new line if it exists
+            $row_information = false !== strpos($response, "\n") ? trim(substr(strrchr($response, "\n"), 1)) : trim($response);
             $row_information = explode(',', $row_information);
             $chunk           = substr($response, 0, strrpos($response, ";\n") + 1);
 
@@ -407,6 +420,20 @@ class MigrationManager
     }
 
     /**
+     * Called to cleanup on error
+     */
+    function error_migration()
+    {
+        $_POST = $this->http_helper->convert_json_body_to_post();
+        $error_message = '';
+        if (isset($_POST['error_message'])) {
+            $error_message = sanitize_text_field($_POST['error_message']);
+        }
+        do_action('wpmdb_error_migration', $error_message);
+        $this->ajax_cancel_migration();
+    }
+
+    /**
      * Called to cancel an in-progress migration.
      */
     function ajax_cancel_migration()
@@ -427,7 +454,13 @@ class MigrationManager
 
         switch ($state_data['intent']) {
             case 'savefile':
-                $this->backup_export->delete_export_file($state_data['dump_filename'], false);
+                if($state_data['full_site_export'] !== true || $state_data['stage'] === 'migrate') {
+                    $this->backup_export->delete_export_file($state_data['dump_filename'], false);
+                }
+                if($state_data['full_site_export'] === true) {
+                    $zip_removed = $this->full_site_export->delete_export_zip($state_data['export_path']);
+                    return $this->http->end_ajax($zip_removed);
+                }
                 break;
             case 'push':
                 $data = $this->http_helper->filter_post_elements(
@@ -474,11 +507,12 @@ class MigrationManager
                 } else {
                     // Import might have been deleted already
                     if ($this->filesystem->file_exists($state_data['import_path'])) {
+                        $sanitized_import_filename = sanitize_file_name($state_data['import_filename']);
                         if ($state_data['import_info']['import_gzipped']) {
                             $is_backup = $this->filesystem->file_exists(substr($state_data['import_path'], 0, -3)) ? true : false;
-                            $this->backup_export->delete_export_file($state_data['import_filename'], $is_backup);
+                            $this->backup_export->delete_export_file($sanitized_import_filename, $is_backup);
                         } else {
-                            $this->backup_export->delete_export_file($state_data['import_filename'], true);
+                            $this->backup_export->delete_export_file($sanitized_import_filename, true);
                         }
                     }
                     $this->table->delete_temporary_tables($this->props->temp_prefix);

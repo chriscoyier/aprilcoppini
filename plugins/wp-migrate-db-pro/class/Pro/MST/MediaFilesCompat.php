@@ -53,7 +53,7 @@ class MediaFilesCompat
         if ('push' === $state_data['intent']) {
             return 'source' === $target ? 0 : $state_data['mst_selected_subsite'];
         }
-        return 'source' === $target ? $state_data['mst_selected_subsite']: 0;
+        return isset($state_data['mst_selected_subsite']) && 'source' === $target ? $state_data['mst_selected_subsite']: 0;
     }
 
     /**
@@ -116,6 +116,26 @@ class MediaFilesCompat
     }
 
     /**
+     * Filter relative paths for media exports
+     *
+     * Hooked to filter_media_export_destination
+     *
+     * @param string $relative_path
+     * @param string $state_data
+     * @return string
+     **/
+    public function filter_media_export_destination($relative_path, $state_data)
+    {
+
+        if ( ! isset($state_data['mst_select_subsite']) || $state_data['mst_select_subsite'] !== '1' || $state_data['mst_selected_subsite'] < 2) {
+            return $relative_path;
+        }
+
+        return str_replace('sites/' . $state_data['mst_selected_subsite'], '', $relative_path);
+
+    }
+
+    /**
      *
      * Called from the 'wpmdb_mf_local_uploads_folder' hook
      *
@@ -155,9 +175,8 @@ class MediaFilesCompat
      */
     public function filter_uploads_path($path, $state_data, $location = 'local')
     {
-        if ('push' === $state_data['intent']) {
-            $target = 'local' === $location ? 'source' : 'destination';
-        } else {
+        $target = 'local' === $location ? 'source' : 'destination';
+        if ('pull' === $state_data['intent']) {
             $target = 'local' === $location ? 'destination' : 'source';
         }
         $blog_id = $this->get_subsite_from_state_data($state_data, $target);
@@ -180,9 +199,9 @@ class MediaFilesCompat
     }
 
     /**
-     * 
+     *
      * Get path of remote uploads directory
-     *  
+     *
      * @param int $blog_id
      * @param array $state_data
      * @return string
@@ -212,13 +231,13 @@ class MediaFilesCompat
             return $excludes;
         }
         $blog_id = $this->get_subsite_from_state_data($state_data, 'source');
-        
+
         if ($blog_id !== 1) {
             return $excludes;
         }
 
         $excludes[] = '**/sites/*';
-        
+
         return $excludes;
     }
 

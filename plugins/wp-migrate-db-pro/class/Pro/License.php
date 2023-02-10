@@ -349,6 +349,11 @@ class License
 			}
 
 			set_site_transient( Helpers::get_licence_response_transient_key(), $response, $this->props->transient_timeout );
+			
+			if (isset($decoded_response['available_addons_list'])) {
+				$this->set_available_addons_list_transient($decoded_response['available_addons_list'], get_current_user_id());
+			}
+			
 			if ( true === $this->dynamic_props->doing_cli_migration ) {
 				$decoded_response['errors'] = array(
 					$this->get_licence_status_message( $decoded_response, $state_data['context'], $message_context ),
@@ -365,7 +370,6 @@ class License
 				$decoded_response['errors'][] = $decoded_response['dbrains_api_down'];
 			}
 		}
-
 		$result = $this->http->end_ajax( $decoded_response );
 
 		return $result;

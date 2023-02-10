@@ -13,8 +13,8 @@ use DeliciousBrains\WPMDB\Common\Properties\Properties;
 use DeliciousBrains\WPMDB\Common\Sql\Table;
 use DeliciousBrains\WPMDB\Common\Sql\TableHelper;
 use DeliciousBrains\WPMDB\Common\Util\Util;
-use DeliciousBrains\WPMDB\Pro\Addon\Addon;
-use DeliciousBrains\WPMDB\Pro\Addon\AddonAbstract;
+use DeliciousBrains\WPMDB\Common\Addon\Addon;
+use DeliciousBrains\WPMDB\Common\Addon\AddonAbstract;
 use DeliciousBrains\WPMDB\Pro\UI\Template;
 use DeliciousBrains\WPMDB\WPMDBDI;
 
@@ -166,6 +166,7 @@ class MultisiteToolsAddon extends AddonAbstract
         add_filter('wpmdb_mf_destination_uploads', [$this->media_files_compat, 'filter_media_uploads'], 10, 2);
         add_filter('wpmdb_mf_media_upload_path', [$this->media_files_compat, 'filter_media_uploads'], 10, 2);
         add_filter('wpmdb_mf_excludes', [$this->media_files_compat, 'filter_media_excludes'], 10, 2);
+        add_filter('wpmdb_export_relative_path', [$this->media_files_compat, 'filter_media_export_destination'], 10, 2);
 
         $this->container = WPMDBDI::getInstance();
     }
@@ -299,7 +300,7 @@ class MultisiteToolsAddon extends AddonAbstract
         }
 
         if (!$state_data) {
-            $state_data = filter_var_array($_POST, FILTER_SANITIZE_STRING);
+            $state_data = filter_var_array($_POST, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         }
 
         if (empty($state_data)) {
@@ -390,7 +391,8 @@ class MultisiteToolsAddon extends AddonAbstract
     {
         global $loaded_profile;
 
-        $data['mst_version'] = $this->plugin_version;
+        $data['mst_version']     = $this->plugin_version;
+        $data['mst_is_licensed'] = $this->licensed ? '1' : '0';
 
         // Track originally selected subsite.
         if (empty($loaded_profile) && !empty($data['profile']) && is_numeric($data['profile'])) {
@@ -742,7 +744,7 @@ class MultisiteToolsAddon extends AddonAbstract
 
         $is_source_multi      = 'true' === $this->state_data['site_details'][$source]['is_multisite'];
         $is_destination_multi = 'true' === $this->state_data['site_details'][$target]['is_multisite'];
-        $destination_id       = $is_source_multi && $is_destination_multi ? $this->state_data['mst_destination_subsite'] : $blog_id;
+        $destination_id       = $is_source_multi && $is_destination_multi && isset($this->state_data['mst_destination_subsite']) ? $this->state_data['mst_destination_subsite'] : $blog_id;
         if ('true' === $this->state_data['site_details'][$source]['is_multisite']) {
             $source_site_url        = $this->state_data['site_details'][$source]['subsites_info'][$blog_id]['site_url'];
             $source_uploads_baseurl = $this->state_data['site_details'][$source]['subsites_info'][$blog_id]['uploads']['baseurl'];
@@ -952,6 +954,10 @@ class MultisiteToolsAddon extends AddonAbstract
      */
     public function filter_get_alter_queries($queries, $state_data)
     {
+        if(empty($state_data)) {
+            return $queries;
+        }
+
         $blog_id = isset($state_data['mst_destination_subsite']) ? $state_data['mst_destination_subsite'] : $this->selected_subsite($state_data);
 
         if (1 > $blog_id) {

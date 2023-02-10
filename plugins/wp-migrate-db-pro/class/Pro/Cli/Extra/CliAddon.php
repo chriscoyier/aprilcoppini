@@ -2,7 +2,7 @@
 
 namespace DeliciousBrains\WPMDB\Pro\Cli\Extra;
 
-use DeliciousBrains\WPMDB\Pro\Addon\AddonAbstract;
+use DeliciousBrains\WPMDB\Common\Addon\AddonAbstract;
 
 class CliAddon extends AddonAbstract
 {

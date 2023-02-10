@@ -5,6 +5,8 @@ namespace DeliciousBrains\WPMDB\Pro\Transfers;
 use DeliciousBrains\WPMDB\Common\Error\ErrorLog;
 use DeliciousBrains\WPMDB\Common\Filesystem\Filesystem;
 use DeliciousBrains\WPMDB\Common\Settings\Settings;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\Util;
+use DeliciousBrains\WPMDB\Pro\Transfers\Files\Payload;
 
 class Receiver {
 
@@ -25,8 +27,8 @@ class Receiver {
 	private $filesystem;
 
 	function __construct(
-		Files\Util $util,
-		Files\Payload $payload,
+		Util $util,
+		Payload $payload,
 		Settings $settings,
 		ErrorLog $error_log,
 		Filesystem $filesystem
@@ -55,7 +57,7 @@ class Receiver {
 	 */
 	public static function create_memory_stream( $content ) {
 		$stream = fopen( 'php://memory', 'rb+' );
-		fwrite( $stream, $content );
+		stream_copy_to_stream( $content, $stream );
 		rewind( $stream );
 
 		return $stream;
@@ -107,102 +109,15 @@ class Receiver {
 	}
 
 	/**
-	 * Where to store files as they're being transferred
+	 * @param $state_data
+	 * @param $content
 	 *
-	 * @return bool|mixed|void
-	 */
-	public static function get_temp_dir() {
-		$temp_dir = trailingslashit( WP_CONTENT_DIR );
-
-		return apply_filters( 'wpmdb_transfers_temp_dir', $temp_dir );
-	}
-
-	/**
-	 * @param string $base
-	 *
-	 * @return array
-	 */
-	public function is_tmp_folder_writable( $base = 'themes' ) {
-		$tmp          = self::get_temp_dir() . $base . '/tmp';
-		$test_file    = $tmp . '/test.php';
-		$renamed_file = $tmp . '/test-2.php';
-
-		$return = [
-			'status' => true,
-		];
-
-		if ( ! $this->filesystem->mkdir( $tmp ) ) {
-			$message = sprintf( __( 'File transfer error - Unable to create a temporary folder. (%s)', 'wp-migrate-db' ), $tmp );
-			$this->error_log->log_error( $message );
-
-			return [
-				'status'  => false,
-				'message' => $message,
-			];
-		}
-
-		if ( method_exists('WpeCommon', 'get_wpe_auth_cookie_value') ) {
-			return $return;
-		}
-
-		if ( ! $this->filesystem->touch( $test_file ) ) {
-			$message = sprintf( __( 'File transfer error - Unable to create a PHP file on the server. (%s)', 'wp-migrate-db' ), $test_file );
-			$this->error_log->log_error( $message );
-
-			return [
-				'status'  => false,
-				'message' => $message,
-			];
-		}
-
-		if ( ! file_put_contents( $test_file, 'test' ) ) {
-			$message = sprintf( __( 'File transfer error - Unable to update file contents using using PHP\'s file_put_contents() function. (%s)', 'wp-migrate-db' ), $test_file );
-			$this->error_log->log_error( $message );
-
-			return [
-				'status'  => false,
-				'message' => $message,
-			];
-		}
-
-		if ( ! rename( $test_file, $renamed_file ) ) {
-			$message = sprintf( __( 'File transfer error - Unable to move file to the correct location using PHP\'s rename() function. (%s)', 'wp-migrate-db' ), $renamed_file );
-			$this->error_log->log_error( $message );
-
-			return [
-				'status'  => false,
-				'message' => $message,
-			];
-		}
-
-		//Clean up
-		if ( ! $this->util->remove_tmp_folder( 'themes' ) ) {
-			$message = sprintf( __( 'File transfer error - Unable to delete file using PHP\'s unlink() function. (%s)', 'wp-migrate-db' ), $renamed_file );
-			$this->error_log->log_error( $message );
-
-			return [
-				'status'  => false,
-				'message' => $message,
-			];
-		}
-
-		return $return;
-	}
-
-	/**
-	 * @param $stage
-	 *
-	 * @return bool|null
+	 * @return bool
 	 * @throws \Exception
 	 */
-	public function receive_post_data( $state_data, $content ) {
-		try {
-			$stream = $this->payload->unpack_payload( $content );
-		} catch ( \Exception $e ) {
-			$this->util->catch_general_error( $e->getMessage() );
-		}
 
-		return $this->payload->process_payload( $state_data, $stream );
+	public function receive_post_data( $state_data, $content ) {
+		return $this->payload->process_payload( $state_data, $content );
 	}
 
 	/**

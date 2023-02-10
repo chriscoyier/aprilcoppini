@@ -505,7 +505,7 @@ class Cli extends Export
     public function get_standard_search_replace_pairs($action = 'push')
     {
         $local_url   = preg_replace('#^https?:#', '', Util::home_url());
-        $local_path  = $this->util->get_absolute_root_file_path();
+        $local_path  = Util::get_absolute_root_file_path();
         $remote_url  = preg_replace('#^https?:#', '', $this->remote['url']);
         $remote_path = $this->remote['path'];
         $push        = 'push' === $action;
@@ -719,7 +719,7 @@ class Cli extends Export
         }
 
         if (isset($profile['media_files']) && true === $profile['media_files']['enabled']) {
-            if (false === class_exists('\DeliciousBrains\WPMDB\Pro\MF\MediaFilesAddon')) {
+            if (false === class_exists('\DeliciousBrains\WPMDB\Pro\MF\MediaFilesRemote')) {
                 return $this->cli_error(__('The profile is set to migrate media files, however migrating media files is not supported with the current license.', 'wp-migrate-db'));
             }
         }
@@ -879,6 +879,14 @@ class Cli extends Export
         }
 
         if (isset($theme_plugin_files['theme_files']) && true === $theme_plugin_files['theme_files']['enabled']) {
+            $tpf_enabled = true;
+        }
+
+        if (isset($theme_plugin_files['muplugin_files']) && true === $theme_plugin_files['muplugin_files']['enabled']) {
+            $tpf_enabled = true;
+        }
+
+        if (isset($theme_plugin_files['other_files']) && true === $theme_plugin_files['other_files']['enabled']) {
             $tpf_enabled = true;
         }
 

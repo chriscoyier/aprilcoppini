@@ -52,7 +52,7 @@ class Persistence
         $state_data = get_site_option($key);
 
         if (false === $state_data) {
-            $filtered = filter_var_array($_POST, FILTER_SANITIZE_STRING);
+            $filtered = filter_var_array($_POST, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             return $filtered;
         }
 
@@ -64,7 +64,7 @@ class Persistence
         $state_data = get_site_option($key);
 
         if (false === $state_data) {
-            return filter_var_array($_POST, FILTER_SANITIZE_STRING);
+            return filter_var_array($_POST, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         }
 
         return $state_data;
@@ -172,9 +172,8 @@ class Persistence
             (!isset($state_data['site_details']['remote']) || empty($state_data['site_details']['remote']))
             && isset($state_data['site_details']['local'])
         ) {
-            $migration_helper = WPMDBDI::getInstance()->get(MigrationHelper::class);
-
-            $state_data['site_details']['remote'] = $migration_helper->siteDetails()['site_details'];
+            $migration_helper                     = WPMDBDI::getInstance()->get(MigrationHelper::class);
+            $state_data['site_details']['remote'] = $migration_helper->siteDetails($state_data)['site_details'];;
         }
 
 

@@ -2,15 +2,15 @@
 
 namespace DeliciousBrains\WPMDB\Pro\TPF\Cli;
 
-use DeliciousBrains\WPMDB\Pro\TPF\ThemePluginFilesAddon;
-use DeliciousBrains\WPMDB\Pro\TPF\ThemePluginFilesLocal;
-use DeliciousBrains\WPMDB\Pro\TPF\ThemePluginFilesFinalize;
+use DeliciousBrains\WPMDB\Common\TPF\ThemePluginFilesAddon;
+use DeliciousBrains\WPMDB\Common\TPF\ThemePluginFilesLocal;
+use DeliciousBrains\WPMDB\Common\TPF\ThemePluginFilesFinalize;
 use DeliciousBrains\WPMDB\Common\Filesystem\Filesystem;
 use DeliciousBrains\WPMDB\Common\Profile\ProfileManager;
 use DeliciousBrains\WPMDB\Common\Properties\Properties;
 use DeliciousBrains\WPMDB\Common\Util\Util;
-use DeliciousBrains\WPMDB\Pro\Addon\Addon;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\PluginHelper;
+use DeliciousBrains\WPMDB\Common\Addon\Addon;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\PluginHelper;
 use DeliciousBrains\WPMDB\Pro\Transfers\Receiver;
 use DeliciousBrains\WPMDB\Pro\UI\Template;
 use DeliciousBrains\WPMDB\WPMDBDI;
@@ -30,7 +30,7 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
         Filesystem $filesystem,
         ProfileManager $profile_manager,
         Util $util,
-        \DeliciousBrains\WPMDB\Pro\Transfers\Files\Util $transfers_util,
+        \DeliciousBrains\WPMDB\Common\Transfers\Files\Util $transfers_util,
         Receiver $transfers_receiver,
         ThemePluginFilesFinalize $tp_addon_finalize,
         PluginHelper $transfers_plugin_helper,
@@ -39,12 +39,10 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
         parent::__construct(
             $addon,
             $properties,
-            $template,
             $filesystem,
             $profile_manager,
             $util,
             $transfers_util,
-            $transfers_receiver,
             $tp_addon_finalize,
             $transfers_plugin_helper
         );
@@ -104,6 +102,14 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
             $stages[] = 'plugins';
         }
 
+        if (isset($tpf['muplugin_files'], $tpf['muplugin_files']['enabled']) && true === $tpf['muplugin_files']['enabled']) {
+            $stages[] = 'muplugins';
+        }
+
+        if (isset($tpf['other_files'], $tpf['other_files']['enabled']) && true === $tpf['other_files']['enabled']) {
+            $stages[] = 'others';
+        }
+
         return $stages;
     }
 
@@ -134,6 +140,8 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
     {
         $args[] = 'theme-files';
         $args[] = 'plugin-files';
+        $args[] = 'mu-plugin-files';
+        $args[] = 'other-files';
         $args[] = 'exclude-theme-plugin-files';
 
         return $args;
@@ -151,18 +159,28 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
      */
     public function add_tpf_profile_args($profile, $args, $assoc_args)
     {
-        if (!isset($assoc_args['theme-files']) && !isset($assoc_args['plugin-files'])) {
+        if (!isset($assoc_args['theme-files'])
+            && !isset($assoc_args['plugin-files'])
+            && !isset($assoc_args['mu-plugin-files'])
+            && !isset($assoc_args['other-files'])
+        ) {
             return $profile;
         }
 
         $theme_plugin_files = [
-            'available'        => true,
-            'theme_files'      => ['enabled' => false],
-            'themes_selected'  => [],
-            'themes_excludes'  => [],
-            'plugin_files'     => ['enabled' => false],
-            'plugins_selected' => [],
-            'plugins_excludes' => [],
+            'available'          => true,
+            'theme_files'        => ['enabled' => false],
+            'themes_selected'    => [],
+            'themes_excludes'    => [],
+            'plugin_files'       => ['enabled' => false],
+            'plugins_selected'   => [],
+            'plugins_excludes'   => [],
+            'muplugin_files'     => ['enabled' => false],
+            'muplugins_selected' => [],
+            'muplugins_excludes' => [],
+            'other_files'        => ['enabled' => false],
+            'others_selected'    => [],
+            'others_excludes'    => [],
         ];
 
         if (isset($assoc_args['theme-files']) && $assoc_args['theme-files']) {
@@ -175,9 +193,21 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
             $theme_plugin_files['plugins_selected'] = $assoc_args['plugin-files'];
         }
 
+        if (isset($assoc_args['mu-plugin-files']) && $assoc_args['mu-plugin-files']) {
+            $theme_plugin_files['muplugin_files']     = ['enabled' => true];
+            $theme_plugin_files['muplugins_selected'] = $assoc_args['mu-plugin-files'];
+        }
+
+        if (isset($assoc_args['other-files']) && $assoc_args['other-files']) {
+            $theme_plugin_files['other_files']     = ['enabled' => true];
+            $theme_plugin_files['others_selected'] = $assoc_args['other-files'];
+        }
+
         if (isset($assoc_args['exclude-theme-plugin-files'])) {
-            $theme_plugin_files['themes_excludes'] = str_replace(',', "\n", $assoc_args['exclude-theme-plugin-files']);
-            $theme_plugin_files['plugins_excludes'] = str_replace(',', "\n", $assoc_args['exclude-theme-plugin-files']);
+            $theme_plugin_files['themes_excludes']    = str_replace(',', "\n", $assoc_args['exclude-theme-plugin-files']);
+            $theme_plugin_files['plugins_excludes']   = str_replace(',', "\n", $assoc_args['exclude-theme-plugin-files']);
+            $theme_plugin_files['muplugins_excludes'] = str_replace(',', "\n", $assoc_args['exclude-theme-plugin-files']);
+            $theme_plugin_files['others_excludes']    = str_replace(',', "\n", $assoc_args['exclude-theme-plugin-files']);
         }
 
         $profile['theme_plugin_files'] = $theme_plugin_files;
@@ -200,11 +230,15 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
         $intent = $profile['action'];
 
         if ('pull' === $intent) {
-            $themes  = isset($remote['site_details'], $remote['site_details']['themes']) ? $remote['site_details']['themes'] : [];
-            $plugins = isset($remote['site_details'], $remote['site_details']['plugins']) ? $remote['site_details']['plugins'] : [];
+            $themes    = isset($remote['site_details'], $remote['site_details']['themes']) ? $remote['site_details']['themes'] : [];
+            $plugins   = isset($remote['site_details'], $remote['site_details']['plugins']) ? $remote['site_details']['plugins'] : [];
+            $muplugins = isset($remote['site_details'], $remote['site_details']['muplugins']) ? $remote['site_details']['muplugins'] : [];
+            $others    = isset($remote['site_details'], $remote['site_details']['others']) ? $remote['site_details']['others'] : [];
         } else {
-            $themes  = $this->get_local_themes();
-            $plugins = $this->filesystem->get_local_plugins();
+            $themes    = $this->get_local_themes();
+            $plugins   = $this->filesystem->get_local_plugins(true);
+            $muplugins = $this->get_local_muplugin_files();
+            $others    = $this->get_local_other_files();
         }
 
         if (in_array('themes', $stages)) {
@@ -227,6 +261,26 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
             $profile['theme_plugin_files']['plugins_selected'] = $plugins;
         }
 
+        if (in_array('muplugins', $stages)) {
+            $muplugins = $this->get_muplugins_to_migrate($profile, $muplugins);
+
+            if (is_wp_error($muplugins)) {
+                return $muplugins;
+            }
+
+            $profile['theme_plugin_files']['muplugins_selected'] = $muplugins;
+        }
+
+        if (in_array('others', $stages)) {
+            $others = $this->get_others_to_migrate($profile, $others);
+
+            if (is_wp_error($others)) {
+                return $others;
+            }
+
+            $profile['theme_plugin_files']['others_selected'] = $others;
+        }
+
         return $profile;
     }
 
@@ -240,9 +294,15 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
      */
     public function get_themes_to_migrate($profile, $themes)
     {
-        $themes_option     = $profile['theme_plugin_files']['themes_option'];
-        $themes_selected   = $profile['theme_plugin_files']['themes_selected'];
-        $themes_excluded   = $profile['theme_plugin_files']['themes_excluded'];
+        $themes_option     = isset($profile['theme_plugin_files']['themes_option'])
+            ? $profile['theme_plugin_files']['themes_option']
+            : null;
+        $themes_selected   = isset($profile['theme_plugin_files']['themes_selected'])
+            ? $profile['theme_plugin_files']['themes_selected']
+            : null;
+        $themes_excluded   = isset($profile['theme_plugin_files']['themes_excluded'])
+            ? $profile['theme_plugin_files']['themes_excluded']
+            : null;
         $themes_to_migrate = [];
 
         if ('all' === $themes_selected || 'all' === $themes_option) {
@@ -308,11 +368,18 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
      */
     public function get_plugins_to_migrate($profile, $plugins)
     {
-        $plugins_option     = $profile['theme_plugin_files']['plugins_option'];
-        $plugins_selected   = $profile['theme_plugin_files']['plugins_selected'];
-        $plugins_excluded   = $profile['theme_plugin_files']['plugins_excluded'];
+        $plugins_option     = isset($profile['theme_plugin_files']['plugins_option'])
+            ? $profile['theme_plugin_files']['plugins_option']
+            : null;
+        $plugins_selected   = isset($profile['theme_plugin_files']['plugins_selected'])
+            ? $profile['theme_plugin_files']['plugins_selected']
+            : null;
+        $plugins_excluded   = isset($profile['theme_plugin_files']['plugins_excluded'])
+            ? $profile['theme_plugin_files']['plugins_excluded']
+            : null;
         $plugins_to_migrate = [];
 
+        $plugins = $this->exclude_migrate_plugins($plugins);
         if ('all' === $plugins_selected || 'all' === $plugins_option) {
             $plugin_paths = array_map(function ($plugin) {
                 return $plugin[0]['path'];
@@ -379,6 +446,162 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
     }
 
     /**
+     * Exclude the Migrate Plugins from the plugins list
+     *
+     * @param array $plugins
+     * @return array
+     **/
+    protected function exclude_migrate_plugins($plugins)
+    {
+        $filtered_plugins = [];
+        foreach ($plugins as $key => $plugin) {
+            if (0 === strpos($key, 'wp-migrate-db')) {
+                continue;
+            }
+            $filtered_plugins[$key] = $plugin;
+        }
+        return $filtered_plugins;
+    }
+
+    /**
+     * Gets the must-use plugins to migrate.
+     *
+     * @param array $profile The current migration profile.
+     * @param array $plugins The plugins that can be migrated.
+     *
+     * @return array|WP_Error
+     */
+    public function get_muplugins_to_migrate($profile, $muplugins)
+    {
+        $muplugins_option     = isset($profile['theme_plugin_files']['muplugins_option'])
+            ? $profile['theme_plugin_files']['muplugins_option']
+            : '';
+        $muplugins_selected   = isset($profile['theme_plugin_files']['muplugins_selected'])
+            ? $profile['theme_plugin_files']['muplugins_selected']
+            : [];
+        $muplugins_to_migrate = [];
+
+        if ('all' === $muplugins_selected || 'all' === $muplugins_option) {
+            $muplugin_paths = array_map(function ($muplugin) {
+                return $muplugin[0]['path'];
+            }, $muplugins);
+
+            return array_values($muplugin_paths);
+        }
+
+        if (!is_array($muplugins_selected)) {
+            $muplugins_selected = explode(',', $muplugins_selected);
+        }
+
+        $muplugin_slugs = [];
+
+        // Get things into a format we can work with.
+        foreach ($muplugins as $key => $value) {
+            $muplugin_slugs[$value[0]['path']] = $value;
+        }
+
+        foreach ($muplugins_selected as $muplugin) {
+            if (strpos($muplugin, WPMU_PLUGIN_DIR) === false) {
+                $muplugin = $this->get_path_from_name($muplugins, $muplugin);
+            }
+            $muplugin = trim($muplugin);
+
+            if (!$muplugin) {
+                continue;
+            }
+
+            if (!isset($muplugin_slugs[$muplugin])) {
+                $message = sprintf(__('Must-Use Plugin not found on source server: %s', 'wp-migrate-db'), $muplugin);
+
+                return new \WP_Error('wpmdbpro_theme_plugin_files_error', $message);
+            }
+
+            $muplugins_to_migrate[] = $muplugin_slugs[$muplugin][0]['path'];
+        }
+
+        return $muplugins_to_migrate;
+    }
+
+
+    /**
+     * Gets the other filess to migrate.
+     *
+     * @param array $profile The current migration profile.
+     * @param array $others The other files that can be migrated.
+     *
+     * @return array|WP_Error
+     */
+    public function get_others_to_migrate($profile, $others)
+    {
+        $others_option     = isset($profile['theme_plugin_files']['others_option'])
+            ? $profile['theme_plugin_files']['others_option']
+            : '';
+        $others_selected   = isset($profile['theme_plugin_files']['others_selected'])
+            ? $profile['theme_plugin_files']['others_selected']
+            : [];
+        $others_to_migrate = [];
+
+        if ('all' === $others_selected || 'all' === $others_option) {
+            $other_paths = array_map(function ($other) {
+                return $other[0]['path'];
+            }, $others);
+
+            return array_values($other_paths);
+        }
+
+        if (!is_array($others_selected)) {
+            $others_selected = explode(',', $others_selected);
+        }
+
+        $other_slugs = [];
+
+        // Get things into a format we can work with.
+        foreach ($others as $key => $value) {
+            $other_slugs[$value[0]['path']] = $value;
+        }
+
+        foreach ($others_selected as $other) {
+            if (strpos($other, WP_CONTENT_DIR) === false) {
+                $other = $this->get_path_from_name($others, $other);
+            }
+            $other = trim($other);
+
+            if (!$other) {
+                continue;
+            }
+
+            if (!isset($other_slugs[$other])) {
+                $message = sprintf(__('Other file not found on source server: %s', 'wp-migrate-db'), $other);
+
+                return new \WP_Error('wpmdbpro_theme_plugin_files_error', $message);
+            }
+
+            $others_to_migrate[] = $other_slugs[$other][0]['path'];
+        }
+
+        return $others_to_migrate;
+    }
+
+     /**
+     * Get file path to be used for array key
+     *
+     * @param array $files_array
+     *
+     * @param string $name
+     *
+     * @return string
+     */
+    public function get_path_from_name($files_array, $name)
+    {
+        foreach ($files_array as $key => $val) {
+            if ($val[0]['name'] === $name || $val[0]['path'] === $name) {
+                return $val[0]['path'];
+            }
+        }
+        return '';
+    }
+
+    /**
      * Adds the Theme & Plugin Files stages to the current migration.
      * Hooks on: wpmdb_cli_profile_before_migration
      *
@@ -400,6 +623,14 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
 
         if (in_array('plugins', $stages)) {
             $profile['current_migration']['stages'][] = 'plugin_files';
+        }
+
+        if (in_array('muplugins', $stages)) {
+            $profile['current_migration']['stages'][] = 'muplugin_files';
+        }
+
+        if (in_array('others', $stages)) {
+            $profile['current_migration']['stages'][] = 'other_files';
         }
 
         return $profile;
@@ -426,13 +657,39 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
             $initiate_msg           = __('Initiating themes migration...', 'wp-migrate-db');
             $_POST['folders']       = json_encode($profile['theme_plugin_files']['themes_selected']);
             $_POST['theme_folders'] = json_encode($profile['theme_plugin_files']['themes_selected']);
+            $_POST['themes_option'] = isset($profile['theme_plugin_files']['themes_option'])
+                ? $profile['theme_plugin_files']['themes_option']
+                : '';
             if (isset($profile['theme_plugin_files']['themes_excludes'])) {
                 $_POST['themes_excludes'] = json_encode($profile['theme_plugin_files']['themes_excludes']);
+            }
+        } elseif('others' === $stage){
+            $initiate_msg            = __('Initiating other files migration...', 'wp-migrate-db');
+            $_POST['folders']        = json_encode($profile['theme_plugin_files']['others_selected']);
+            $_POST['other_folders']  = json_encode($profile['theme_plugin_files']['others_selected']);
+            $_POST['others_option']  = isset($profile['theme_plugin_files']['others_option'])
+                ? $profile['theme_plugin_files']['others_option']
+                : '';
+            if (isset($profile['theme_plugin_files']['others_excludes'])) {
+                $_POST['others_excludes'] = json_encode($profile['theme_plugin_files']['others_excludes']);
+            }
+        } elseif('muplugins' === $stage){
+            $initiate_msg              = __('Initiating must-use files migration...', 'wp-migrate-db');
+            $_POST['folders']          = json_encode($profile['theme_plugin_files']['muplugins_selected']);
+            $_POST['muplugin_folders'] = json_encode($profile['theme_plugin_files']['muplugins_selected']);
+            $_POST['muplugins_option'] = isset($profile['theme_plugin_files']['muplugins_option'])
+                ? $profile['theme_plugin_files']['muplugins_option']
+                : '';
+            if (isset($profile['theme_plugin_files']['muplugins_excludes'])) {
+                $_POST['muplugins_excludes'] = json_encode($profile['theme_plugin_files']['muplugins_excludes']);
             }
         } else {
             $initiate_msg            = __('Initiating plugins migration...', 'wp-migrate-db');
             $_POST['folders']        = json_encode($profile['theme_plugin_files']['plugins_selected']);
             $_POST['plugin_folders'] = json_encode($profile['theme_plugin_files']['plugins_selected']);
+            $_POST['plugins_option'] = isset($profile['theme_plugin_files']['plugins_option'])
+                ? $profile['theme_plugin_files']['plugins_option']
+                : '';
             if (isset($profile['theme_plugin_files']['plugins_excludes'])) {
                 $_POST['plugins_excludes'] = json_encode($profile['theme_plugin_files']['plugins_excludes']);
             }

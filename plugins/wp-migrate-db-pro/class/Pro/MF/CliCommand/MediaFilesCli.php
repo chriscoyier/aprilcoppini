@@ -8,11 +8,11 @@ use DeliciousBrains\WPMDB\Common\Filesystem\Filesystem;
 use DeliciousBrains\WPMDB\Common\MigrationState\StateDataContainer;
 use DeliciousBrains\WPMDB\Common\Properties\Properties;
 use DeliciousBrains\WPMDB\Common\Util\Util;
-use DeliciousBrains\WPMDB\Pro\Addon\Addon;
+use DeliciousBrains\WPMDB\Common\Addon\Addon;
 use DeliciousBrains\WPMDB\WPMDBDI;
-use DeliciousBrains\WPMDB\Pro\MF\MediaFilesLocal;
+use DeliciousBrains\WPMDB\Common\MF\MediaFilesLocal;
 
-class MediaFilesCli extends \DeliciousBrains\WPMDB\Pro\MF\MediaFilesAddon
+class MediaFilesCli extends \DeliciousBrains\WPMDB\Common\MF\MediaFilesAddon
 {
     /**
      * @var Cli
@@ -42,7 +42,7 @@ class MediaFilesCli extends \DeliciousBrains\WPMDB\Pro\MF\MediaFilesAddon
         CliManager $cli_manager,
         Util $util,
         StateDataContainer $state_data_container,
-        \DeliciousBrains\WPMDB\Pro\Transfers\Files\Util $transfers_util,
+        \DeliciousBrains\WPMDB\Common\Transfers\Files\Util $transfers_util,
         Filesystem $filesystem
     ) {
         parent::__construct(

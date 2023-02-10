@@ -264,7 +264,7 @@ class Remote
         $return['table_sizes']            = $this->table->get_table_sizes();
         $return['table_rows']             = $this->table->get_table_row_count();
         $return['table_sizes_hr']         = array_map(array($this->table, 'format_table_sizes'), $this->table->get_table_sizes());
-        $return['path']                   = $this->util->get_absolute_root_file_path();
+        $return['path']                   = Util::get_absolute_root_file_path();
         $return['url']                    = Util::home_url();
         $return['prefix']                 = $site_details['prefix']; // TODO: Remove backwards compatibility.
         $return['bottleneck']             = $this->util->get_bottleneck();
@@ -278,6 +278,10 @@ class Remote
         $return['post_types']             = $this->table->get_post_types();
         // TODO: Use WP_Filesystem API.
         $return['write_permissions']      = (is_writeable($this->filesystem->get_upload_info('path')) ? 'true' : 'false');
+        $return['themes_permissions']     = is_writeable(WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'themes') ? 'true' : 'false';
+        $return['plugins_permissions']    = is_writeable(WP_PLUGIN_DIR) ? 'true' : 'false';
+        $return['muplugins_permissions']  = is_writeable(WPMU_PLUGIN_DIR) ? 'true' : 'false';
+        $return['others_permissions']     = is_writeable(WP_CONTENT_DIR) ? 'true' : 'false';
         $return['upload_dir_long']        = $this->filesystem->get_upload_info('path');
         $return['wp_upload_dir']          = $this->filesystem->get_wp_upload_dir();
         $return['temp_prefix']            = $this->props->temp_prefix;
@@ -423,6 +427,7 @@ class Remote
             $state,
             false
         );
+        do_action('wpmdb_respond_remote_initiate', $state_data);
 
         return wp_send_json_success($result);
     }

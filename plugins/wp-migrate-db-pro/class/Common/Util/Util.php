@@ -47,6 +47,19 @@ class Util
     }
 
     /**
+     * Gets the global plugin meta info
+     *
+     * @return array
+     **/
+    public static function getPluginMeta()
+    {
+        if (self::isPro()) {
+            return $GLOBALS['wpmdb_meta']['wp-migrate-db-pro'];
+        }
+        return $GLOBALS['wpmdb_meta']['wp-migrate-db'];
+    }
+
+    /**
      * Has a specific method been called in the stack trace.
      *
      * @param string     $method
@@ -602,7 +615,7 @@ class Util
      *
      * @return string
      */
-    function slash_one_direction($path)
+    public static function slash_one_direction($path)
     {
         return str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
     }
@@ -612,7 +625,7 @@ class Util
      *
      * @return string
      */
-    function get_absolute_root_file_path()
+    public static function get_absolute_root_file_path()
     {
         static $absolute_path;
 
@@ -737,29 +750,31 @@ class Util
 
     /**
      * Returns an associative array of html escaped useful information about the site.
-     *
+     * @param array $state_data
      * @return array
      */
-    public function site_details()
+    public function site_details($state_data = [])
     {
         global $wpdb;
         $table_prefix = $wpdb->base_prefix;
         $uploads      = wp_upload_dir();
 
         $site_details = array(
-            'is_multisite'         => esc_html(is_multisite() ? 'true' : 'false'),
-            'site_url'             => esc_html(addslashes(site_url())),
-            'home_url'             => esc_html(addslashes(Util::home_url())),
-            'prefix'               => esc_html($table_prefix),
-            'uploads_baseurl'      => esc_html(addslashes(trailingslashit($uploads['baseurl']))),
-            'uploads'              => $this->uploads_info(),
-            'uploads_dir'          => esc_html(addslashes($this->get_short_uploads_dir())),
-            'subsites'             => $this->subsites_list(),
-            'subsites_info'        => $this->subsites_info(),
-            'is_subdomain_install' => esc_html((is_multisite() && is_subdomain_install()) ? 'true' : 'false'),
+            'is_multisite'                  => esc_html(is_multisite() ? 'true' : 'false'),
+            'site_url'                      => esc_html(addslashes(site_url())),
+            'home_url'                      => esc_html(addslashes(Util::home_url())),
+            'prefix'                        => esc_html($table_prefix),
+            'uploads_baseurl'               => esc_html(addslashes(trailingslashit($uploads['baseurl']))),
+            'uploads'                       => $this->uploads_info(),
+            'uploads_dir'                   => esc_html(addslashes($this->get_short_uploads_dir())),
+            'subsites'                      => $this->subsites_list(),
+            'subsites_info'                 => $this->subsites_info(),
+            'is_subdomain_install'          => esc_html((is_multisite() && is_subdomain_install()) ? 'true' : 'false'),
+            'high_performance_transfers'    => (bool)Settings::get_setting('high_performance_transfers'),
+            'theoreticalTransferBottleneck' => apply_filters('wpmdb_theoretical_transfer_bottleneck', 0)
         );
 
-        $site_details = apply_filters('wpmdb_site_details', $site_details);
+        $site_details = apply_filters('wpmdb_site_details', $site_details, $state_data);
 
         return $site_details;
     }
@@ -771,7 +786,7 @@ class Util
      */
     public function get_short_uploads_dir()
     {
-        $short_path = str_replace($this->get_absolute_root_file_path(), '', $this->filesystem->get_upload_info('path'));
+        $short_path = str_replace(self::get_absolute_root_file_path(), '', $this->filesystem->get_upload_info('path'));
 
         return trailingslashit(substr(str_replace('\\', '/', $short_path), 1));
     }
@@ -1295,6 +1310,21 @@ class Util
     }
 
     /**
+     * Checks if a directory is empty
+     *
+     * @return bool
+     */
+    public static function is_empty_dir($dir)
+    {
+        $res = scandir($dir);
+        if ($res === false) {
+            return false;
+        }
+        //do not include directories with only '.' '..'
+        return count(array_diff($res, ['.', '..'])) === 0;
+    }
+
+    /**
      * Checks if a request was initiated from a frontend page.
      *
      * @return bool
@@ -1336,5 +1366,32 @@ class Util
         }
 
         return true;
+    }
+
+    /**
+     * Gets the directory for each stage
+     * Defaults to uploads dir if no match
+     * 
+     * @param string $stage
+     * @return string
+     **/
+    public static function get_stage_base_dir($stage)
+    {
+        $wp_upload_dir = wp_upload_dir();
+        $dirs          = [
+            'media_files'     => $wp_upload_dir['basedir'],
+            'theme_files'     => WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'themes',
+            'themes'          => WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'themes',
+            'plugin_files'    => WP_PLUGIN_DIR,
+            'plugins'         => WP_PLUGIN_DIR,
+            'mu_plugin_files' => WPMU_PLUGIN_DIR,
+            'muplugins'       => WPMU_PLUGIN_DIR,
+            'other_files'     => WP_CONTENT_DIR,
+            'others'          => WP_CONTENT_DIR,
+            'core_files'      => ABSPATH ,
+            'core'            => ABSPATH
+        ];
+        $stage = in_array($stage, array_keys($dirs)) ? $stage : 'media_files';
+        return self::slash_one_direction($dirs[$stage]);
     }
 }

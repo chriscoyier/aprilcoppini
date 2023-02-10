@@ -2,7 +2,7 @@
 
 namespace DeliciousBrains\WPMDB\Pro\Cli\Extra;
 
-use DeliciousBrains\WPMDB\Pro\Addon\AddonManagerInterface;
+use DeliciousBrains\WPMDB\Common\Addon\AddonManagerInterface;
 use DeliciousBrains\WPMDB\WPMDBDI;
 
 class Manager implements AddonManagerInterface
@@ -21,7 +21,7 @@ class Manager implements AddonManagerInterface
     }
 
 
-    public function register()
+    public function register($licensed)
     {
         global $wpmdbpro_cli;
 
@@ -31,6 +31,7 @@ class Manager implements AddonManagerInterface
         $register_pro = new \DeliciousBrains\WPMDB\Pro\RegisterPro();
 
         $container->get(CliAddon::class)->register();
+        $container->get(CliAddon::class)->set_licensed($licensed);
 
         $wpmdbpro_cli = $container->get(Cli::class);
         $wpmdbpro_cli->register();

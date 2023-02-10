@@ -323,6 +323,22 @@ class Command extends \DeliciousBrains\WPMDB\Pro\Cli\Command
      *     * A comma separated list of plugins to migrate. See `wp plugin list` for a list
      *       of plugin slugs.
      *
+     * [--mu-plugin-files=<all|mu-plugin-one,mu-plugin-two,mu-plugin-etc>]
+     * : Perform a migration of the must-use plugin files. Requires the Theme & Plugin files addon.
+     *
+     *     Accepted values:
+     *
+     *     * all - Uploads all must-use plugins to the remote site.
+     *     * A comma separated list of must-use plugin files and directories to migrate. 
+     *
+     * [--other-files=<all|other-one,other-two,other-etc>]
+     * : Perform a migration of the other files in the wp-content directory not covered by. Requires the Theme & Plugin files addon.
+     *
+     *     Accepted values:
+     *
+     *     * all - Uploads all other plugins to the remote site.
+     *     * A comma separated list of other plugin files and directories to migrate. 
+     *
      * [--exclude-theme-plugin-files=<string>]
      * : A comma-separated list of theme or plugin files and folders that should be excluded
      * from the migration.
@@ -494,6 +510,22 @@ class Command extends \DeliciousBrains\WPMDB\Pro\Cli\Command
      *     * A comma separated list of plugins to migrate. See `wp plugin list` for a list
      *       of plugin slugs.
      *
+     * [--mu-plugin-files=<all|mu-plugin-one,mu-plugin-two,mu-plugin-etc>]
+     * : Perform a migration of the must-use plugin files. Requires the Theme & Plugin files addon.
+     *
+     *     Accepted values:
+     *
+     *     * all - Uploads all must-use plugins to the remote site.
+     *     * A comma separated list of must-use plugin files and directories to migrate. 
+     *
+     * [--other-files=<all|other-one,other-two,other-etc>]
+     * : Perform a migration of the other files in the wp-content directory not covered by. Requires the Theme & Plugin files addon.
+     *
+     *     Accepted values:
+     *
+     *     * all - Uploads all must-use plugins to the remote site.
+     *     * A comma separated list of must-use plugin files and directories to migrate. 
+     *
      * [--exclude-theme-plugin-files=<string>]
      * : A comma-separated list of theme or plugin files and folders that should be excluded
      * from the migration.
@@ -507,6 +539,8 @@ class Command extends \DeliciousBrains\WPMDB\Pro\Cli\Command
      *        --media=all
      *        --theme-files=twentytwenty
      *        --plugin-files=hello-dolly,akismet
+     *        --mu-plugin-files=hello-dolly,akismet
+     *        --other-files=langauges
      *
      * @param array $args
      * @param array $assoc_args

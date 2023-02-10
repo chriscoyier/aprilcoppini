@@ -2,8 +2,8 @@
 
 namespace DeliciousBrains\WPMDB\Pro\MF;
 
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\PluginHelper;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\Util;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\PluginHelper;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\Util;
 
 class MediaFilesRemote {
     /**

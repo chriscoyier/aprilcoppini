@@ -10,11 +10,11 @@ use DeliciousBrains\WPMDB\Common\MigrationPersistence\Persistence;
 use DeliciousBrains\WPMDB\Common\MigrationState\MigrationStateManager;
 use DeliciousBrains\WPMDB\Common\Properties\Properties;
 use DeliciousBrains\WPMDB\Common\Settings\Settings;
-use DeliciousBrains\WPMDB\Pro\Queue\Manager;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\FileProcessor;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\PluginHelper;
+use DeliciousBrains\WPMDB\Common\Queue\Manager;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\FileProcessor;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\PluginHelper;
+use DeliciousBrains\WPMDB\Common\Transfers\Files\Util;
 use DeliciousBrains\WPMDB\Pro\Transfers\Files\TransferManager;
-use DeliciousBrains\WPMDB\Pro\Transfers\Files\Util;
 use DeliciousBrains\WPMDB\Pro\Transfers\Receiver;
 use DeliciousBrains\WPMDB\Pro\Transfers\Sender;
 
@@ -114,28 +114,14 @@ class ThemePluginFilesRemote
     {
         add_action('wp_ajax_nopriv_wpmdbtp_respond_to_get_remote_themes', array($this, 'ajax_tp_respond_to_get_remote_themes'));
         add_action('wp_ajax_nopriv_wpmdbtp_respond_to_get_remote_plugins', array($this, 'ajax_tp_respond_to_get_remote_plugins'));
+        add_action('wp_ajax_nopriv_wpmdbtp_respond_to_get_remote_muplugins', array($this, 'ajax_tp_respond_to_get_remote_muplugins'));
+        add_action('wp_ajax_nopriv_wpmdbtp_respond_to_get_remote_others', array($this, 'ajax_tp_respond_to_get_remote_others'));
 
         add_action('wp_ajax_nopriv_wpmdbtp_respond_to_save_queue_status', array($this, 'ajax_tp_respond_to_save_queue_status'));
         add_action('wp_ajax_nopriv_wpmdbtp_transfers_send_file', array($this, 'ajax_tp_respond_to_request_files',));
         add_action('wp_ajax_nopriv_wpmdbtp_transfers_receive_file', array($this, 'ajax_tp_respond_to_post_file'));
-
-        add_filter('wpmdb_establish_remote_connection_data', array($this, 'establish_remote_connection_data'));
     }
 
-    public function establish_remote_connection_data($data)
-    {
-        $receiver         = $this->receiver;
-        $tmp_folder_check = isset($data['site_details']['local_tmp_folder_check']) 
-            ? $data['site_details']['local_tmp_folder_check']
-            : $receiver->is_tmp_folder_writable('themes');
-
-        $data['remote_theme_plugin_files_available'] = true;
-        $data['remote_tmp_folder_check']             = $tmp_folder_check;
-        $data['remote_tmp_folder_writable']          = $tmp_folder_check['status'];
-
-        //@todo revisit - this doesn't seem to be used anywhere, why are we check remote folder status?
-        return $data;
-    }
 
     public function ajax_tp_respond_to_get_remote_themes()
     {
@@ -145,6 +131,16 @@ class ThemePluginFilesRemote
     public function ajax_tp_respond_to_get_remote_plugins()
     {
         $this->respond_to_get_remote_folders('plugins');
+    }
+
+    public function ajax_tp_respond_to_get_remote_muplugins()
+    {
+        $this->respond_to_get_remote_folders('muplugins');
+    }
+
+    public function ajax_tp_respond_to_get_remote_others()
+    {
+        $this->respond_to_get_remote_folders('others');
     }
 
     /**
