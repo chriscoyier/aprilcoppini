@@ -2,6 +2,7 @@
 
 namespace Automattic\Jetpack_Boost\Features\Optimizations\Critical_CSS;
 
+use Automattic\Jetpack_Boost\Admin\Regenerate_Admin_Notice;
 use Automattic\Jetpack_Boost\Contracts\Feature;
 use Automattic\Jetpack_Boost\Lib\Critical_CSS\Admin_Bar_Compatibility;
 use Automattic\Jetpack_Boost\Lib\Critical_CSS\Critical_CSS_Invalidator;
@@ -20,8 +21,6 @@ use Automattic\Jetpack_Boost\REST_API\Endpoints\Recommendations_Reset;
 use Automattic\Jetpack_Boost\REST_API\REST_API;
 
 class Critical_CSS implements Feature, Has_Endpoints {
-
-	const RESET_REASON_STORAGE_KEY = 'jb-generate-critical-css-reset-reason';
 
 	/**
 	 * Critical CSS storage class instance.
@@ -67,13 +66,16 @@ class Critical_CSS implements Feature, Has_Endpoints {
 		CSS_Proxy::init();
 
 		add_filter( 'jetpack_boost_js_constants', array( $this, 'add_critical_css_constants' ) );
-		add_filter( 'jetpack_boost_admin_notices', array( $this, 'add_admin_notices' ) );
 
 		REST_API::register( $this->get_endpoints() );
+
+		// Admin Notices
+		Regenerate_Admin_Notice::init();
+
 		return true;
 	}
 
-	public function get_slug() {
+	public static function get_slug() {
 		return 'critical-css';
 	}
 
@@ -133,39 +135,6 @@ class Critical_CSS implements Feature, Has_Endpoints {
 	}
 
 	/**
-	 * Override; returns an admin notice to show if there was a reset reason.
-	 *
-	 * @todo
-	 *      There should be an Admin_Notice class
-	 *      To create a notice, (new Admin_Notice())->create("notice text");
-	 *      To view notices: (new Admin_Notice())->get_all();
-	 * @return null|\Automattic\Jetpack_Boost\Admin\Admin_Notice[]
-	 */
-	public function add_admin_notices( $notices ) {
-		$reason = \get_option( self::RESET_REASON_STORAGE_KEY );
-
-		if ( $reason ) {
-			$notices[] = new Regenerate_Admin_Notice( $reason );
-		}
-
-		return $notices;
-	}
-
-	/**
-	 * Clear Critical CSS reset reason option.
-	 *
-	 * @todo Admin notices need to be moved elsewhere.
-	 *        Note: Looks like we need a way to <construct> and <destroy> options throughout the app.
-	 *        This is why it's currently awkwardly using a static method with a constant
-	 *        If we could trust classes to use constructors properly - without performing actions
-	 *        Then we could easily (and cheaply) instantiate all Boost objects
-	 *        and kindly ask them to delete themselves
-	 */
-	public static function clear_reset_reason() {
-		\delete_option( self::RESET_REASON_STORAGE_KEY );
-	}
-
-	/**
 	 * Add Critical CSS related constants to be passed to JavaScript only if the module is enabled.
 	 *
 	 * @param array $constants Constants to be passed to JavaScript.
@@ -181,8 +150,7 @@ class Critical_CSS implements Feature, Has_Endpoints {
 	}
 
 	/**
-	 * @todo Facepalm. PHP Typehinting is broken.
-	 * @return Endpoint[]
+	 * @return Endpoint::class[]
 	 *
 	 */
 	public function get_endpoints() {

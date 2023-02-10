@@ -42,11 +42,15 @@ class Waf_Standalone_Bootstrap {
 	 * @return void
 	 */
 	private function initialize_constants() {
-		Waf_Constants::initialize_constants();
+		Waf_Constants::initialize_bootstrap_constants();
 	}
 
 	/**
 	 * Initialized the WP filesystem and serves as a mocking hook for tests.
+	 *
+	 * Should only be implemented after the wp_loaded action hook:
+	 *
+	 * @link https://developer.wordpress.org/reference/functions/wp_filesystem/#more-information
 	 *
 	 * @return void
 	 */
@@ -141,7 +145,7 @@ class Waf_Standalone_Bootstrap {
 			. sprintf( "define( 'JETPACK_WAF_DIR', %s );\n", var_export( JETPACK_WAF_DIR, true ) )
 			. sprintf( "define( 'JETPACK_WAF_WPCONFIG', %s );\n", var_export( JETPACK_WAF_WPCONFIG, true ) )
 			. 'require_once ' . var_export( $this->locate_autoloader_file(), true ) . ";\n"
-			. 'include ' . var_export( dirname( __DIR__ ) . '/run.php', true ) . ";\n";
+			. "Automattic\Jetpack\Waf\Waf_Runner::initialize();\n";
 		// phpcs:enable
 
 		if ( ! $wp_filesystem->is_dir( JETPACK_WAF_DIR ) ) {
