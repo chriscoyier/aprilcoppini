@@ -13,9 +13,6 @@ use Automattic\Jetpack\Blocks;
 use Jetpack_Gutenberg;
 use Jetpack_Podcast_Helper;
 
-const FEATURE_NAME = 'podcast-player';
-const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
-
 if ( ! class_exists( 'Jetpack_Podcast_Helper' ) ) {
 	require_once JETPACK__PLUGIN_DIR . '/_inc/lib/class-jetpack-podcast-helper.php';
 }
@@ -26,37 +23,9 @@ if ( ! class_exists( 'Jetpack_Podcast_Helper' ) ) {
  */
 function register_block() {
 	Blocks::jetpack_register_block(
-		BLOCK_NAME,
+		__DIR__,
 		array(
-			'attributes'      => array(
-				'url'                    => array(
-					'type' => 'string',
-				),
-				'itemsToShow'            => array(
-					'type'    => 'integer',
-					'default' => 5,
-				),
-				'showCoverArt'           => array(
-					'type'    => 'boolean',
-					'default' => true,
-				),
-				'showEpisodeTitle'       => array(
-					'type'    => 'boolean',
-					'default' => true,
-				),
-				'showEpisodeDescription' => array(
-					'type'    => 'boolean',
-					'default' => true,
-				),
-			),
 			'render_callback' => __NAMESPACE__ . '\render_block',
-			'supports'        => array(
-				'align'   => array( 'wide', 'full' ),
-				'spacing' => array(
-					'padding' => true,
-					'margin'  => true,
-				),
-			),
 			// Since Gutenberg #31873.
 			'style'           => 'wp-mediaelement',
 
@@ -104,7 +73,7 @@ function render_block( $attributes, $content ) {
 		return render_error( __( 'Your podcast URL is invalid and couldn\'t be embedded. Please double check your URL.', 'jetpack' ) );
 	}
 
-	if ( isset( $attributes['selectedEpisodes'] ) && count( $attributes['selectedEpisodes'] ) ) {
+	if ( ! empty( $attributes['selectedEpisodes'] ) ) {
 		$guids       = array_map(
 			function ( $episode ) {
 				return $episode['guid'];
@@ -140,6 +109,10 @@ function render_player( $player_data, $attributes ) {
 		return render_error( __( 'No tracks available to play.', 'jetpack' ) );
 	}
 
+	if ( is_wp_error( $player_data['tracks'] ) ) {
+		return render_error( $player_data['tracks']->get_error_message() );
+	}
+
 	// Only use the amount of tracks requested.
 	$player_data['tracks'] = array_slice(
 		$player_data['tracks'],
@@ -167,7 +140,7 @@ function render_player( $player_data, $attributes ) {
 	$player_inline_style  = trim( "{$secondary_colors['style']} {$background_colors['style']}" );
 	$player_inline_style .= get_css_vars( $attributes );
 	$wrapper_attributes   = \WP_Block_Supports::get_instance()->apply_block_supports();
-	$block_classname      = Blocks::classes( FEATURE_NAME, $attributes, array( 'is-default' ) );
+	$block_classname      = Blocks::classes( Blocks::get_block_feature( __DIR__ ), $attributes, array( 'is-default' ) );
 	$is_amp               = Blocks::is_amp_request();
 
 	ob_start();
@@ -218,7 +191,7 @@ function render_player( $player_data, $attributes ) {
 	if ( ! $is_amp ) {
 		wp_enqueue_style( 'wp-mediaelement' );
 	}
-	Jetpack_Gutenberg::load_assets_as_required( FEATURE_NAME, array( 'mediaelement' ) );
+	Jetpack_Gutenberg::load_assets_as_required( __DIR__, array( 'mediaelement' ) );
 
 	return ob_get_clean();
 }
@@ -290,10 +263,12 @@ function get_css_vars( $attrs ) {
  *    Keep it mind when using this param to pass
  *    properties to the template.
  *
+ * @html-template-var array $template_props
+ *
  * @param string $name           Template name, available in `./templates` folder.
  * @param array  $template_props Template properties. Optional.
  * @param bool   $print          Render template. True as default.
- * @return false|string          HTML markup or false.
+ * @return string|null           HTML markup or null.
  */
 function render( $name, $template_props = array(), $print = true ) {
 	if ( ! strpos( $name, '.php' ) ) {

@@ -119,6 +119,7 @@ class MigrationHelper
             'plugins_permissions'           => is_writeable(WP_PLUGIN_DIR) ? 'true' : 'false',
             'muplugins_permissions'         => is_writeable(WPMU_PLUGIN_DIR) ? 'true' : 'false',
             'others_permissions'            => is_writeable(WP_CONTENT_DIR) ? 'true' : 'false',
+            'firewall_plugins'              => $site_details['firewall_plugins'],
             'profile'                       => isset($_GET['wpmdb-profile']) ? $_GET['wpmdb-profile'] : '-1',
             'is_pro'                        => esc_html($this->props->is_pro ? 'true' : 'false'),
             'lower_case_table_names'        => esc_html($this->tables->get_lower_case_table_names_setting()),
@@ -133,7 +134,8 @@ class MigrationHelper
             'mst_available'                 => Util::isPro() && Util::is_addon_registered('mst'),
             'tpf_available'                 => Util::is_addon_registered('tpf'),
             'mf_available'                  => Util::is_addon_registered('mf'),
-            'mst_required_message'          => $this->multisite->mst_required_message(),
+            'mst_required_message_push'     => $this->multisite->mst_required_message('push'),
+            'mst_required_message_pull'     => $this->multisite->mst_required_message('pull'),
             'time_format'                   => get_option('time_format'),
             'theoreticalTransferBottleneck' => apply_filters('wpmdb_theoretical_transfer_bottleneck', 0)
         ];

@@ -9,11 +9,17 @@ import StorageUsageDetails from './storage-usage-details';
 import { getUsageLevel, StorageUsageLevels } from './storage-usage-levels';
 
 const BackupStorageSpace = () => {
-	const [ connectionStatus ] = useConnection();
+	const connectionStatus = useConnection();
 	const isFetchingPolicies = useSelect( select => select( STORE_ID ).isFetchingBackupPolicies() );
 	const isFetchingSize = useSelect( select => select( STORE_ID ).isFetchingBackupSize() );
+	const hasBackupSizeLoaded = useSelect( select => select( STORE_ID ).hasBackupSizeLoaded() );
+	const hasBackupPoliciesLoaded = useSelect( select =>
+		select( STORE_ID ).hasBackupPoliciesLoaded()
+	);
 	const storageLimit = useSelect( select => select( STORE_ID ).getBackupStorageLimit() );
 	const storageSize = useSelect( select => select( STORE_ID ).getBackupSize() );
+	const lastBackupSize = useSelect( select => select( STORE_ID ).getLastBackupSize() );
+
 	const planRetentionDays = useSelect( select => select( STORE_ID ).getActivityLogLimitDays() );
 	const minDaysOfBackupsAllowed = useSelect( select =>
 		select( STORE_ID ).getMinDaysOfBackupsAllowed()
@@ -23,6 +29,8 @@ const BackupStorageSpace = () => {
 	const showComponent = storageSize !== null && storageLimit > 0;
 
 	const usageLevel = useSelect( select => select( STORE_ID ).getStorageUsageLevel() );
+	const backupRetentionDays = useSelect( select => select( STORE_ID ).getBackupRetentionDays() );
+	const retentionDays = backupRetentionDays || planRetentionDays;
 
 	const dispatch = useDispatch( STORE_ID );
 
@@ -33,20 +41,20 @@ const BackupStorageSpace = () => {
 			return;
 		}
 
-		if ( ! isFetchingPolicies && ! storageLimit ) {
+		if ( ! isFetchingPolicies && ! hasBackupPoliciesLoaded ) {
 			dispatch.getSitePolicies();
 		}
 
-		if ( ! isFetchingSize && ! storageSize ) {
+		if ( ! isFetchingSize && ! hasBackupSizeLoaded ) {
 			dispatch.getSiteSize();
 		}
 	}, [
 		connectionStatus,
 		dispatch,
+		hasBackupPoliciesLoaded,
+		hasBackupSizeLoaded,
 		isFetchingPolicies,
 		isFetchingSize,
-		storageLimit,
-		storageSize,
 	] );
 
 	useEffect( () => {
@@ -56,7 +64,7 @@ const BackupStorageSpace = () => {
 				storageLimit,
 				minDaysOfBackupsAllowed,
 				daysOfBackupsAllowed,
-				planRetentionDays,
+				retentionDays,
 				daysOfBackupsSaved
 			)
 		);
@@ -66,7 +74,7 @@ const BackupStorageSpace = () => {
 		storageLimit,
 		minDaysOfBackupsAllowed,
 		daysOfBackupsAllowed,
-		planRetentionDays,
+		retentionDays,
 		daysOfBackupsSaved,
 	] );
 
@@ -95,7 +103,13 @@ const BackupStorageSpace = () => {
 					storageLimit={ storageLimit }
 					usageLevel={ usageLevel }
 				/>
-				<StorageUsageDetails storageUsed={ storageSize } storageLimit={ storageLimit } />
+				<StorageUsageDetails
+					storageUsed={ storageSize }
+					storageLimit={ storageLimit }
+					lastBackupSize={ lastBackupSize }
+					usageLevel={ usageLevel }
+					planRetentionDays={ planRetentionDays }
+				/>
 
 				{ usageLevel !== StorageUsageLevels.Normal && (
 					<StorageAddonUpsellPrompt usageLevel={ usageLevel } />

@@ -5,6 +5,313 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.1] - 2025-03-05
+### Changed
+- Internal updates.
+
+## [4.2.0] - 2025-03-03
+### Changed
+- Replace more JITM jQuery Ajax calls with @wordpress/api-fetch [#41990]
+- Update package dependencies. [#42163]
+
+## [4.1.1] - 2025-02-24
+### Changed
+- Refactor handling of JITM-approved screens. [#41748]
+
+## [4.1.0] - 2025-02-17
+### Changed
+- Update AJAX calls to utilise @wordpress/api-fetch. [#41745]
+
+## [4.0.7] - 2025-02-12
+### Fixed
+- Fix the query parameter used for JITM query strings. [#41542]
+
+## [4.0.6] - 2025-02-10
+### Changed
+- Update package dependencies. [#41491]
+
+## [4.0.5] - 2025-02-03
+### Changed
+- Update package dependencies. [#41286]
+- Update the WooCommerce logo in Woo JITMs. [#41322]
+
+## [4.0.4] - 2025-01-20
+### Changed
+- Updated package dependencies. [#41099]
+
+## [4.0.3] - 2024-12-16
+### Changed
+- Updated package dependencies. [#40564]
+
+## [4.0.2] - 2024-12-04
+### Changed
+- Updated package dependencies. [#40363]
+
+## [4.0.1] - 2024-11-25
+### Changed
+- Updated package dependencies. [#40258] [#40288]
+
+## [4.0.0] - 2024-11-14
+### Removed
+- General: Update minimum PHP version to 7.2. [#40147]
+
+## [3.1.29] - 2024-11-11
+### Changed
+- Updated package dependencies. [#39999]
+
+## [3.1.28] - 2024-11-04
+### Added
+- Enable test coverage. [#39961]
+
+## [3.1.27] - 2024-10-29
+### Changed
+- Internal updates.
+
+## [3.1.26] - 2024-10-14
+### Changed
+- Only include `wp-polyfill` as a script dependency when needed. [#39629]
+
+## [3.1.25] - 2024-10-10
+### Changed
+- Updated package dependencies. [#39707]
+
+## [3.1.24] - 2024-10-07
+### Changed
+- Updated package dependencies. [#39594]
+
+## [3.1.23] - 2024-09-23
+### Changed
+- Update dependencies.
+
+## [3.1.22] - 2024-09-10
+### Changed
+- Updated package dependencies. [#39302]
+
+## [3.1.21] - 2024-09-05
+### Changed
+- Update dependencies.
+
+## [3.1.20] - 2024-09-05
+### Changed
+- Updated package dependencies. [#39176]
+
+## [3.1.19] - 2024-08-29
+### Changed
+- Updated package dependencies. [#39111]
+
+## [3.1.18] - 2024-08-23
+### Changed
+- Updated package dependencies. [#39004]
+
+## [3.1.17] - 2024-08-19
+### Fixed
+- Lossless image optimization for images (should improve performance with no visible changes). [#38750]
+
+## [3.1.16] - 2024-08-15
+### Changed
+- Updated package dependencies. [#38662]
+
+## [3.1.15] - 2024-08-08
+### Fixed
+- JITM: Fix background for RTL languages. [#38706]
+
+## [3.1.14] - 2024-07-18
+### Changed
+- Update margins on jitms in my jetpack [#38283]
+
+## [3.1.13] - 2024-07-03
+### Changed
+- Updated package dependencies. [#38132]
+
+## [3.1.12] - 2024-06-05
+### Changed
+- Updated package dependencies. [#37669]
+
+## [3.1.11] - 2024-05-16
+### Changed
+- Updated package dependencies. [#37379]
+
+## [3.1.10] - 2024-05-06
+### Changed
+- Updated package dependencies. [#37147]
+
+## [3.1.9] - 2024-04-26
+### Changed
+- Internal updates.
+
+## [3.1.8] - 2024-04-25
+### Changed
+- Internal updates.
+
+## [3.1.7] - 2024-04-22
+### Changed
+- Internal updates.
+
+## [3.1.6] - 2024-04-15
+### Changed
+- Internal updates.
+
+## [3.1.5] - 2024-04-11
+### Changed
+- Internal updates.
+
+## [3.1.4] - 2024-04-08
+### Changed
+- Updated package dependencies. [#36760]
+
+## [3.1.3] - 2024-03-27
+### Changed
+- Updated package dependencies. [#36585]
+
+## [3.1.2] - 2024-03-25
+### Changed
+- Update Phan baselines [#36441]
+
+## [3.1.1] - 2024-03-14
+### Changed
+- Internal updates.
+
+## [3.1.0] - 2024-03-12
+### Changed
+- Performance: only enqueue the JITM JavaScript on pages where it will be used. [#35997]
+- Updated package dependencies. [#36325]
+
+## [3.0.5] - 2024-03-04
+### Changed
+- Updated package dependencies. [#36095]
+
+## [3.0.4] - 2024-02-13
+### Changed
+- Updated package dependencies. [#35608]
+
+## [3.0.3] - 2024-02-05
+### Changed
+- Updated package dependencies. [#35384]
+
+## [3.0.2] - 2024-01-04
+### Changed
+- Updated package dependencies. [#34815]
+
+## [3.0.1] - 2023-12-03
+### Changed
+- Updated package dependencies. [#34411]
+
+## [3.0.0] - 2023-11-20
+### Changed
+- Updated required PHP version to >= 7.0. [#34192]
+
+### Removed
+- Removed the Partner package requirement. Relying on the Connection package instead. [#33832]
+
+## [2.5.3] - 2023-11-14
+### Changed
+- Updated package dependencies. [#34093]
+
+## [2.5.2] - 2023-11-03
+
+## [2.5.1] - 2023-10-19
+### Changed
+- Updated package dependencies. [#33687]
+
+## [2.5.0] - 2023-10-10
+### Added
+- JITMs can now redirect to a specific Jetpack settings page. [#32826]
+
+### Changed
+- Update color of WooCommerce logo. [#33491]
+- Updated package dependencies. [#33428]
+
+## [2.4.0] - 2023-09-28
+### Changed
+- Moved tracking for JITM buttons into JITM script, added message_path property [#33252]
+
+## [2.3.19] - 2023-09-19
+
+- Minor internal updates.
+
+## [2.3.18] - 2023-09-04
+### Changed
+- Updated package dependencies. [#32803]
+
+## [2.3.17] - 2023-08-23
+### Changed
+- Updated package dependencies. [#32605]
+
+## [2.3.16] - 2023-08-21
+### Fixed
+- Update secondary button styling [#32503]
+
+## [2.3.15] - 2023-08-09
+### Changed
+- Updated package dependencies. [#32166]
+
+## [2.3.14] - 2023-07-25
+### Changed
+- Updated package dependencies. [#32040]
+
+## [2.3.13] - 2023-07-17
+### Changed
+- Generate query string when using the WPCOM API to fetch JITMs [#31809]
+
+## [2.3.12] - 2023-07-11
+### Changed
+- Updated package dependencies. [#31785]
+
+## [2.3.11] - 2023-07-05
+### Changed
+- Updated package dependencies. [#31659]
+
+## [2.3.10] - 2023-06-23
+### Changed
+- Updated package dependencies. [#31468]
+
+## [2.3.9] - 2023-06-06
+### Changed
+- Updated package dependencies. [#31129]
+
+## [2.3.8] - 2023-05-08
+### Added
+- JITM: Add jetpack-videopress to JITM refetch on hashchange list [#30465]
+
+## [2.3.7] - 2023-05-02
+### Changed
+- Updated package dependencies. [#30375]
+
+## [2.3.6] - 2023-04-10
+### Added
+- Add Jetpack Autoloader package suggestion. [#29988]
+
+## [2.3.5] - 2023-04-04
+### Added
+- Add external link icons in JITM [#29654]
+
+### Changed
+- Updated package dependencies. [#29854]
+
+## [2.3.4] - 2023-03-28
+### Fixed
+- JITM: Fix button overflow when text length is too big [#29749]
+
+## [2.3.3] - 2023-03-27
+### Changed
+- JITM: Update styles [#29709]
+
+## [2.3.2] - 2023-03-20
+### Changed
+- Updated package dependencies. [#29471]
+
+## [2.3.1] - 2023-03-08
+### Changed
+- Updated package dependencies. [#29216]
+
+## [2.3.0] - 2023-02-20
+### Changed
+- Moving deleting connection owner notice from JITM to Connection package. [#28516]
+
+## [2.2.42] - 2023-02-15
+### Changed
+- Update to React 18. [#28710]
+
 ## [2.2.41] - 2023-02-06
 ### Fixed
 - JITM: minor fix for styles on Safari browser.
@@ -538,6 +845,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Jetpack to use new JITM package
 
+[4.2.1]: https://github.com/Automattic/jetpack-jitm/compare/v4.2.0...v4.2.1
+[4.2.0]: https://github.com/Automattic/jetpack-jitm/compare/v4.1.1...v4.2.0
+[4.1.1]: https://github.com/Automattic/jetpack-jitm/compare/v4.1.0...v4.1.1
+[4.1.0]: https://github.com/Automattic/jetpack-jitm/compare/v4.0.7...v4.1.0
+[4.0.7]: https://github.com/Automattic/jetpack-jitm/compare/v4.0.6...v4.0.7
+[4.0.6]: https://github.com/Automattic/jetpack-jitm/compare/v4.0.5...v4.0.6
+[4.0.5]: https://github.com/Automattic/jetpack-jitm/compare/v4.0.4...v4.0.5
+[4.0.4]: https://github.com/Automattic/jetpack-jitm/compare/v4.0.3...v4.0.4
+[4.0.3]: https://github.com/Automattic/jetpack-jitm/compare/v4.0.2...v4.0.3
+[4.0.2]: https://github.com/Automattic/jetpack-jitm/compare/v4.0.1...v4.0.2
+[4.0.1]: https://github.com/Automattic/jetpack-jitm/compare/v4.0.0...v4.0.1
+[4.0.0]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.29...v4.0.0
+[3.1.29]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.28...v3.1.29
+[3.1.28]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.27...v3.1.28
+[3.1.27]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.26...v3.1.27
+[3.1.26]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.25...v3.1.26
+[3.1.25]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.24...v3.1.25
+[3.1.24]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.23...v3.1.24
+[3.1.23]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.22...v3.1.23
+[3.1.22]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.21...v3.1.22
+[3.1.21]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.20...v3.1.21
+[3.1.20]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.19...v3.1.20
+[3.1.19]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.18...v3.1.19
+[3.1.18]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.17...v3.1.18
+[3.1.17]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.16...v3.1.17
+[3.1.16]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.15...v3.1.16
+[3.1.15]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.14...v3.1.15
+[3.1.14]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.13...v3.1.14
+[3.1.13]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.12...v3.1.13
+[3.1.12]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.11...v3.1.12
+[3.1.11]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.10...v3.1.11
+[3.1.10]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.9...v3.1.10
+[3.1.9]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.8...v3.1.9
+[3.1.8]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.7...v3.1.8
+[3.1.7]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.6...v3.1.7
+[3.1.6]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.5...v3.1.6
+[3.1.5]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.4...v3.1.5
+[3.1.4]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.3...v3.1.4
+[3.1.3]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.2...v3.1.3
+[3.1.2]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.1...v3.1.2
+[3.1.1]: https://github.com/Automattic/jetpack-jitm/compare/v3.1.0...v3.1.1
+[3.1.0]: https://github.com/Automattic/jetpack-jitm/compare/v3.0.5...v3.1.0
+[3.0.5]: https://github.com/Automattic/jetpack-jitm/compare/v3.0.4...v3.0.5
+[3.0.4]: https://github.com/Automattic/jetpack-jitm/compare/v3.0.3...v3.0.4
+[3.0.3]: https://github.com/Automattic/jetpack-jitm/compare/v3.0.2...v3.0.3
+[3.0.2]: https://github.com/Automattic/jetpack-jitm/compare/v3.0.1...v3.0.2
+[3.0.1]: https://github.com/Automattic/jetpack-jitm/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/Automattic/jetpack-jitm/compare/v2.5.3...v3.0.0
+[2.5.3]: https://github.com/Automattic/jetpack-jitm/compare/v2.5.2...v2.5.3
+[2.5.2]: https://github.com/Automattic/jetpack-jitm/compare/v2.5.1...v2.5.2
+[2.5.1]: https://github.com/Automattic/jetpack-jitm/compare/v2.5.0...v2.5.1
+[2.5.0]: https://github.com/Automattic/jetpack-jitm/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.19...v2.4.0
+[2.3.19]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.18...v2.3.19
+[2.3.18]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.17...v2.3.18
+[2.3.17]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.16...v2.3.17
+[2.3.16]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.15...v2.3.16
+[2.3.15]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.14...v2.3.15
+[2.3.14]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.13...v2.3.14
+[2.3.13]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.12...v2.3.13
+[2.3.12]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.11...v2.3.12
+[2.3.11]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.10...v2.3.11
+[2.3.10]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.9...v2.3.10
+[2.3.9]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.8...v2.3.9
+[2.3.8]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.7...v2.3.8
+[2.3.7]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.6...v2.3.7
+[2.3.6]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.5...v2.3.6
+[2.3.5]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.4...v2.3.5
+[2.3.4]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.3...v2.3.4
+[2.3.3]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.2...v2.3.3
+[2.3.2]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.1...v2.3.2
+[2.3.1]: https://github.com/Automattic/jetpack-jitm/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/Automattic/jetpack-jitm/compare/v2.2.42...v2.3.0
+[2.2.42]: https://github.com/Automattic/jetpack-jitm/compare/v2.2.41...v2.2.42
 [2.2.41]: https://github.com/Automattic/jetpack-jitm/compare/v2.2.40...v2.2.41
 [2.2.40]: https://github.com/Automattic/jetpack-jitm/compare/v2.2.39...v2.2.40
 [2.2.39]: https://github.com/Automattic/jetpack-jitm/compare/v2.2.38...v2.2.39

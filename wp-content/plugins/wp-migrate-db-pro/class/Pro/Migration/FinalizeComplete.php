@@ -187,7 +187,7 @@ class FinalizeComplete
         }
 
         $this->form_data            = base64_decode($filtered_post['form_data']);
-        $state_data['site_details'] = unserialize(base64_decode($state_data['site_details']));
+        $state_data['site_details'] = json_decode(base64_decode($state_data['site_details']), true);
         do_action('wpmdb_remote_finalize', $state_data);
         $return = $this->finalize->finalize_migration($state_data);
         $result = $this->http->end_ajax($return);

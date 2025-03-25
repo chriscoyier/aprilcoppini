@@ -54,6 +54,13 @@ abstract class Jetpack_Tiled_Gallery_Layout {
 	public $columns;
 
 	/**
+	 * Attachment link
+	 *
+	 * @var bool
+	 */
+	public $needs_attachment_link;
+
+	/**
 	 * Constructor function.
 	 *
 	 * @param object $attachments - the attachmed image.
@@ -99,10 +106,12 @@ abstract class Jetpack_Tiled_Gallery_Layout {
 	/**
 	 * Handle tiled gallery template path.
 	 *
+	 * @html-template-var array $context
+	 *
 	 * @param string $name Template name.
 	 * @param array  $context Context array passed to the template.
 	 */
-	private function template( $name, $context = null ) {
+	private function template( $name, $context = array() ) {
 		if ( ! in_array( $name, self::$templates, true ) ) {
 			return;
 		}
@@ -123,10 +132,12 @@ abstract class Jetpack_Tiled_Gallery_Layout {
 	/**
 	 * Handle tiled gallery partial path.
 	 *
+	 * @html-template-var array $context
+	 *
 	 * @param string $name - the name.
 	 * @param array  $context Context array passed to the partial.
 	 */
-	private function partial( $name, $context = null ) {
+	private function partial( $name, $context = array() ) {
 		if ( ! in_array( $name, self::$partials, true ) ) {
 			return;
 		}
@@ -171,4 +182,3 @@ abstract class Jetpack_Tiled_Gallery_Layout {
 		return $extra_data;
 	}
 }
-

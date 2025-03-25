@@ -90,7 +90,7 @@ class Current_Page_Helper {
 		/**
 		 * Filter: Allow changing the default page id.
 		 *
-		 * @api int $page_id The default page id.
+		 * @param int $page_id The default page id.
 		 */
 		return \apply_filters( 'wpseo_frontend_page_type_simple_page_id', 0 );
 	}
@@ -129,13 +129,7 @@ class Current_Page_Helper {
 	public function get_term_id() {
 		$wp_query = $this->wp_query_wrapper->get_main_query();
 
-		if ( $wp_query->is_category() ) {
-			return $wp_query->get( 'cat' );
-		}
-		if ( $wp_query->is_tag() ) {
-			return $wp_query->get( 'tag_id' );
-		}
-		if ( $wp_query->is_tax() ) {
+		if ( $wp_query->is_tax() || $wp_query->is_tag() || $wp_query->is_category() ) {
 			$queried_object = $wp_query->get_queried_object();
 			if ( $queried_object && ! \is_wp_error( $queried_object ) ) {
 				return $queried_object->term_id;
@@ -412,14 +406,13 @@ class Current_Page_Helper {
 	 * @return bool True when current page is a yoast seo plugin page.
 	 */
 	public function is_yoast_seo_page() {
-		static $is_yoast_seo;
-
-		if ( $is_yoast_seo === null ) {
-			$current_page = \filter_input( \INPUT_GET, 'page' );
-			$is_yoast_seo = ( \is_string( $current_page ) && \strpos( $current_page, 'wpseo_' ) === 0 );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reason: We are not processing form information.
+		if ( isset( $_GET['page'] ) && \is_string( $_GET['page'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reason: We are not processing form information, We are only using the variable in the strpos function.
+			$current_page = \wp_unslash( $_GET['page'] );
+			return \strpos( $current_page, 'wpseo_' ) === 0;
 		}
-
-		return $is_yoast_seo;
+		return false;
 	}
 
 	/**
@@ -429,13 +422,13 @@ class Current_Page_Helper {
 	 * @return string The current Yoast SEO page.
 	 */
 	public function get_current_yoast_seo_page() {
-		static $current_yoast_seo_page;
-
-		if ( $current_yoast_seo_page === null ) {
-			$current_yoast_seo_page = \filter_input( \INPUT_GET, 'page' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reason: We are not processing form information.
+		if ( isset( $_GET['page'] ) && \is_string( $_GET['page'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reason: We are not processing form information.
+			return \sanitize_text_field( \wp_unslash( $_GET['page'] ) );
 		}
 
-		return $current_yoast_seo_page;
+		return '';
 	}
 
 	/**
@@ -483,10 +476,11 @@ class Current_Page_Helper {
 	 * @return int The amoumt of queried terms.
 	 */
 	protected function count_queried_terms() {
-		$wp_query      = $this->wp_query_wrapper->get_main_query();
-		$term          = $wp_query->get_queried_object();
+		$wp_query = $this->wp_query_wrapper->get_main_query();
+		$term     = $wp_query->get_queried_object();
+
 		$queried_terms = $wp_query->tax_query->queried_terms;
-		if ( empty( $queried_terms[ $term->taxonomy ]['terms'] ) ) {
+		if ( \is_null( $term ) || empty( $queried_terms[ $term->taxonomy ]['terms'] ) ) {
 			return 0;
 		}
 

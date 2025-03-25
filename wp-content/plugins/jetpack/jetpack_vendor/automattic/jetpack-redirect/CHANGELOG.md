@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.3] - 2025-03-05
+### Changed
+- Internal updates.
+
+## [3.0.2] - 2025-02-24
+### Changed
+- Update dependencies.
+
+## [3.0.1] - 2024-11-25
+### Changed
+- Updated package dependencies. [#40258]
+
+## [3.0.0] - 2024-11-14
+### Removed
+- General: Update minimum PHP version to 7.2. [#40147]
+
+## [2.0.5] - 2024-11-04
+### Added
+- Enable test coverage. [#39961]
+
+## [2.0.4] - 2024-09-05
+### Changed
+- Update dependencies.
+
+## [2.0.3] - 2024-08-23
+### Changed
+- Updated package dependencies. [#39004]
+
+## [2.0.2] - 2024-04-25
+### Changed
+- Update dependencies.
+
+## [2.0.1] - 2024-03-12
+### Changed
+- Internal updates.
+
+## [2.0.0] - 2023-11-20
+### Changed
+- Replaced usage of strpos() with str_starts_with(). [#34135]
+- Updated required PHP version to >= 7.0. [#34192]
+
+## [1.7.27] - 2023-09-19
+
+- Minor internal updates.
+
+## [1.7.26] - 2023-08-23
+### Changed
+- Updated package dependencies. [#32605]
+
+## [1.7.25] - 2023-04-10
+### Added
+- Add Jetpack Autoloader package suggestion. [#29988]
+
+## [1.7.24] - 2023-02-20
+### Changed
+- Minor internal updates.
+
 ## [1.7.23] - 2023-01-11
 ### Changed
 - Updated package dependencies.
@@ -172,6 +229,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Create Jetpack Redirect package
 
+[3.0.3]: https://github.com/Automattic/jetpack-redirect/compare/v3.0.2...v3.0.3
+[3.0.2]: https://github.com/Automattic/jetpack-redirect/compare/v3.0.1...v3.0.2
+[3.0.1]: https://github.com/Automattic/jetpack-redirect/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/Automattic/jetpack-redirect/compare/v2.0.5...v3.0.0
+[2.0.5]: https://github.com/Automattic/jetpack-redirect/compare/v2.0.4...v2.0.5
+[2.0.4]: https://github.com/Automattic/jetpack-redirect/compare/v2.0.3...v2.0.4
+[2.0.3]: https://github.com/Automattic/jetpack-redirect/compare/v2.0.2...v2.0.3
+[2.0.2]: https://github.com/Automattic/jetpack-redirect/compare/v2.0.1...v2.0.2
+[2.0.1]: https://github.com/Automattic/jetpack-redirect/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/Automattic/jetpack-redirect/compare/v1.7.27...v2.0.0
+[1.7.27]: https://github.com/Automattic/jetpack-redirect/compare/v1.7.26...v1.7.27
+[1.7.26]: https://github.com/Automattic/jetpack-redirect/compare/v1.7.25...v1.7.26
+[1.7.25]: https://github.com/Automattic/jetpack-redirect/compare/v1.7.24...v1.7.25
+[1.7.24]: https://github.com/Automattic/jetpack-redirect/compare/v1.7.23...v1.7.24
 [1.7.23]: https://github.com/Automattic/jetpack-redirect/compare/v1.7.22...v1.7.23
 [1.7.22]: https://github.com/Automattic/jetpack-redirect/compare/v1.7.21...v1.7.22
 [1.7.21]: https://github.com/Automattic/jetpack-redirect/compare/v1.7.20...v1.7.21

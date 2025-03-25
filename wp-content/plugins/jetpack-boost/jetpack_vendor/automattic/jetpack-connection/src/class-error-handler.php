@@ -114,6 +114,7 @@ class Error_Handler {
 		'invalid_body_hash',
 		'invalid_nonce',
 		'signature_mismatch',
+		'invalid_connection_owner',
 	);
 
 	/**
@@ -135,11 +136,12 @@ class Error_Handler {
 
 		add_action( 'rest_api_init', array( $this, 'register_verify_error_endpoint' ) );
 
-		$this->handle_verified_errors();
+		// Handle verified errors on admin pages.
+		add_action( 'admin_init', array( $this, 'handle_verified_errors' ) );
 
 		// If the site gets reconnected, clear errors.
 		add_action( 'jetpack_site_registered', array( $this, 'delete_all_errors' ) );
-		add_action( 'jetpack_get_site_data_success', array( $this, 'delete_all_errors' ) );
+		add_action( 'jetpack_get_site_data_success', array( $this, 'delete_all_api_errors' ) );
 		add_filter( 'jetpack_connection_disconnect_site_wpcom', array( $this, 'delete_all_errors_and_return_unfiltered_value' ) );
 		add_filter( 'jetpack_connection_delete_all_tokens', array( $this, 'delete_all_errors_and_return_unfiltered_value' ) );
 		add_action( 'jetpack_unlinked_user', array( $this, 'delete_all_errors' ) );
@@ -170,6 +172,7 @@ class Error_Handler {
 				case 'signature_mismatch':
 				case 'no_user_tokens':
 				case 'no_token_for_user':
+				case 'invalid_connection_owner':
 					add_action( 'admin_notices', array( $this, 'generic_admin_notice_error' ) );
 					add_action( 'react_connection_errors_initial_state', array( $this, 'jetpack_react_dashboard_error' ) );
 					$this->error_code = $error_code;
@@ -277,7 +280,8 @@ class Error_Handler {
 		$stored_errors[ $error_code ][ $user_id ] = $error_array;
 
 		// Let's store a maximum of 5 different user ids for each error code.
-		if ( count( $stored_errors[ $error_code ] ) > 5 ) {
+		$error_code_count = is_countable( $stored_errors[ $error_code ] ) ? count( $stored_errors[ $error_code ] ) : 0;
+		if ( $error_code_count > 5 ) {
 			// array_shift will destroy keys here because they are numeric, so manually remove first item.
 			$keys = array_keys( $stored_errors[ $error_code ] );
 			unset( $stored_errors[ $error_code ][ $keys[0] ] );
@@ -308,7 +312,7 @@ class Error_Handler {
 
 		$signature_details = $data['signature_details'];
 
-		if ( ! isset( $signature_details['token'] ) || empty( $signature_details['token'] ) ) {
+		if ( ! isset( $signature_details['token'] ) ) {
 			return false;
 		}
 
@@ -389,12 +393,14 @@ class Error_Handler {
 	 * @return string $the user id or `invalid` if user id not present.
 	 */
 	public function get_user_id_from_token( $token ) {
-		$parsed_token = explode( ':', wp_unslash( $token ) );
+		$user_id = 'invalid';
 
-		if ( isset( $parsed_token[2] ) && ctype_digit( $parsed_token[2] ) ) {
-			$user_id = $parsed_token[2];
-		} else {
-			$user_id = 'invalid';
+		if ( $token ) {
+			$parsed_token = explode( ':', wp_unslash( $token ) );
+
+			if ( isset( $parsed_token[2] ) && ctype_digit( $parsed_token[2] ) ) {
+				$user_id = $parsed_token[2];
+			}
 		}
 
 		return $user_id;
@@ -480,6 +486,47 @@ class Error_Handler {
 	public function delete_all_errors() {
 		$this->delete_stored_errors();
 		$this->delete_verified_errors();
+	}
+
+	/**
+	 * Delete all stored and verified API errors from the database, leave the non-API errors intact.
+	 *
+	 * @since 1.54.0
+	 *
+	 * @return void
+	 */
+	public function delete_all_api_errors() {
+		$type_filter = function ( $errors ) {
+			if ( is_array( $errors ) ) {
+				foreach ( $errors as $key => $error ) {
+					if ( ! empty( $error['error_type'] ) && in_array( $error['error_type'], array( 'xmlrpc', 'rest' ), true ) ) {
+						unset( $errors[ $key ] );
+					}
+				}
+			}
+
+			return count( $errors ) ? $errors : null;
+		};
+
+		$stored_errors = $this->get_stored_errors();
+		if ( is_array( $stored_errors ) && count( $stored_errors ) ) {
+			$stored_errors = array_filter( array_map( $type_filter, $stored_errors ) );
+			if ( count( $stored_errors ) ) {
+				update_option( static::STORED_ERRORS_OPTION, $stored_errors );
+			} else {
+				delete_option( static::STORED_ERRORS_OPTION );
+			}
+		}
+
+		$verified_errors = $this->get_verified_errors();
+		if ( is_array( $verified_errors ) && count( $verified_errors ) ) {
+			$verified_errors = array_filter( array_map( $type_filter, $verified_errors ) );
+			if ( count( $verified_errors ) ) {
+				update_option( static::STORED_VERIFIED_ERRORS_OPTION, $verified_errors );
+			} else {
+				delete_option( static::STORED_VERIFIED_ERRORS_OPTION );
+			}
+		}
 	}
 
 	/**
@@ -644,7 +691,7 @@ class Error_Handler {
 		/**
 		 * Fires inside the admin_notices hook just before displaying the error message for a broken connection.
 		 *
-		 * If you want to disable the default message from being displayed, return an emtpy value in the jetpack_connection_error_notice_message filter.
+		 * If you want to disable the default message from being displayed, return an empty value in the jetpack_connection_error_notice_message filter.
 		 *
 		 * @since 8.9.0
 		 *
@@ -656,11 +703,15 @@ class Error_Handler {
 			return;
 		}
 
-		?>
-		<div class="notice notice-error is-dismissible jetpack-message jp-connect" style="display:block !important;">
-			<p><?php echo esc_html( $message ); ?></p>
-		</div>
-		<?php
+		wp_admin_notice(
+			esc_html( $message ),
+			array(
+				'type'               => 'error',
+				'dismissible'        => true,
+				'additional_classes' => array( 'jetpack-message', 'jp-connect' ),
+				'attributes'         => array( 'style' => 'display:block !important;' ),
+			)
+		);
 	}
 
 	/**
@@ -726,5 +777,4 @@ class Error_Handler {
 
 		$this->report_error( $error, false, true );
 	}
-
 }

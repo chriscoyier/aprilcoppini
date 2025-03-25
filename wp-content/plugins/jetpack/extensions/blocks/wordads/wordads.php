@@ -10,6 +10,7 @@
 namespace Automattic\Jetpack\Extensions;
 
 use Automattic\Jetpack\Blocks;
+use Automattic\Jetpack\Current_Plan as Jetpack_Plan;
 use Jetpack;
 use Jetpack_Gutenberg;
 
@@ -19,8 +20,17 @@ use Jetpack_Gutenberg;
  * @since 7.1.0
  */
 class WordAds {
-	const FEATURE_NAME = 'wordads';
-	const BLOCK_NAME   = 'jetpack/' . self::FEATURE_NAME;
+	/**
+	 * Mapping array of gutenberg ad snippet with the WordAds_Smart formats.
+	 *
+	 * @var array
+	 */
+	private static $gutenberg_ad_snippet_x_smart_format = array(
+		'gutenberg_300x250' => 'gutenberg_rectangle',
+		'gutenberg_728x90'  => 'gutenberg_leaderboard',
+		'gutenberg_320x50'  => 'gutenberg_mobile_leaderboard',
+		'gutenberg_160x600' => 'gutenberg_skyscraper',
+	);
 
 	/**
 	 * Check if site is on WP.com Simple.
@@ -30,6 +40,7 @@ class WordAds {
 	private static function is_wpcom() {
 		return defined( 'IS_WPCOM' ) && IS_WPCOM;
 	}
+
 	/**
 	 * Check if the WordAds module is active.
 	 *
@@ -49,7 +60,7 @@ class WordAds {
 			return has_any_blog_stickers( array( 'wordads', 'wordads-approved', 'wordads-approved-misfits' ), get_current_blog_id() );
 		}
 
-		return self::is_jetpack_module_active();
+		return Jetpack_Plan::supports( 'wordads' );
 	}
 
 	/**
@@ -58,7 +69,7 @@ class WordAds {
 	public static function register() {
 		if ( self::is_available() ) {
 			Blocks::jetpack_register_block(
-				self::BLOCK_NAME,
+				__DIR__,
 				array(
 					'render_callback' => array( __CLASS__, 'gutenblock_render' ),
 				)
@@ -70,12 +81,14 @@ class WordAds {
 	 * Set if the WordAds block is available.
 	 */
 	public static function set_availability() {
+		$block_name = 'wordads';
+
 		if ( ! self::is_available() ) {
-			Jetpack_Gutenberg::set_extension_unavailable( self::BLOCK_NAME, 'WordAds unavailable' );
+			Jetpack_Gutenberg::set_extension_unavailable( $block_name, 'WordAds unavailable' );
 			return;
 		}
 		// Make the block available. Just in case it wasn't registered before.
-		Jetpack_Gutenberg::set_extension_available( self::BLOCK_NAME );
+		Jetpack_Gutenberg::set_extension_available( $block_name );
 	}
 
 	/**
@@ -87,6 +100,11 @@ class WordAds {
 	 */
 	public static function gutenblock_render( $attr ) {
 		global $wordads;
+
+		/** If the WordAds module is not active, don't render the block. */
+		if ( ! self::is_jetpack_module_active() ) {
+			return '';
+		}
 
 		/** This filter is already documented in modules/wordads/class-wordads.php `insert_ad()` */
 		if (
@@ -121,10 +139,35 @@ class WordAds {
 			$format = $attr['format'];
 		}
 
-		$height  = $ad_tag_ids[ $format ]['height'];
-		$width   = $ad_tag_ids[ $format ]['width'];
-		$snippet = $wordads->get_ad_snippet( $section_id, $height, $width, 'gutenberg', $wordads->get_solo_unit_css() );
-		return $wordads->get_ad_div( 'inline', $snippet, array( $align ) );
+		$height   = $ad_tag_ids[ $format ]['height'];
+		$width    = $ad_tag_ids[ $format ]['width'];
+		$location = 'gutenberg';
+		$snippet  = $wordads->get_ad_snippet( $section_id, $height, $width, $location, $wordads->get_solo_unit_css() );
+
+		$key          = "{$location}_{$width}x{$height}";
+		$smart_format = self::$gutenberg_ad_snippet_x_smart_format[ $key ] ?? null;
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$is_watl_enabled = $smart_format && ( isset( $_GET[ $smart_format ] ) && 'true' === $_GET[ $smart_format ] );
+		$ad_div          = $wordads->get_ad_div( 'inline', $snippet, array( $align ) );
+		// Render IPW div if WATL is not enabled.
+		if ( ! $is_watl_enabled ) {
+			return $ad_div;
+		}
+
+		// Remove linebreaks and sanitize.
+		$snippet = esc_js( str_replace( array( "\n", "\t", "\r" ), '', $ad_div ) );
+
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
+		$fallback_snippet = <<<HTML
+			<script>
+				var sas_fallback = sas_fallback || [];
+				sas_fallback.push(
+					{ tag: "$snippet", type: '$smart_format' }
+				);
+			</script>
+HTML;
+
+		return $fallback_snippet . $wordads->get_watl_ad_html_tag( $smart_format );
 	}
 }
 

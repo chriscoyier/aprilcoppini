@@ -1,5 +1,7 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+use Automattic\Jetpack\Image_CDN\Image_CDN_Core;
+
 /**
  * For back-compat, the final widget class must be named
  * Jetpack_Display_Posts_Widget.
@@ -150,7 +152,7 @@ abstract class Jetpack_Display_Posts_Widget__Base extends WP_Widget {
 		 * Show only as much posts as we need. If we have less than configured amount,
 		 * we must show only that much posts.
 		 */
-		$number_of_posts = min( $instance['number_of_posts'], count( $posts_list ) );
+		$number_of_posts = min( $instance['number_of_posts'], is_countable( $posts_list ) ? count( $posts_list ) : 0 );
 
 		for ( $i = 0; $i < $number_of_posts; $i++ ) {
 			$single_post = $posts_list[ $i ];
@@ -175,7 +177,7 @@ abstract class Jetpack_Display_Posts_Widget__Base extends WP_Widget {
 				 * @param array $args Array of Photon Parameters.
 				 */
 				$image_params = apply_filters( 'jetpack_display_posts_widget_image_params', array() );
-				$content     .= '<a title="' . esc_attr( $post_title ) . '" href="' . esc_url( $single_post['url'] ) . '"' . $target . '><img src="' . jetpack_photon_url( $featured_image, $image_params ) . '" alt="' . esc_attr( $post_title ) . '"/></a>';
+				$content     .= '<a title="' . esc_attr( $post_title ) . '" href="' . esc_url( $single_post['url'] ) . '"' . $target . '><img src="' . Image_CDN_Core::cdn_url( $featured_image, $image_params ) . '" alt="' . esc_attr( $post_title ) . '"/></a>';
 			}
 
 			if ( true === $instance['show_excerpts'] ) {
@@ -353,7 +355,7 @@ abstract class Jetpack_Display_Posts_Widget__Base extends WP_Widget {
 		if ( ! empty( $instance['url'] ) ) {
 			$blog_data = $this->fetch_blog_data( $instance['url'], array(), true );
 
-			if ( is_wp_error( $blog_data['site_info']['error'] ) && 'www.' === substr( $instance['url'], 0, 4 ) ) {
+			if ( is_wp_error( $blog_data['site_info']['error'] ) && str_starts_with( $instance['url'], 'www.' ) ) {
 				$blog_data = $this->fetch_blog_data( substr( $instance['url'], 4 ), array(), true );
 
 				if ( ! is_wp_error( $blog_data['site_info']['error'] ) ) {

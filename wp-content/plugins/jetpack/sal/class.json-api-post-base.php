@@ -359,7 +359,7 @@ abstract class SAL_Post {
 	}
 
 	/**
-	 * Returns an array with details of the posts revisions, or false if 'edit' isn't the current post request context.
+	 * Returns an array with post revision ids, or false if 'edit' isn't the current post request context.
 	 *
 	 * @return bool|array
 	 */
@@ -368,14 +368,16 @@ abstract class SAL_Post {
 			return false;
 		}
 
-		$revisions      = array();
-		$post_revisions = wp_get_post_revisions( $this->post->ID );
+		$args = array(
+			'posts_per_page' => -1,
+			'post_type'      => 'revision',
+			'post_status'    => 'any',
+			'fields'         => 'ids',  // Fetch only the IDs.
+			'post_parent'    => $this->post->ID,
+		);
 
-		foreach ( $post_revisions as $_post ) {
-			$revisions[] = $_post->ID;
-		}
-
-		return $revisions;
+		$revision_query = new WP_Query( $args );
+		return $revision_query->posts;  // This returns an array of revision IDs.
 	}
 
 	/**
@@ -423,6 +425,7 @@ abstract class SAL_Post {
 		if ( $publicize ) {
 			foreach ( $publicize as $service => $data ) {
 				switch ( $service ) {
+					// @todo explore removing once Twitter is removed from Publicize.
 					case 'twitter':
 						foreach ( $data as $datum ) {
 							$publicize_urls[] = esc_url_raw( "https://twitter.com/{$datum['user_id']}/status/{$datum['post_id']}" );
@@ -750,7 +753,7 @@ abstract class SAL_Post {
 		$old_pages = $pages;
 		$old_page  = $page;
 
-		$content = join( "\n\n", $pages );
+		$content = implode( "\n\n", $pages );
 		$content = preg_replace( '/<!--more(.*?)?-->/', '', $content );
 		// phpcs:disable WordPress.WP.GlobalVariablesOverride.Prohibited -- Assignment to globals is intentional
 		$pages = array( $content );
@@ -788,10 +791,10 @@ abstract class SAL_Post {
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName
 		if ( defined( 'IS_WPCOM' ) && IS_WPCOM ) {
 			$active_blog = get_active_blog_for_user( $user->ID );
-			$site_id     = $active_blog->blog_id;
-			$profile_URL = "https://en.gravatar.com/{$user->user_login}";
+			$site_id     = $active_blog->blog_id ?? -1;
+			$profile_URL = "https://gravatar.com/{$user->user_login}";
 		} else {
-			$profile_URL = 'https://en.gravatar.com/' . md5( strtolower( trim( $user->user_email ) ) );
+			$profile_URL = 'https://gravatar.com/' . md5( strtolower( trim( $user->user_email ) ) );
 			$site_id     = -1;
 		}
 
@@ -822,10 +825,12 @@ abstract class SAL_Post {
 	 * @param string $email The user's email.
 	 * @param int    $avatar_size The size of the avatar in pixels.
 	 *
+	 * @todo Provide a non-WP.com option.
+	 *
 	 * @return string
 	 */
 	protected function get_avatar_url( $email, $avatar_size = 96 ) {
-		$avatar_url = wpcom_get_avatar_url( $email, $avatar_size, '', true );
+		$avatar_url = function_exists( 'wpcom_get_avatar_url' ) ? wpcom_get_avatar_url( $email, $avatar_size ) : '';
 		if ( ! $avatar_url || is_wp_error( $avatar_url ) ) {
 			return '';
 		}
@@ -914,7 +919,7 @@ abstract class SAL_Post {
 
 		$file      = basename( wp_get_attachment_url( $media_item->ID ) );
 		$file_info = pathinfo( $file );
-		$ext       = $file_info['extension'];
+		$ext       = isset( $file_info['extension'] ) ? $file_info['extension'] : '';
 
 		$response = array(
 			'ID'          => $media_item->ID,
@@ -935,7 +940,7 @@ abstract class SAL_Post {
 
 		if ( in_array( $ext, array( 'jpg', 'jpeg', 'png', 'gif', 'webp' ), true ) ) {
 			$metadata = wp_get_attachment_metadata( $media_item->ID );
-			if ( isset( $metadata['height'], $metadata['width'] ) ) {
+			if ( isset( $metadata['height'] ) && isset( $metadata['width'] ) ) {
 				$response['height'] = $metadata['height'];
 				$response['width']  = $metadata['width'];
 			}
@@ -975,13 +980,21 @@ abstract class SAL_Post {
 
 		if ( in_array( $ext, array( 'ogv', 'mp4', 'mov', 'wmv', 'avi', 'mpg', '3gp', '3g2', 'm4v' ), true ) ) {
 			$metadata = wp_get_attachment_metadata( $media_item->ID );
-			if ( isset( $metadata['height'], $metadata['width'] ) ) {
+			if ( isset( $metadata['height'] ) && isset( $metadata['width'] ) ) {
 				$response['height'] = $metadata['height'];
 				$response['width']  = $metadata['width'];
 			}
 
 			if ( isset( $metadata['length'] ) ) {
 				$response['length'] = $metadata['length'];
+			}
+
+			if ( empty( $response['length'] ) && isset( $metadata['duration'] ) ) {
+				$response['length'] = (int) $metadata['duration'];
+			}
+
+			if ( empty( $response['length'] ) && isset( $metadata['videopress']['duration'] ) ) {
+				$response['length'] = ceil( $metadata['videopress']['duration'] / 1000 );
 			}
 
 			// add VideoPress info.
@@ -1004,11 +1017,9 @@ abstract class SAL_Post {
 					}
 				}
 
-				$response['videopress_guid']            = $info->guid;
+				$response['videopress_guid']            = $info->guid ?? null;
 				$response['videopress_processing_done'] = true;
-				if ( '0000-00-00 00:00:00' === $info->finish_date_gmt ) {
-					$response['videopress_processing_done'] = false;
-				}
+				$response['videopress_processing_done'] = isset( $info->finish_date_gmt ) && '0000-00-00 00:00:00' !== $info->finish_date_gmt ? $info->finish_date_gmt : false;
 			}
 		}
 

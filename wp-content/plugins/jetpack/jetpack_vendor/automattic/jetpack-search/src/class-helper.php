@@ -438,6 +438,10 @@ class Helper {
 					}
 
 					if ( 'filters' === $k ) {
+						if ( ! is_countable( $new_instance['filters'] ) || ! is_countable( $old_instance['filters'] ) ) {
+							continue;
+						}
+
 						if ( count( $new_instance['filters'] ) !== count( $old_instance['filters'] ) ) {
 							$widget = $new_instance;
 							break;
@@ -750,7 +754,7 @@ class Helper {
 	 *
 	 * @since 8.9.0
 	 *
-	 * @param any $value from the customizer form.
+	 * @param mixed $value from the customizer form.
 	 * @return string either '0' or '1'.
 	 */
 	public static function sanitize_checkbox_value( $value ) {
@@ -762,7 +766,7 @@ class Helper {
 	 *
 	 * @since 8.9.0
 	 *
-	 * @param any $value from the database.
+	 * @param mixed $value from the database.
 	 * @return boolean
 	 */
 	public static function sanitize_checkbox_value_for_js( $value ) {
@@ -836,7 +840,7 @@ class Helper {
 		);
 		$unexcluded_post_types = array_diff( $post_types, $excluded_post_types );
 		// NOTE: If all post types are being excluded, ignore the option value.
-		if ( count( $unexcluded_post_types ) === 0 ) {
+		if ( array() === $unexcluded_post_types ) {
 			$excluded_post_types = array();
 		}
 
@@ -845,41 +849,53 @@ class Helper {
 		$is_jetpack_photon_enabled = method_exists( 'Jetpack', 'is_module_active' ) && Jetpack::is_module_active( 'photon' );
 
 		$options = array(
-			'overlayOptions'        => array(
-				'colorTheme'        => get_option( $prefix . 'color_theme', 'light' ),
-				'enableInfScroll'   => get_option( $prefix . 'inf_scroll', '1' ) === '1',
-				'enableSort'        => get_option( $prefix . 'enable_sort', '1' ) === '1',
-				'highlightColor'    => get_option( $prefix . 'highlight_color', '#FFC' ),
-				'overlayTrigger'    => get_option( $prefix . 'overlay_trigger', Options::DEFAULT_OVERLAY_TRIGGER ),
-				'resultFormat'      => get_option( $prefix . 'result_format', Options::RESULT_FORMAT_MINIMAL ),
-				'showPoweredBy'     => ( new Plan() )->is_free_plan() || ( get_option( $prefix . 'show_powered_by', '1' ) === '1' ),
+			'overlayOptions'              => array(
+				'colorTheme'                  => get_option( $prefix . 'color_theme', 'light' ),
+				'enableInfScroll'             => get_option( $prefix . 'inf_scroll', '1' ) === '1',
+				'enableFilteringOpensOverlay' => get_option( $prefix . 'filtering_opens_overlay', '1' ) === '1',
+				'enablePostDate'              => get_option( $prefix . 'show_post_date', '1' ) === '1',
+				'enableSort'                  => get_option( $prefix . 'enable_sort', '1' ) === '1',
+				'highlightColor'              => get_option( $prefix . 'highlight_color', '#FFC' ),
+				'overlayTrigger'              => get_option( $prefix . 'overlay_trigger', Options::DEFAULT_OVERLAY_TRIGGER ),
+				'resultFormat'                => get_option( $prefix . 'result_format', Options::RESULT_FORMAT_MINIMAL ),
+				'showPoweredBy'               => ( new Plan() )->is_free_plan() || ( get_option( $prefix . 'show_powered_by', '1' ) === '1' ),
 
 				// These options require kicking off a new search.
-				'defaultSort'       => get_option( $prefix . 'default_sort', 'relevance' ),
-				'excludedPostTypes' => $excluded_post_types,
+				'defaultSort'                 => get_option( $prefix . 'default_sort', 'relevance' ),
+				'excludedPostTypes'           => $excluded_post_types,
 			),
 
 			// core config.
-			'homeUrl'               => home_url(),
-			'locale'                => str_replace( '_', '-', self::is_valid_locale( get_locale() ) ? get_locale() : 'en_US' ),
-			'postsPerPage'          => $posts_per_page,
-			'siteId'                => self::get_wpcom_site_id(),
-			'postTypes'             => $post_type_labels,
-			'webpackPublicPath'     => plugins_url( '/build/instant-search/', __DIR__ ),
-			'isPhotonEnabled'       => ( $is_wpcom || $is_jetpack_photon_enabled ) && ! $is_private_site,
-			'isFreePlan'            => ( new Plan() )->is_free_plan(),
+			'homeUrl'                     => home_url(),
+			'locale'                      => str_replace( '_', '-', self::is_valid_locale( get_locale() ) ? get_locale() : 'en_US' ),
+			'postsPerPage'                => $posts_per_page,
+			'siteId'                      => self::get_wpcom_site_id(),
+			'postTypes'                   => $post_type_labels,
+			'webpackPublicPath'           => plugins_url( '/build/instant-search/', __DIR__ ),
+			'isPhotonEnabled'             => ( $is_wpcom || $is_jetpack_photon_enabled ) && ! $is_private_site,
+			'isFreePlan'                  => ( new Plan() )->is_free_plan(),
 
 			// config values related to private site support.
-			'apiRoot'               => esc_url_raw( rest_url() ),
-			'apiNonce'              => wp_create_nonce( 'wp_rest' ),
-			'isPrivateSite'         => $is_private_site,
-			'isWpcom'               => $is_wpcom,
+			'apiRoot'                     => esc_url_raw( rest_url() ),
+			'apiNonce'                    => wp_create_nonce( 'wp_rest' ),
+			'isPrivateSite'               => $is_private_site,
+			'isWpcom'                     => $is_wpcom,
 
 			// widget info.
-			'hasOverlayWidgets'     => count( $overlay_widget_ids ) > 0,
-			'widgets'               => array_values( $widgets ),
-			'widgetsOutsideOverlay' => array_values( $widgets_outside_overlay ),
-			'hasNonSearchWidgets'   => $has_non_search_widgets,
+			'hasOverlayWidgets'           => is_countable( $overlay_widget_ids ) && count( $overlay_widget_ids ) > 0,
+			'widgets'                     => array_values( $widgets ),
+			'widgetsOutsideOverlay'       => array_values( $widgets_outside_overlay ),
+			'hasNonSearchWidgets'         => $has_non_search_widgets,
+			/**
+			 * Whether to prevent tracking cookie reset. More information `pbmxuV-39H-p2`.
+			 *
+			 * @module search
+			 *
+			 * @since 0.41.0
+			 *
+			 * @param bool Prevent cookie reset for automattic sites as default value.
+			 */
+			'preventTrackingCookiesReset' => apply_filters( 'jetpack_instant_search_prevent_tracking_cookies_reset', function_exists( 'is_automattic' ) && is_automattic() ),
 		);
 
 		/**

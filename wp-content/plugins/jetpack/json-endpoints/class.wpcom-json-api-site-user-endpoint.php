@@ -25,7 +25,7 @@ new WPCOM_JSON_API_Site_User_Endpoint(
 		"name": "binarysmash",
 		"URL": "http:\/\/binarysmash.wordpress.com",
 		"avatar_URL": "http:\/\/0.gravatar.com\/avatar\/a178ebb1731d432338e6bb0158720fcc?s=96&d=identicon&r=G",
-		"profile_URL": "http:\/\/en.gravatar.com\/binarysmash",
+		"profile_URL": "http:\/\/gravatar.com\/binarysmash",
 		"roles": [ "administrator" ]
 	}',
 	)
@@ -56,7 +56,7 @@ new WPCOM_JSON_API_Site_User_Endpoint(
 		"name": "binarysmash",
 		"URL": "http:\/\/binarysmash.wordpress.com",
 		"avatar_URL": "http:\/\/0.gravatar.com\/avatar\/a178ebb1731d432338e6bb0158720fcc?s=96&d=identicon&r=G",
-		"profile_URL": "http:\/\/en.gravatar.com\/binarysmash",
+		"profile_URL": "http:\/\/gravatar.com\/binarysmash",
 		"roles": [ "administrator" ]
 	}',
 	)
@@ -97,7 +97,7 @@ new WPCOM_JSON_API_Site_User_Endpoint(
 		"name": "binarysmash",
 		"URL": "http:\/\/binarysmash.wordpress.com",
 		"avatar_URL": "http:\/\/0.gravatar.com\/avatar\/a178ebb1731d432338e6bb0158720fcc?s=96&d=identicon&r=G",
-		"profile_URL": "http:\/\/en.gravatar.com\/binarysmash",
+		"profile_URL": "http:\/\/gravatar.com\/binarysmash",
 		"roles": [ "administrator" ]
 	}',
 	)
@@ -144,12 +144,13 @@ class WPCOM_JSON_API_Site_User_Endpoint extends WPCOM_JSON_API_Endpoint {
 		if ( is_wp_error( $blog_id ) ) {
 			return $blog_id;
 		}
+		// @phan-suppress-next-line PhanDeprecatedFunction -- @todo Switch to current_user_can_for_site when we drop support for WP 6.6.
 		if ( ! current_user_can_for_blog( $blog_id, 'list_users' ) ) {
 			return new WP_Error( 'unauthorized', 'User cannot view users for specified site', 403 );
 		}
 
 		// Get the user by ID or login
-		$get_by = false !== strpos( $path, '/users/login:' ) ? 'login' : 'id';
+		$get_by = str_contains( $path, '/users/login:' ) ? 'login' : 'id';
 		$user   = get_user_by( $get_by, $user_id );
 
 		if ( ! $user ) {
@@ -163,6 +164,7 @@ class WPCOM_JSON_API_Site_User_Endpoint extends WPCOM_JSON_API_Endpoint {
 		if ( 'GET' === $this->api->method ) {
 			return $this->get_user( $user->ID );
 		} elseif ( 'POST' === $this->api->method ) {
+			// @phan-suppress-next-line PhanDeprecatedFunction -- @todo Switch to current_user_can_for_site when we drop support for WP 6.6.
 			if ( ! current_user_can_for_blog( $blog_id, 'promote_users' ) ) {
 				return new WP_Error( 'unauthorized_no_promote_cap', 'User cannot promote users for specified site', 403 );
 			}
@@ -184,6 +186,9 @@ class WPCOM_JSON_API_Site_User_Endpoint extends WPCOM_JSON_API_Endpoint {
 		if ( $the_user && ! is_wp_error( $the_user ) ) {
 			$userdata        = get_userdata( $user_id );
 			$the_user->roles = ! is_wp_error( $userdata ) ? array_values( $userdata->roles ) : array();
+			if ( is_multisite() ) {
+				$the_user->is_super_admin = user_can( $the_user->ID, 'manage_network' );
+			}
 		}
 
 		return $the_user;
@@ -260,5 +265,4 @@ class WPCOM_JSON_API_Site_User_Endpoint extends WPCOM_JSON_API_Endpoint {
 		}
 		return $this->get_user( $user_id );
 	}
-
 }

@@ -102,6 +102,20 @@ abstract class WPCOM_JSON_API_Menus_Translator {
 	protected $filters = array();
 
 	/**
+	 * False if $menus was an array on construct, true otherwise.
+	 *
+	 * @var bool
+	 */
+	public $is_single_menu;
+
+	/**
+	 * A menu or array of menus.
+	 *
+	 * @var mixed
+	 */
+	public $menus;
+
+	/**
 	 * Class constructor.
 	 *
 	 * @param mixed $menus - a menu or list of menus.
@@ -766,7 +780,6 @@ class WPCOM_JSON_API_Menus_Complexify extends WPCOM_JSON_API_Menus_Translator {
 			array_key_exists( $location_name, $existing_locations ) ||
 			in_array( $location_name, $widget_location_names, true );
 	}
-
 }
 
 new WPCOM_JSON_API_Menus_New_Menu_Endpoint(

@@ -64,7 +64,7 @@ class Plan {
 	/**
 	 * Get plan info.
 	 *
-	 * @param {bool} $force_refresh - Default to false. Set true to load from WPCOM.
+	 * @param bool $force_refresh - Default to false. Set true to load from WPCOM.
 	 */
 	public function get_plan_info( $force_refresh = false ) {
 		if ( $force_refresh ) {
@@ -91,7 +91,7 @@ class Plan {
 	 */
 	public function supports_instant_search() {
 		$plan_info = $this->get_plan_info();
-		return ( isset( $plan_info['supports_instant_search'] ) && $plan_info['supports_instant_search'] ) || $this->has_jetpack_search_product();
+		return ( isset( $plan_info['supports_instant_search'] ) && $plan_info['supports_instant_search'] );
 	}
 
 	/**
@@ -99,7 +99,7 @@ class Plan {
 	 */
 	public function supports_search() {
 		$plan_info = $this->get_plan_info();
-		return ( isset( $plan_info['supports_search'] ) && $plan_info['supports_search'] ) || $this->has_jetpack_search_product();
+		return ( isset( $plan_info['supports_search'] ) && $plan_info['supports_search'] );
 	}
 
 	/**
@@ -174,5 +174,4 @@ class Plan {
 		update_option( self::JETPACK_SEARCH_PLAN_INFO_OPTION_KEY, $plan_info );
 		return true;
 	}
-
 }

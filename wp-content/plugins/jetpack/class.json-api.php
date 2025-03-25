@@ -175,8 +175,7 @@ class WPCOM_JSON_API {
 	 */
 	public static function init( $method = null, $url = null, $post_body = null ) {
 		if ( ! self::$self ) {
-			$class      = function_exists( 'get_called_class' ) ? get_called_class() : __CLASS__; // phpcs:ignore PHPCompatibility.PHP.NewFunctions.get_called_classFound
-			self::$self = new $class( $method, $url, $post_body );
+			self::$self = new static( $method, $url, $post_body );
 		}
 		return self::$self;
 	}
@@ -203,12 +202,25 @@ class WPCOM_JSON_API {
 	}
 
 	/**
-	 * Determine if a string is truthy.
+	 * Determine if a string is truthy. If it's not a string, which can happen with
+	 * not well-formed data coming from Jetpack sites, we still consider it a truthy value.
 	 *
-	 * @param string $value "1", "t", and "true" (case insensitive) are falsey, everything else isn't.
+	 * @param mixed $value true, 1, "1", "t", and "true" (case insensitive) are truthy, everything else isn't.
 	 * @return bool
 	 */
 	public static function is_truthy( $value ) {
+		if ( true === $value ) {
+			return true;
+		}
+
+		if ( 1 === $value ) {
+			return true;
+		}
+
+		if ( ! is_string( $value ) ) {
+			return false;
+		}
+
 		switch ( strtolower( (string) $value ) ) {
 			case '1':
 			case 't':
@@ -222,10 +234,22 @@ class WPCOM_JSON_API {
 	/**
 	 * Determine if a string is falsey.
 	 *
-	 * @param string $value "0", "f", and "false" (case insensitive) are falsey, everything else isn't.
+	 * @param mixed $value false, 0, "0", "f", and "false" (case insensitive) are falsey, everything else isn't.
 	 * @return bool
 	 */
 	public static function is_falsy( $value ) {
+		if ( false === $value ) {
+			return true;
+		}
+
+		if ( 0 === $value ) {
+			return true;
+		}
+
+		if ( ! is_string( $value ) ) {
+			return false;
+		}
+
 		switch ( strtolower( (string) $value ) ) {
 			case '0':
 			case 'f':
@@ -289,13 +313,13 @@ class WPCOM_JSON_API {
 					$this->content_type = filter_var( wp_unslash( $_SERVER['HTTP_CONTENT_TYPE'] ) );
 				} elseif ( ! empty( $_SERVER['CONTENT_TYPE'] ) ) {
 					$this->content_type = filter_var( wp_unslash( $_SERVER['CONTENT_TYPE'] ) );
-				} elseif ( '{' === $this->post_body[0] ) {
+				} elseif ( isset( $this->post_body[0] ) && '{' === $this->post_body[0] ) {
 					$this->content_type = 'application/json';
 				} else {
 					$this->content_type = 'application/x-www-form-urlencoded';
 				}
 
-				if ( 0 === strpos( strtolower( $this->content_type ), 'multipart/' ) ) {
+				if ( str_starts_with( strtolower( $this->content_type ), 'multipart/' ) ) {
 					// phpcs:ignore WordPress.Security.NonceVerification.Missing
 					$this->post_body    = http_build_query( stripslashes_deep( $_POST ) );
 					$this->files        = $_FILES;
@@ -358,6 +382,17 @@ class WPCOM_JSON_API {
 	}
 
 	/**
+	 * Checks if the current request is authorized with an upload token.
+	 * This method is overridden by a child class in WPCOM.
+	 *
+	 * @since 13.5
+	 * @return boolean
+	 */
+	public function is_authorized_with_upload_token() {
+		return false;
+	}
+
+	/**
 	 * Serve.
 	 *
 	 * @param bool $exit Whether to exit.
@@ -400,9 +435,10 @@ class WPCOM_JSON_API {
 
 		// Normalize path and extract API version.
 		$this->path = untrailingslashit( $this->path );
-		preg_match( '#^/rest/v(\d+(\.\d+)*)#', $this->path, $matches );
-		$this->path    = substr( $this->path, strlen( $matches[0] ) );
-		$this->version = $matches[1];
+		if ( preg_match( '#^/rest/v(\d+(\.\d+)*)#', $this->path, $matches ) ) {
+			$this->path    = substr( $this->path, strlen( $matches[0] ) );
+			$this->version = $matches[1];
+		}
 
 		$allowed_methods = array( 'GET', 'POST' );
 		$four_oh_five    = false;
@@ -463,7 +499,7 @@ class WPCOM_JSON_API {
 				$endpoint_path = untrailingslashit( $endpoint_path );
 				if ( $is_help ) {
 					// Truncate path at help depth.
-					$endpoint_path = join( '/', array_slice( explode( '/', $endpoint_path ), 0, $depth ) );
+					$endpoint_path = implode( '/', array_slice( explode( '/', $endpoint_path ), 0, $depth ) );
 				}
 
 				// Generate regular expression from sprintf().
@@ -501,7 +537,7 @@ class WPCOM_JSON_API {
 				$allowed_methods[] = $matching_endpoint[0]->method;
 			}
 
-			header( 'Allow: ' . strtoupper( join( ',', array_unique( $allowed_methods ) ) ) );
+			header( 'Allow: ' . strtoupper( implode( ',', array_unique( $allowed_methods ) ) ) );
 			return $this->output(
 				405,
 				array(
@@ -537,7 +573,7 @@ class WPCOM_JSON_API {
 					}
 				}
 			}
-			exit;
+			exit( 0 );
 		}
 
 		if ( $endpoint->in_testing && ! WPCOM_JSON_API__DEBUG ) {
@@ -618,7 +654,7 @@ class WPCOM_JSON_API {
 		// In case output() was called before the callback returned.
 		if ( $this->did_output ) {
 			if ( $this->exit ) {
-				exit;
+				exit( 0 );
 			}
 			return $content_type;
 		}
@@ -648,7 +684,7 @@ class WPCOM_JSON_API {
 			}
 			echo $response; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			if ( $this->exit ) {
-				exit;
+				exit( 0 );
 			}
 
 			return $content_type;
@@ -657,25 +693,8 @@ class WPCOM_JSON_API {
 		$response = $this->filter_fields( $response );
 
 		if ( isset( $this->query['http_envelope'] ) && self::is_truthy( $this->query['http_envelope'] ) ) {
-			$headers = array(
-				array(
-					'name'  => 'Content-Type',
-					'value' => $content_type,
-				),
-			);
+			$response = static::wrap_http_envelope( $status_code, $response, $content_type, $extra );
 
-			foreach ( $extra as $key => $value ) {
-				$headers[] = array(
-					'name'  => $key,
-					'value' => $value,
-				);
-			}
-
-			$response     = array(
-				'code'    => (int) $status_code,
-				'headers' => $headers,
-				'body'    => $response,
-			);
 			$status_code  = 200;
 			$content_type = 'application/json';
 		}
@@ -701,10 +720,44 @@ class WPCOM_JSON_API {
 		}
 
 		if ( $this->exit ) {
-			exit;
+			exit( 0 );
 		}
 
 		return $content_type;
+	}
+
+	/**
+	 * Wrap JSON API response into an HTTP 200 one.
+	 *
+	 * @param int        $status_code HTTP status code.
+	 * @param mixed      $response Response body.
+	 * @param string     $content_type Content type.
+	 * @param array|null $extra Extra data.
+	 *
+	 * @return array
+	 */
+	public static function wrap_http_envelope( $status_code, $response, $content_type, $extra = null ) {
+		$headers = array(
+			array(
+				'name'  => 'Content-Type',
+				'value' => $content_type,
+			),
+		);
+
+		if ( is_array( $extra ) ) {
+			foreach ( $extra as $key => $value ) {
+				$headers[] = array(
+					'name'  => $key,
+					'value' => $value,
+				);
+			}
+		}
+
+		return array(
+			'code'    => (int) $status_code,
+			'headers' => $headers,
+			'body'    => $response,
+		);
 	}
 
 	/**
@@ -717,7 +770,7 @@ class WPCOM_JSON_API {
 
 		$status_code = $error->get_error_data();
 
-		if ( is_array( $status_code ) ) {
+		if ( is_array( $status_code ) && isset( $status_code['status_code'] ) ) {
 			$status_code = $status_code['status_code'];
 		}
 
@@ -747,7 +800,7 @@ class WPCOM_JSON_API {
 	 * @return string Content type (assuming it didn't exit).
 	 */
 	public function output_error( $error ) {
-		$error_response = $this->serializable_error( $error );
+		$error_response = static::serializable_error( $error );
 
 		return $this->output( $error_response['status_code'], $error_response['errors'] );
 	}
@@ -992,21 +1045,32 @@ class WPCOM_JSON_API {
 	}
 
 	/**
+	 * Return a count of comment likes.
+	 * This method is overridden by a child class in WPCOM.
+	 *
+	 * @since 13.5
+	 * @return int
+	 */
+	public function comment_like_count() {
+		func_get_args(); // @phan-suppress-current-line PhanPluginUseReturnValueInternalKnown -- This is just here so Phan realizes the wpcom version does this.
+		return 0;
+	}
+
+	/**
 	 * Get avatar URL.
 	 *
 	 * @param string $email Email.
-	 * @param array  $avatar_size Args for `get_avatar_url()`.
+	 * @param array  $args Args for `get_avatar_url()`.
 	 * @return string|false
 	 */
-	public function get_avatar_url( $email, $avatar_size = null ) {
+	public function get_avatar_url( $email, $args = null ) {
 		if ( function_exists( 'wpcom_get_avatar_url' ) ) {
-			return null === $avatar_size
-				? wpcom_get_avatar_url( $email )
-				: wpcom_get_avatar_url( $email, $avatar_size );
+			$ret = wpcom_get_avatar_url( $email, $args['size'] ?? 96, $args['default'] ?? '', false, $args['force_default'] ?? false );
+			return $ret ? $ret[0] : false;
 		} else {
-			return null === $avatar_size
+			return null === $args
 				? get_avatar_url( $email )
-				: get_avatar_url( $email, $avatar_size );
+				: get_avatar_url( $email, $args );
 		}
 	}
 
@@ -1057,21 +1121,33 @@ class WPCOM_JSON_API {
 			return wp_count_comments( $post_id );
 		}
 
-		array_walk( $include, 'esc_sql' );
-		$where = sprintf(
-			"WHERE comment_type IN ( '%s' )",
-			implode( "','", $include )
-		);
+		// The following caching mechanism is based on what the get_comments() function uses.
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- `$where` is built with escaping just above.
-		$count = $wpdb->get_results(
-			"SELECT comment_approved, COUNT(*) AS num_comments
-				FROM $wpdb->comments
-				{$where}
-				GROUP BY comment_approved
-			"
-		);
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$key          = md5( serialize( $include ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		$last_changed = wp_cache_get_last_changed( 'comment' );
+
+		$cache_key = "wp_count_comments:$key:$last_changed";
+		$count     = wp_cache_get( $cache_key, 'jetpack-json-api' );
+
+		if ( false === $count ) {
+			array_walk( $include, 'esc_sql' );
+			$where = sprintf(
+				"WHERE comment_type IN ( '%s' )",
+				implode( "','", $include )
+			);
+
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- `$where` is built with escaping just above.
+			$count = $wpdb->get_results(
+				"SELECT comment_approved, COUNT(*) AS num_comments
+					FROM $wpdb->comments
+					{$where}
+					GROUP BY comment_approved
+				"
+			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+			wp_cache_add( $cache_key, $count, 'jetpack-json-api' );
+		}
 
 		$approved = array(
 			'0'            => 'moderated',
@@ -1164,6 +1240,7 @@ class WPCOM_JSON_API {
 	 * @param string|WP_Error  $message As for `wp_die()`.
 	 * @param string|int       $title As for `wp_die()`.
 	 * @param string|array|int $args As for `wp_die()`.
+	 * @return never
 	 */
 	public function wp_die_handler( $message, $title = '', $args = array() ) {
 		// Allow wp_die calls to override HTTP status code...
@@ -1198,7 +1275,7 @@ class WPCOM_JSON_API {
 		// We still want to exit so that code execution stops where it should.
 		// Attach the JSON output to the WordPress shutdown handler.
 		add_action( 'shutdown', array( $this, 'output_trapped_error' ), 0 );
-		exit;
+		exit( 0 );
 	}
 
 	/**
@@ -1221,6 +1298,34 @@ class WPCOM_JSON_API {
 	public function finish_request() {
 		if ( function_exists( 'fastcgi_finish_request' ) ) {
 			return fastcgi_finish_request();
+		}
+	}
+
+	/**
+	 * Initialize the locale if different from 'en'.
+	 *
+	 * @param string $locale The locale to initialize.
+	 */
+	public function init_locale( $locale ) {
+		if ( 'en' !== $locale ) {
+			// .org mo files are named slightly different from .com, and all we have is this the locale -- try to guess them.
+			$new_locale = $locale;
+			if ( str_contains( $locale, '-' ) ) {
+				$locale_pieces = explode( '-', $locale );
+				$new_locale    = $locale_pieces[0];
+				$new_locale   .= ( ! empty( $locale_pieces[1] ) ) ? '_' . strtoupper( $locale_pieces[1] ) : '';
+			} else { // phpcs:ignore Universal.ControlStructures.DisallowLonelyIf.Found
+				// .com might pass 'fr' because thats what our language files are named as, where core seems
+				// to do fr_FR - so try that if we don't think we can load the file.
+				if ( ! file_exists( WP_LANG_DIR . '/' . $locale . '.mo' ) ) {
+					$new_locale = $locale . '_' . strtoupper( $locale );
+				}
+			}
+
+			if ( file_exists( WP_LANG_DIR . '/' . $new_locale . '.mo' ) ) {
+				unload_textdomain( 'default' );
+				load_textdomain( 'default', WP_LANG_DIR . '/' . $new_locale . '.mo' );
+			}
 		}
 	}
 }

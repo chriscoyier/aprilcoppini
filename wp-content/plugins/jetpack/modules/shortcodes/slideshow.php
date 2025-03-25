@@ -130,7 +130,7 @@ class Jetpack_Slideshow_Shortcode {
 			)
 		);
 
-		if ( count( $attachments ) < 1 ) {
+		if ( ! is_countable( $attachments ) || count( $attachments ) < 1 ) {
 			return false;
 		}
 
@@ -139,7 +139,7 @@ class Jetpack_Slideshow_Shortcode {
 		$gallery = array();
 		foreach ( $attachments as $attachment ) {
 			$attachment_image_src   = wp_get_attachment_image_src( $attachment->ID, $attr['size'] );
-			$attachment_image_src   = $attachment_image_src[0]; // [url, width, height].
+			$attachment_image_src   = false !== $attachment_image_src ? $attachment_image_src[0] : ''; // [url, width, height].
 			$attachment_image_title = get_the_title( $attachment->ID );
 			$attachment_image_alt   = get_post_meta( $attachment->ID, '_wp_attachment_image_alt', true );
 			/**
@@ -183,7 +183,10 @@ class Jetpack_Slideshow_Shortcode {
 			);
 		}
 
-		if ( class_exists( 'Jetpack_AMP_Support' ) && Jetpack_AMP_Support::is_amp_request() ) {
+		if (
+			class_exists( 'Jetpack_AMP_Support' )
+			&& Jetpack_AMP_Support::is_amp_request()
+		) {
 			// Load the styles and use the rendering method from the Slideshow block.
 			Jetpack_Gutenberg::load_styles_as_required( 'slideshow' );
 
@@ -193,6 +196,14 @@ class Jetpack_Slideshow_Shortcode {
 
 			if ( 'true' == $autostart ) { // phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual -- attribute can be stored as boolean or string.
 				$amp_args['autoplay'] = true;
+			}
+
+			/*
+			 * Blocks can be disabled in Jetpack Settings.
+			 * If that's the case, we need to include the slideshow block manually.
+			 */
+			if ( ! class_exists( 'Automattic\Jetpack\Extensions\Slideshow' ) ) {
+				require_once JETPACK__PLUGIN_DIR . 'extensions/blocks/slideshow/slideshow.php';
 			}
 
 			return Slideshow\render_amp( $amp_args );
@@ -252,7 +263,7 @@ class Jetpack_Slideshow_Shortcode {
 		wp_enqueue_script(
 			'jetpack-slideshow',
 			Assets::get_file_url_for_environment( '_inc/build/shortcodes/js/slideshow-shortcode.min.js', 'modules/shortcodes/js/slideshow-shortcode.js' ),
-			array( 'jquery-cycle' ),
+			array( 'jquery', 'jquery-cycle' ),
 			'20160119.1',
 			true
 		);

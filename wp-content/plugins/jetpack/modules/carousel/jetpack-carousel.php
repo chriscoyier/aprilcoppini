@@ -96,6 +96,9 @@ class Jetpack_Carousel {
 			add_action( 'wp_ajax_nopriv_get_attachment_comments', array( $this, 'get_attachment_comments' ) );
 			add_action( 'wp_ajax_post_attachment_comment', array( $this, 'post_attachment_comment' ) );
 			add_action( 'wp_ajax_nopriv_post_attachment_comment', array( $this, 'post_attachment_comment' ) );
+
+			// Disable core lightbox when Carousel is enabled.
+			add_action( 'wp_theme_json_data_theme', array( $this, 'disable_core_lightbox' ) );
 		} else {
 			if ( ! $this->in_jetpack ) {
 				if ( 0 === $this->test_1or0_option( get_option( 'carousel_enable_it' ), true ) ) {
@@ -123,17 +126,28 @@ class Jetpack_Carousel {
 				add_filter( 'the_content', array( $this, 'add_data_img_tags_and_enqueue_assets' ) );
 			}
 
-			if (
-				! class_exists( 'Jetpack_AMP_Support' )
-				|| ! Jetpack_AMP_Support::is_amp_request()
-			) {
-				add_filter( 'render_block_core/gallery', array( $this, 'filter_gallery_block_render' ), 10, 2 );
-				add_filter( 'render_block_jetpack/tiled-gallery', array( $this, 'filter_gallery_block_render' ), 10, 2 );
-			}
+			// `is_amp_request()` can't be called until the 'wp' filter.
+			add_action( 'wp', array( $this, 'check_amp_support' ) );
+
+			// Disable core lightbox when Carousel is enabled.
+			add_action( 'wp_theme_json_data_theme', array( $this, 'disable_core_lightbox' ) );
 		}
 
 		if ( $this->in_jetpack ) {
 			Jetpack::enable_module_configurable( dirname( __DIR__ ) . '/carousel.php' );
+		}
+	}
+
+	/**
+	 * Check AMP and add filters.
+	 */
+	public function check_amp_support() {
+		if (
+			! class_exists( 'Jetpack_AMP_Support' )
+			|| ! Jetpack_AMP_Support::is_amp_request()
+		) {
+			add_filter( 'render_block_core/gallery', array( $this, 'filter_gallery_block_render' ), 10, 2 );
+			add_filter( 'render_block_jetpack/tiled-gallery', array( $this, 'filter_gallery_block_render' ), 10, 2 );
 		}
 	}
 
@@ -196,6 +210,32 @@ class Jetpack_Carousel {
 		 * @param bool false Should Carousel be enabled for single images linking to 'Media File'? Default to false.
 		 */
 		return apply_filters( 'jp_carousel_load_for_images_linked_to_file', false );
+	}
+
+	/**
+	 * Disable the "Lightbox" option offered in WordPress core
+	 * whenever Jetpack's Carousel feature is enabled.
+	 *
+	 * @since 13.3
+	 *
+	 * @param WP_Theme_JSON_Data $theme_json Class to access and update theme.json data.
+	 */
+	public function disable_core_lightbox( $theme_json ) {
+		return $theme_json->update_with(
+			array(
+				'version'  => 2,
+				'settings' => array(
+					'blocks' => array(
+						'core/image' => array(
+							'lightbox' => array(
+								'allowEditing' => false,
+								'enabled'      => false,
+							),
+						),
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -441,6 +481,7 @@ class Jetpack_Carousel {
 				'post_comment'                    => __( 'Post Comment', 'jetpack' ),
 				'write_comment'                   => __( 'Write a Comment...', 'jetpack' ),
 				'loading_comments'                => __( 'Loading Comments...', 'jetpack' ),
+				'image_label'                     => __( 'Open image in full-screen.', 'jetpack' ),
 				'download_original'               => sprintf(
 					/* translators: %1s is the full-size image width, and %2s is the height. */
 					__( 'View full size <span class="photo-size">%1$s<span class="photo-size-times">&times;</span>%2$s</span>', 'jetpack' ),
@@ -724,7 +765,7 @@ class Jetpack_Carousel {
 								<div class="jp-carousel-photo-description"></div>
 							</div>
 							<ul class="jp-carousel-image-exif" style="display: none;"></ul>
-							<a class="jp-carousel-image-download" target="_blank" style="display: none;">
+							<a class="jp-carousel-image-download" href="#" target="_blank" style="display: none;">
 								<svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 									<mask id="mask0" mask-type="alpha" maskUnits="userSpaceOnUse" x="3" y="3" width="19" height="18">
 										<path fill-rule="evenodd" clip-rule="evenodd" d="M5.84615 5V19H19.7775V12H21.7677V19C21.7677 20.1 20.8721 21 19.7775 21H5.84615C4.74159 21 3.85596 20.1 3.85596 19V5C3.85596 3.9 4.74159 3 5.84615 3H12.8118V5H5.84615ZM14.802 5V3H21.7677V10H19.7775V6.41L9.99569 16.24L8.59261 14.83L18.3744 5H14.802Z" fill="white"/>
@@ -777,6 +818,9 @@ class Jetpack_Carousel {
 	 * @return string
 	 */
 	public function add_data_img_tags_and_enqueue_assets( $content ) {
+		if ( ! is_string( $content ) || $content === '' ) {
+			return '';
+		}
 		if (
 			class_exists( 'Jetpack_AMP_Support' )
 			&& Jetpack_AMP_Support::is_amp_request()
@@ -789,9 +833,28 @@ class Jetpack_Carousel {
 		}
 		$selected_images = array();
 		foreach ( $matches[0] as $image_html ) {
-			if ( preg_match( '/(wp-image-|data-id=)\"?([0-9]+)\"?/i', $image_html, $class_id ) &&
-				! preg_match( '/wp-block-jetpack-slideshow_image/', $image_html ) ) {
-				$attachment_id = absint( $class_id[2] );
+			if (
+				preg_match( '/(wp-image-|data-id=)\"?([0-9]+)\"?/i', $image_html, $class_id )
+				&& ! preg_match( '/wp-block-jetpack-slideshow_image/', $image_html )
+			) {
+				/**
+				 * Allow filtering the attachment ID used to fetch and populate metadata about an image in a gallery.
+				 *
+				 * @module carousel
+				 *
+				 * @since 12.6
+				 *
+				 * @param int    $attachment_id Attachment ID pulled from image HTML.
+				 * @param string $image_html    Full HTML image tag.
+				 */
+				$attachment_id = absint(
+					apply_filters(
+						'jetpack_carousel_image_attachment_id',
+						$class_id[2],
+						$image_html
+					)
+				);
+
 				/**
 				 * The same image tag may be used more than once but with different attribs,
 				 * so save each of them against the attachment id.
@@ -826,7 +889,11 @@ class Jetpack_Carousel {
 			 * This is meant as a relatively quick fix, as a better fix is likely to update the get_posts call above to only
 			 * include attachments.
 			 */
-			if ( ! isset( $attachment->ID ) || ! wp_attachment_is_image( $attachment->ID ) ) {
+			if (
+				! isset( $attachment->ID )
+				|| ! wp_attachment_is_image( $attachment->ID )
+				|| ! isset( $selected_images[ $attachment->ID ] )
+			) {
 				continue;
 			}
 			$image_elements = $selected_images[ $attachment->ID ];
@@ -857,8 +924,8 @@ class Jetpack_Carousel {
 	 * @see add_data_img_tags_and_enqueue_assets()
 	 * @see https://developer.wordpress.org/reference/functions/wp_get_attachment_image/ Documentation about wp_get_attachment_image
 	 *
-	 * @param string[] $attr Array of attribute values for the image markup, keyed by attribute name.
-	 * @param WP_Post  $attachment Image attachment post.
+	 * @param string[]     $attr       Array of attribute values for the image markup, keyed by attribute name.
+	 * @param null|WP_Post $attachment Image attachment post.
 	 *
 	 * @return string[] Modified image attributes.
 	 */
@@ -870,11 +937,15 @@ class Jetpack_Carousel {
 			return $attr;
 		}
 
-		$attachment_id = (int) $attachment->ID;
-		if ( ! wp_attachment_is_image( $attachment_id ) ) {
+		if (
+			! $attachment instanceof WP_Post
+			|| ! isset( $attachment->ID )
+			|| ! wp_attachment_is_image( $attachment )
+		) {
 			return $attr;
 		}
 
+		$attachment_id   = (int) $attachment->ID;
 		$orig_file       = wp_get_attachment_image_src( $attachment_id, 'full' );
 		$orig_file       = isset( $orig_file[0] ) ? $orig_file[0] : wp_get_attachment_url( $attachment_id );
 		$meta            = wp_get_attachment_metadata( $attachment_id );
@@ -903,10 +974,9 @@ class Jetpack_Carousel {
 		$large_file_info = wp_get_attachment_image_src( $attachment_id, 'large' );
 		$large_file      = isset( $large_file_info[0] ) ? $large_file_info[0] : '';
 
-		$attachment         = get_post( $attachment_id );
-		$attachment_title   = ! empty( $attachment ) ? wptexturize( $attachment->post_title ) : '';
-		$attachment_desc    = ! empty( $attachment ) ? wpautop( wptexturize( $attachment->post_content ) ) : '';
-		$attachment_caption = ! empty( $attachment ) ? wpautop( wptexturize( $attachment->post_excerpt ) ) : '';
+		$attachment_title   = wptexturize( $attachment->post_title );
+		$attachment_desc    = wpautop( wptexturize( $attachment->post_content ) );
+		$attachment_caption = wpautop( wptexturize( $attachment->post_excerpt ) );
 
 		// See https://github.com/Automattic/jetpack/issues/2765.
 		if ( isset( $img_meta['keywords'] ) ) {
@@ -927,7 +997,6 @@ class Jetpack_Carousel {
 		$attr['data-image-caption']     = esc_attr( htmlspecialchars( $attachment_caption, ENT_COMPAT ) );
 		$attr['data-medium-file']       = esc_attr( $medium_file );
 		$attr['data-large-file']        = esc_attr( $large_file );
-
 		return $attr;
 	}
 
@@ -1144,6 +1213,8 @@ class Jetpack_Carousel {
 
 	/**
 	 * Adds a new comment to the database
+	 *
+	 * @return never
 	 */
 	public function post_attachment_comment() {
 		if ( ! headers_sent() ) {
@@ -1398,7 +1469,7 @@ class Jetpack_Carousel {
 	 *
 	 * @param mixed $value User input setting value.
 	 *
-	 * @return number Sanitized value, only 1 or 0.
+	 * @return int Sanitized value, only 1 or 0.
 	 */
 	public function carousel_display_exif_sanitize( $value ) {
 		return $this->sanitize_1or0_option( $value );
@@ -1407,9 +1478,9 @@ class Jetpack_Carousel {
 	/**
 	 * Return sanitized option for value that controls whether comments will be hidden or not.
 	 *
-	 * @param number $value Value to sanitize.
+	 * @param mixed $value Value to sanitize.
 	 *
-	 * @return number Sanitized value, only 1 or 0.
+	 * @return int Sanitized value, only 1 or 0.
 	 */
 	public function carousel_display_comments_sanitize( $value ) {
 		return $this->sanitize_1or0_option( $value );
@@ -1451,7 +1522,7 @@ class Jetpack_Carousel {
 	 *
 	 * @param mixed $value User input.
 	 *
-	 * @return number Sanitized value, only 1 or 0.
+	 * @return int Sanitized value, only 1 or 0.
 	 */
 	public function carousel_enable_it_sanitize( $value ) {
 		return $this->sanitize_1or0_option( $value );

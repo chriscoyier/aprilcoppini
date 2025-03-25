@@ -5,6 +5,8 @@
  * @package automattic/jetpack
  */
 
+use Automattic\Jetpack\Publicize\REST_API\Connections_Controller;
+
 /**
  * Add per-post Publicize Connection data.
  *
@@ -25,6 +27,7 @@
  *     jetpack_publicize_message: (string) The message to use instead of the post's title when sharing.
  *     jetpack_social_options: {
  *       attached_media: (array) List of media that will be attached to the social media post.
+ *       image_generator_settings: (array) List of settings related to the generated image.
  *     }
  *   ...
  * }
@@ -101,52 +104,40 @@ class WPCOM_REST_API_V2_Post_Publicize_Connections_Field extends WPCOM_REST_API_
 	 * Schema for the endpoint.
 	 */
 	private function post_connection_schema() {
+		$connection_fields = Connections_Controller::get_the_item_schema();
+		$deprecated_fields = array(
+			'id'       => array(
+				'type'        => 'string',
+				'description' => __( 'Unique identifier for the Jetpack Social connection.', 'jetpack' ) . ' ' . sprintf(
+					/* translators: %s is the new field name */
+					__( 'Deprecated in favor of %s.', 'jetpack' ),
+					'connection_id'
+				),
+			),
+			'username' => array(
+				'type'        => 'string',
+				'description' => __( 'Username of the connected account.', 'jetpack' ) . ' ' . sprintf(
+					/* translators: %s is the new field name */
+					__( 'Deprecated in favor of %s.', 'jetpack' ),
+					'external_handle'
+				),
+			),
+		);
+
 		return array(
 			'$schema'    => 'http://json-schema.org/draft-04/schema#',
 			'title'      => 'jetpack-publicize-post-connection',
 			'type'       => 'object',
-			'properties' => array(
-				'id'              => array(
-					'description' => __( 'Unique identifier for the Jetpack Social connection', 'jetpack' ),
-					'type'        => 'string',
-					'context'     => array( 'view', 'edit' ),
-					'readonly'    => true,
-				),
-				'service_name'    => array(
-					'description' => __( 'Alphanumeric identifier for the Jetpack Social service', 'jetpack' ),
-					'type'        => 'string',
-					'context'     => array( 'view', 'edit' ),
-					'readonly'    => true,
-				),
-				'display_name'    => array(
-					'description' => __( 'Username of the connected account', 'jetpack' ),
-					'type'        => 'string',
-					'context'     => array( 'view', 'edit' ),
-					'readonly'    => true,
-				),
-				'profile_picture' => array(
-					'description' => __( 'Profile picture of the connected account', 'jetpack' ),
-					'type'        => 'string',
-					'context'     => array( 'view', 'edit' ),
-					'readonly'    => true,
-				),
-				'enabled'         => array(
-					'description' => __( 'Whether to share to this connection', 'jetpack' ),
-					'type'        => 'boolean',
-					'context'     => array( 'edit' ),
-				),
-				'done'            => array(
-					'description' => __( 'Whether Jetpack Social has already finished sharing for this post', 'jetpack' ),
-					'type'        => 'boolean',
-					'context'     => array( 'edit' ),
-					'readonly'    => true,
-				),
-				'toggleable'      => array(
-					'description' => __( 'Whether `enable` can be changed for this post/connection', 'jetpack' ),
-					'type'        => 'boolean',
-					'context'     => array( 'edit' ),
-					'readonly'    => true,
-				),
+			'properties' => array_merge(
+				$deprecated_fields,
+				$connection_fields,
+				array(
+					'enabled' => array(
+						'description' => __( 'Whether to share to this connection.', 'jetpack' ),
+						'type'        => 'boolean',
+						'context'     => array( 'edit' ),
+					),
+				)
 			),
 		);
 	}
@@ -236,8 +227,6 @@ class WPCOM_REST_API_V2_Post_Publicize_Connections_Field extends WPCOM_REST_API_
 				}
 			}
 
-			$output_connection['id'] = (string) $connection['unique_id'];
-
 			$output_connections[] = $output_connection;
 		}
 
@@ -251,7 +240,7 @@ class WPCOM_REST_API_V2_Post_Publicize_Connections_Field extends WPCOM_REST_API_
 	 * @param object          $post    Post data to insert/update.
 	 * @param WP_REST_Request $request API request.
 	 *
-	 * @return Filtered $post
+	 * @return object|WP_Error Filtered $post
 	 */
 	public function rest_pre_insert( $post, $request ) {
 		if ( ! isset( $request['jetpack_publicize_connections'] ) ) {
@@ -305,14 +294,19 @@ class WPCOM_REST_API_V2_Post_Publicize_Connections_Field extends WPCOM_REST_API_
 	/**
 	 * Get list of meta data to update per post ID.
 	 *
-	 * @param array $requested_connections Publicize conenctions to update.
+	 * @param array $requested_connections Publicize connections to update.
 	 *              Items are either `{ id: (string) }` or `{ service_name: (string) }`.
 	 * @param int   $post_id    Post ID.
 	 */
 	protected function get_meta_to_update( $requested_connections, $post_id = 0 ) {
 		global $publicize;
 
-		if ( ! $publicize ) {
+		if ( ! $publicize || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) ) {
+			return array();
+		}
+
+		$post = get_post( $post_id );
+		if ( isset( $post->post_status ) && 'publish' === $post->post_status ) {
 			return array();
 		}
 
@@ -325,10 +319,10 @@ class WPCOM_REST_API_V2_Post_Publicize_Connections_Field extends WPCOM_REST_API_
 		$changed_connections = array();
 
 		// Build lookup mappings.
-		$available_connections_by_unique_id    = array();
-		$available_connections_by_service_name = array();
+		$available_connections_by_connection_id = array();
+		$available_connections_by_service_name  = array();
 		foreach ( $available_connections as $available_connection ) {
-			$available_connections_by_unique_id[ $available_connection['unique_id'] ] = $available_connection;
+			$available_connections_by_connection_id[ $available_connection['connection_id'] ] = $available_connection;
 
 			if ( ! isset( $available_connections_by_service_name[ $available_connection['service_name'] ] ) ) {
 				$available_connections_by_service_name[ $available_connection['service_name'] ] = array();
@@ -348,42 +342,45 @@ class WPCOM_REST_API_V2_Post_Publicize_Connections_Field extends WPCOM_REST_API_
 			}
 
 			foreach ( $available_connections_by_service_name[ $requested_connection['service_name'] ] as $available_connection ) {
-				$changed_connections[ $available_connection['unique_id'] ] = $requested_connection['enabled'];
+				if ( $requested_connection['connection_id'] === $available_connection['connection_id'] ) {
+					$changed_connections[ $available_connection['connection_id'] ] = $requested_connection['enabled'];
+					break;
+				}
 			}
 		}
 
 		// Handle { id: $id, enabled: (bool) }
 		// These override the service_name settings.
 		foreach ( $requested_connections as $requested_connection ) {
-			if ( ! isset( $requested_connection['id'] ) ) {
+			if ( ! isset( $requested_connection['connection_id'] ) ) {
 				continue;
 			}
 
-			if ( ! isset( $available_connections_by_unique_id[ $requested_connection['id'] ] ) ) {
+			if ( ! isset( $available_connections_by_connection_id[ $requested_connection['connection_id'] ] ) ) {
 				continue;
 			}
 
-			$changed_connections[ $requested_connection['id'] ] = $requested_connection['enabled'];
+			$changed_connections[ $requested_connection['connection_id'] ] = $requested_connection['enabled'];
 		}
 
 		// Set all changed connections to their new value.
-		foreach ( $changed_connections as $unique_id => $enabled ) {
-			$connection = $available_connections_by_unique_id[ $unique_id ];
+		foreach ( $changed_connections as $id => $enabled ) {
+			$connection = $available_connections_by_connection_id[ $id ];
 
-			if ( $connection['done'] || ! $connection['toggleable'] ) {
+			if ( $connection['done'] ) {
 				continue;
 			}
 
-			$available_connections_by_unique_id[ $unique_id ]['enabled'] = $enabled;
+			$available_connections_by_connection_id[ $id ]['enabled'] = $enabled;
 		}
 
 		$meta_to_update = array();
 		// For all connections, ensure correct post_meta.
-		foreach ( $available_connections_by_unique_id as $unique_id => $available_connection ) {
+		foreach ( $available_connections_by_connection_id as $connection_id => $available_connection ) {
 			if ( $available_connection['enabled'] ) {
-				$meta_to_update[ $publicize->POST_SKIP . $unique_id ] = null; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				$meta_to_update[ $publicize->POST_SKIP_PUBLICIZE . $connection_id ] = null; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			} else {
-				$meta_to_update[ $publicize->POST_SKIP . $unique_id ] = 1; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				$meta_to_update[ $publicize->POST_SKIP_PUBLICIZE . $connection_id ] = 1; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			}
 		}
 

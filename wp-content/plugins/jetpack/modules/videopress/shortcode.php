@@ -90,6 +90,7 @@ class VideoPress_Shortcode {
 			'controls'        => true,  // Whether the video should display controls.
 			'playsinline'     => false, // Whether the video should be allowed to play inline (for browsers that support this).
 			'useaveragecolor' => false, // Whether the video should use the seekbar automatic average color.
+			'preloadcontent'  => 'metadata', // Setting for how the browser should preload the video (none, metadata, auto).
 		);
 
 		// Make sure "false" will be actually false.
@@ -97,6 +98,10 @@ class VideoPress_Shortcode {
 			if ( is_string( $value ) && 'false' === strtolower( $value ) ) {
 				$attr[ $key ] = false;
 			}
+		}
+
+		if ( isset( $attr['preload'] ) ) {
+			$attr['preloadcontent'] = $attr['preload'];
 		}
 
 		$attr = shortcode_atts( $defaults, $attr, 'videopress' );
@@ -122,7 +127,7 @@ class VideoPress_Shortcode {
 		 * If there was an invalid or unspecified width, set the width equal to the theme's `$content_width`.
 		 */
 		if ( 0 === $attr['width'] && isset( $content_width ) && $content_width >= VIDEOPRESS_MIN_WIDTH ) {
-			$attr['width'] = $content_width;
+			$attr['width'] = (int) $content_width;
 		}
 
 		/**
@@ -158,6 +163,7 @@ class VideoPress_Shortcode {
 				'controls'        => $attr['controls'],
 				'playsinline'     => $attr['playsinline'],
 				'useAverageColor' => (bool) $attr['useaveragecolor'], // The casing is intentional, shortcode params are lowercase, but player expects useAverageColor
+				'preloadContent'  => $attr['preloadcontent'], // The casing is intentional, shortcode params are lowercase, but player expects preloadContent
 			// accessible via the `videopress_shortcode_options` filter.
 			)
 		);
@@ -202,7 +208,7 @@ class VideoPress_Shortcode {
 			foreach ( $url_keys as $key ) {
 				if ( isset( $attr[ $key ] ) ) {
 					$url = $attr[ $key ];
-					// phpcs:ignore WordPress.WP.CapitalPDangit
+					// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText
 					if ( preg_match( '@videos.(videopress\.com|files\.wordpress\.com)/([a-z0-9]{8})/@i', $url, $matches ) ) {
 						$videopress_guid = $matches[2];
 					}
@@ -213,7 +219,7 @@ class VideoPress_Shortcode {
 					}
 
 					// Also test for old v.wordpress.com oembed URL.
-					if ( ! $videopress_guid && preg_match( '|^https?://v\.wordpress\.com/([a-zA-Z\d]{8})(.+)?$|i', $url, $matches ) ) { // phpcs:ignore WordPress.WP.CapitalPDangit.Misspelled
+					if ( ! $videopress_guid && preg_match( '|^https?://v\.wordpress\.com/([a-zA-Z\d]{8})(.+)?$|i', $url, $matches ) ) { // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText
 						$videopress_guid = $matches[1];
 					}
 

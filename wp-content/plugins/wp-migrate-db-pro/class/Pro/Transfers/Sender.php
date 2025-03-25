@@ -88,7 +88,7 @@ class Sender {
 		}
 
 		$batch = filter_var( $_POST['batch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS );
-		$batch = unserialize( str_rot13( base64_decode( $batch ) ) );
+		$batch = json_decode( str_rot13( base64_decode( $batch ) ), true );
 
 		if ( ! $batch || ! \is_array( $batch ) ) {
 			throw new \Exception( __( 'Request for batch of files failed.', 'wp-migrate-db' ) );
@@ -96,7 +96,7 @@ class Sender {
 
 		$handle = $this->payload->create_payload( $batch, $state_data, $state_data['bottleneck'] );
 		rewind( $handle );
-		stream_filter_append( $handle, 'zlib.deflate', STREAM_FILTER_ALL );
+
 
 		// Read payload line by line and send each line to the output buffer
 		while ( ! feof( $handle ) ) {

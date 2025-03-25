@@ -16,9 +16,6 @@ use Jetpack;
 use Jetpack_Gutenberg;
 use Jetpack_Mapbox_Helper;
 
-const FEATURE_NAME = 'map';
-const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
-
 if ( ! class_exists( 'Jetpack_Mapbox_Helper' ) ) {
 	require_once JETPACK__PLUGIN_DIR . '_inc/lib/class-jetpack-mapbox-helper.php';
 }
@@ -30,7 +27,7 @@ if ( ! class_exists( 'Jetpack_Mapbox_Helper' ) ) {
  */
 function register_block() {
 	Blocks::jetpack_register_block(
-		BLOCK_NAME,
+		__DIR__,
 		array(
 			'render_callback' => __NAMESPACE__ . '\load_assets',
 		)
@@ -59,6 +56,31 @@ function wpcom_load_event( $access_token_source ) {
 }
 
 /**
+ * Function to determine which map provider to choose
+ *
+ * @param array $html The block's HTML - needed for the class name.
+ *
+ * @return string The name of the map provider.
+ */
+function get_map_provider( $html ) {
+	$mapbox_styles = array( 'is-style-terrain' );
+	// return mapbox if html contains one of the mapbox styles
+	foreach ( $mapbox_styles as $style ) {
+		if ( str_contains( $html, $style ) ) {
+			return 'mapbox';
+		}
+	}
+
+	// you can override the map provider with a cookie
+	if ( isset( $_COOKIE['map_provider'] ) ) {
+		return sanitize_text_field( wp_unslash( $_COOKIE['map_provider'] ) );
+	}
+
+	// if we don't apply the filters & default to mapbox
+	return apply_filters( 'wpcom_map_block_map_provider', 'mapbox' );
+}
+
+/**
  * Map block registration/dependency declaration.
  *
  * @param array  $attr    Array containing the map block attributes.
@@ -68,7 +90,6 @@ function wpcom_load_event( $access_token_source ) {
  */
 function load_assets( $attr, $content ) {
 	$access_token = Jetpack_Mapbox_Helper::get_access_token();
-
 	wpcom_load_event( $access_token['source'] );
 
 	if ( Blocks::is_amp_request() ) {
@@ -99,9 +120,14 @@ function load_assets( $attr, $content ) {
 		);
 	}
 
-	Jetpack_Gutenberg::load_assets_as_required( FEATURE_NAME );
+	Jetpack_Gutenberg::load_assets_as_required( __DIR__ );
 
-	return preg_replace( '/<div /', '<div data-api-key="' . esc_attr( $access_token['key'] ) . '" ', $content, 1 );
+	$map_provider = get_map_provider( $content );
+	if ( $map_provider === 'mapkit' ) {
+		return preg_replace( '/<div /', '<div data-map-provider="mapkit" data-api-key="' . esc_attr( $access_token['key'] ) . '"  data-blog-id="' . \Jetpack_Options::get_option( 'id' ) . '" ', $content, 1 );
+	}
+
+	return preg_replace( '/<div /', '<div data-map-provider="mapbox" data-api-key="' . esc_attr( $access_token['key'] ) . '" ', $content, 1 );
 }
 
 /**
@@ -109,9 +135,9 @@ function load_assets( $attr, $content ) {
  */
 function render_single_block_page() {
 	// phpcs:ignore WordPress.Security.NonceVerification
-	$map_block_counter = isset( $_GET, $_GET['map-block-counter'] ) ? absint( $_GET['map-block-counter'] ) : null;
+	$map_block_counter = isset( $_GET['map-block-counter'] ) ? absint( $_GET['map-block-counter'] ) : null;
 	// phpcs:ignore WordPress.Security.NonceVerification
-	$map_block_post_id = isset( $_GET, $_GET['map-block-post-id'] ) ? absint( $_GET['map-block-post-id'] ) : null;
+	$map_block_post_id = isset( $_GET['map-block-post-id'] ) ? absint( $_GET['map-block-post-id'] ) : null;
 
 	if ( ! $map_block_counter || ! $map_block_post_id ) {
 		return;
@@ -127,6 +153,11 @@ function render_single_block_page() {
 	$post_html = new \DOMDocument();
 	/** This filter is already documented in core/wp-includes/post-template.php */
 	$content = apply_filters( 'the_content', $post->post_content );
+
+	// Return early if empty to prevent DOMDocument::loadHTML fatal.
+	if ( empty( $content ) ) {
+		return;
+	}
 
 	/* Suppress warnings */
 	libxml_use_internal_errors( true );
@@ -146,7 +177,7 @@ function render_single_block_page() {
 
 	add_filter( 'jetpack_is_amp_request', '__return_false' );
 
-	Jetpack_Gutenberg::load_assets_as_required( FEATURE_NAME );
+	Jetpack_Gutenberg::load_assets_as_required( __DIR__ );
 	wp_scripts()->do_items();
 	wp_styles()->do_items();
 
@@ -163,7 +194,7 @@ function render_single_block_page() {
 		preg_replace( '/(?<=<div\s)/', 'data-api-key="' . esc_attr( $access_token['key'] ) . '" ', $block_markup, 1 )
 	);
 	echo $page_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-	exit;
+	exit( 0 );
 }
 add_action( 'wp', __NAMESPACE__ . '\render_single_block_page' );
 

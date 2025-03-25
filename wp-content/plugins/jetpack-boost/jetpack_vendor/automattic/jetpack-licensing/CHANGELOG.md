@@ -5,6 +5,108 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.7] - 2025-03-12
+### Changed
+- Internal updates.
+
+## [3.0.6] - 2025-03-05
+### Changed
+- Internal updates.
+
+## [3.0.5] - 2025-02-24
+### Changed
+- Update dependencies.
+
+## [3.0.4] - 2025-02-03
+### Changed
+- Internal updates.
+
+## [3.0.3] - 2025-01-20
+### Changed
+- Code: Use function-style exit() and die() with a default status code of 0. [#41167]
+
+## [3.0.2] - 2024-12-02
+### Changed
+- Exclude revoked licenses from results when filtering unattached licenses in `Licensing::get_user_licenses()`. Only unattached and valid licenses are now returned. [#40215]
+
+## [3.0.1] - 2024-11-25
+### Changed
+- Updated dependencies. [#40286]
+
+## [3.0.0] - 2024-11-14
+### Removed
+- General: Update minimum PHP version to 7.2. [#40147]
+
+## [2.0.12] - 2024-11-04
+### Added
+- Enable test coverage. [#39961]
+
+## [2.0.11] - 2024-10-29
+### Changed
+- Internal updates.
+
+## [2.0.10] - 2024-09-23
+### Changed
+- Update dependencies.
+
+## [2.0.9] - 2024-09-05
+### Changed
+- Update dependencies.
+
+## [2.0.8] - 2024-09-05
+### Changed
+- Update dependencies.
+
+## [2.0.7] - 2024-08-26
+### Changed
+- Updated package dependencies. [#39004]
+
+## [2.0.6] - 2024-08-19
+### Changed
+- Internal updates.
+
+## [2.0.5] - 2024-04-22
+### Changed
+- Internal updates.
+
+## [2.0.4] - 2024-04-08
+### Changed
+- Internal updates.
+
+## [2.0.3] - 2024-03-25
+### Changed
+- Internal updates.
+
+## [2.0.2] - 2024-03-14
+### Changed
+- Internal updates.
+
+## [2.0.1] - 2023-11-21
+
+## [2.0.0] - 2023-11-20
+### Changed
+- Updated required PHP version to >= 7.0. [#34192]
+
+## [1.8.4] - 2023-09-19
+
+- Minor internal updates.
+
+## [1.8.3] - 2023-08-23
+### Changed
+- Updated package dependencies. [#32605]
+
+## [1.8.2] - 2023-04-10
+### Added
+- Add Jetpack Autoloader package suggestion. [#29988]
+
+## [1.8.1] - 2023-02-20
+### Changed
+- Minor internal updates.
+
+## [1.8.0] - 2023-02-08
+### Added
+- After connection flow, load unattached licenses. If any of them match the product that's being connected, redirect users to the license activation page. [#28509]
+
 ## [1.7.14] - 2023-01-11
 ### Changed
 - Updated package dependencies.
@@ -230,6 +332,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Licensing: Add support for Jetpack licenses
 
+[3.0.7]: https://github.com/Automattic/jetpack-licensing/compare/v3.0.6...v3.0.7
+[3.0.6]: https://github.com/Automattic/jetpack-licensing/compare/v3.0.5...v3.0.6
+[3.0.5]: https://github.com/Automattic/jetpack-licensing/compare/v3.0.4...v3.0.5
+[3.0.4]: https://github.com/Automattic/jetpack-licensing/compare/v3.0.3...v3.0.4
+[3.0.3]: https://github.com/Automattic/jetpack-licensing/compare/v3.0.2...v3.0.3
+[3.0.2]: https://github.com/Automattic/jetpack-licensing/compare/v3.0.1...v3.0.2
+[3.0.1]: https://github.com/Automattic/jetpack-licensing/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.12...v3.0.0
+[2.0.12]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.11...v2.0.12
+[2.0.11]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.10...v2.0.11
+[2.0.10]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.9...v2.0.10
+[2.0.9]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.8...v2.0.9
+[2.0.8]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.7...v2.0.8
+[2.0.7]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.6...v2.0.7
+[2.0.6]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.5...v2.0.6
+[2.0.5]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.4...v2.0.5
+[2.0.4]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.3...v2.0.4
+[2.0.3]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.2...v2.0.3
+[2.0.2]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.1...v2.0.2
+[2.0.1]: https://github.com/Automattic/jetpack-licensing/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/Automattic/jetpack-licensing/compare/v1.8.4...v2.0.0
+[1.8.4]: https://github.com/Automattic/jetpack-licensing/compare/v1.8.3...v1.8.4
+[1.8.3]: https://github.com/Automattic/jetpack-licensing/compare/v1.8.2...v1.8.3
+[1.8.2]: https://github.com/Automattic/jetpack-licensing/compare/v1.8.1...v1.8.2
+[1.8.1]: https://github.com/Automattic/jetpack-licensing/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/Automattic/jetpack-licensing/compare/v1.7.14...v1.8.0
 [1.7.14]: https://github.com/Automattic/jetpack-licensing/compare/v1.7.13...v1.7.14
 [1.7.13]: https://github.com/Automattic/jetpack-licensing/compare/v1.7.12...v1.7.13
 [1.7.12]: https://github.com/Automattic/jetpack-licensing/compare/v1.7.11...v1.7.12

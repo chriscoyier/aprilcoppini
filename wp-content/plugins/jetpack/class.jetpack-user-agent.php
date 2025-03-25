@@ -16,7 +16,7 @@
  * @phpcs:disable WordPress.Files.FileName
  */
 
-use \Automattic\Jetpack\Device_Detection\User_Agent_Info;
+use Automattic\Jetpack\Device_Detection\User_Agent_Info;
 
 /**
  * A class providing device properties detection.
@@ -328,19 +328,6 @@ class Jetpack_User_Agent_Info {
 	public static function is_opera_mini_dumb() {
 		self::warn_deprecated( __METHOD__, '::is_opera_mini_dumb' );
 		return User_Agent_Info::is_opera_mini_dumb();
-	}
-
-	/**
-	 * Detects if the current browser is Opera Mobile or Mini.
-	 *
-	 * Opera Mini 5 Beta: Opera/9.80 (J2ME/MIDP; Opera Mini/5.0.15650/756; U; en) Presto/2.2.0
-	 * Opera Mini 8: Opera/8.01 (J2ME/MIDP; Opera Mini/3.0.6306/1528; en; U; ssr)
-	 *
-	 * @deprecated 8.7.0 Use Automattic\Jetpack\Device_Detection\User_Agent_Info
-	 */
-	public static function is_OperaMobile() {
-		self::warn_deprecated( __METHOD__, '::is_opera_mini() or \Automattic\Jetpack\Device_Detection\User_Agent_Info::is_opera_mobile()' );
-		return User_Agent_Info::is_OperaMobile();
 	}
 
 	/**

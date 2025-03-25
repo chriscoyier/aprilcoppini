@@ -4,13 +4,18 @@
 	"type": "jetpack-library",
 	"license": "GPL-2.0-or-later",
 	"require": {
-		"automattic/jetpack-constants": "^1.6.20"
+		"php": ">=7.2",
+		"automattic/jetpack-constants": "^3.0.4"
 	},
 	"require-dev": {
-		"brain/monkey": "2.6.1",
-		"yoast/phpunit-polyfills": "1.0.4",
-		"automattic/jetpack-changelogger": "^3.3.1",
-		"wikimedia/testing-access-wrapper": "^1.0 || ^2.0"
+		"brain/monkey": "^2.6.2",
+		"yoast/phpunit-polyfills": "^1.1.1",
+		"automattic/jetpack-changelogger": "^6.0.1",
+		"wikimedia/testing-access-wrapper": "^1.0 || ^2.0 || ^3.0",
+		"automattic/phpunit-select-config": "^1.0.0"
+	},
+	"suggest": {
+		"automattic/jetpack-autoloader": "Allow for better interoperability with other plugins that use this package."
 	},
 	"autoload": {
 		"files": [
@@ -28,12 +33,9 @@
 			"pnpm run build-production"
 		],
 		"phpunit": [
-			"./vendor/phpunit/phpunit/phpunit --colors=always"
+			"phpunit-select-config phpunit.#.xml.dist --colors=always"
 		],
-		"test-coverage": [
-			"php -dpcov.directory=. ./vendor/bin/phpunit --coverage-clover \"$COVERAGE_DIR/php/clover.xml\"",
-			"pnpm run test-coverage"
-		],
+		"test-coverage": "pnpm concurrently --names php,js 'php -dpcov.directory=. ./vendor/bin/phpunit-select-config phpunit.#.xml.dist --coverage-php \"$COVERAGE_DIR/php.cov\"' 'pnpm:test-coverage'",
 		"test-js": [
 			"pnpm run test"
 		],
@@ -51,7 +53,7 @@
 			"link-template": "https://github.com/Automattic/jetpack-assets/compare/v${old}...v${new}"
 		},
 		"branch-alias": {
-			"dev-trunk": "1.17.x-dev"
+			"dev-trunk": "4.0.x-dev"
 		}
 	}
 }

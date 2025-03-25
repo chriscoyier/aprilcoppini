@@ -15,6 +15,7 @@ use DeliciousBrains\WPMDB\Pro\Cli\Export;
 use DeliciousBrains\WPMDB\Pro\Cli\Extra\Cli;
 use DeliciousBrains\WPMDB\Pro\Cli\Extra\CliAddon;
 use DeliciousBrains\WPMDB\Pro\Cli\Extra\Setting;
+use DeliciousBrains\WPMDB\Pro\Compatibility\Layers\Platforms\Platforms;
 use DeliciousBrains\WPMDB\Pro\MF\CliCommand\MediaFilesCli;
 use DeliciousBrains\WPMDB\Pro\MF\MediaFilesRemote;
 use DeliciousBrains\WPMDB\Pro\Migration\Flush;
@@ -137,6 +138,16 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
      */
     private $incremental_size_controller;
 
+    /**
+     * @var Platforms
+     */
+    private $hosting_platform;
+
+    /**
+     * @var RemoteUpdatesManager
+     */
+    public $remote_updates_manager;
+
     public function __construct()
     {
         parent::__construct();
@@ -203,6 +214,8 @@ class ClassMap extends \DeliciousBrains\WPMDB\ClassMap
             $this->properties,
             $this->pro_plugin_manager
         );
+
+        $this->hosting_platform = new Platforms();
 
         $this->usage_tracking = new UsageTracking(
             $this->settings,

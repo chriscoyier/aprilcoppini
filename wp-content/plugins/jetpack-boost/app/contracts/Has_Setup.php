@@ -14,16 +14,6 @@ interface Has_Setup {
 	 * This is a good place to attach hooks
 	 * or perform other tasks that need
 	 * to be performed once.
-	 *
-	 * @return mixed
 	 */
 	public function setup();
-
-	/**
-	 * Return a string - which action should the setup method be run on?
-	 * Typically, this should return `init` or `admin_init`
-	 *
-	 * @return string
-	 */
-	public function setup_trigger();
 }

@@ -1,25 +1,17 @@
 ( function ( window, $, items, models, views, i18n, modalinfo, nonces ) {
 	'use strict';
 
-	var modules,
-		list_table,
-		handle_module_tag_click,
-		$the_table,
-		$the_filters,
-		$the_search,
-		$jp_frame,
-		$bulk_button;
+	var modules, list_table, handle_module_tag_click, $the_filters, $the_search, $bulk_button;
 
-	$the_table = $( '.wp-list-table.jetpack-modules' );
 	$the_filters = $( '.navbar-form' );
 	$the_search = $( '#srch-term-search-input' );
-	$jp_frame = $( '.jp-frame' );
 	$bulk_button = $( '#doaction' );
 
 	modules = new models.Modules( {
 		items: items,
 	} );
 
+	// eslint-disable-next-line no-unused-vars -- Does this have side effects?
 	list_table = new views.List_Table( {
 		el: '#the-list',
 		model: modules,
@@ -30,14 +22,13 @@
 
 	// Handle the filtering of modules.
 	handle_module_tag_click = function ( event ) {
+		$( '.subsubsub' ).find( 'li.current' ).removeClass( 'current' );
+
 		// Switch the item in the subsubsub list that's flagged as current.
 		$( '.subsubsub' )
 			.find( 'a[data-title="' + $( this ).data( 'title' ) + '"]' )
-			.addClass( 'current' )
 			.closest( 'li' )
-			.siblings()
-			.find( 'a.current' )
-			.removeClass( 'current' );
+			.addClass( 'current' );
 
 		event.preventDefault();
 		modules.trigger( 'change' );
