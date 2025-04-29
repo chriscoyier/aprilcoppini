@@ -7,14 +7,10 @@
 
 namespace Automattic\Jetpack\VideoPress;
 
-use WP_Block;
-
 /**
  * Initialized the VideoPress package
  */
 class Initializer {
-
-	const JETPACK_VIDEOPRESS_IFRAME_API_HANDLER = 'jetpack-videopress-iframe-api';
 
 	/**
 	 * Initialization optinos
@@ -127,15 +123,9 @@ class Initializer {
 		XMLRPC::init();
 		Block_Editor_Content::init();
 		self::register_oembed_providers();
-
-		// Enqueuethe VideoPress Iframe API script in the front-end.
-		add_filter( 'embed_oembed_html', array( __CLASS__, 'enqueue_videopress_iframe_api_script' ), 10, 4 );
-
 		if ( self::should_initialize_admin_ui() ) {
 			Admin_UI::init();
 		}
-
-		Divi::init();
 	}
 
 	/**
@@ -149,7 +139,7 @@ class Initializer {
 		// By explicitly declaring the provider here, we can speed things up by not relying on oEmbed discovery.
 		wp_oembed_add_provider( '#^https?://video.wordpress.com/v/.*#', 'https://public-api.wordpress.com/oembed/?for=' . $host, true );
 		// This is needed as it's not supported in oEmbed discovery
-		wp_oembed_add_provider( '|^https?://v\.wordpress\.com/([a-zA-Z\d]{8})(.+)?$|i', 'https://public-api.wordpress.com/oembed/?for=' . $host, true ); // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText
+		wp_oembed_add_provider( '|^https?://v\.wordpress\.com/([a-zA-Z\d]{8})(.+)?$|i', 'https://public-api.wordpress.com/oembed/?for=' . $host, true ); // phpcs:ignore WordPress.WP.CapitalPDangit.Misspelled
 
 		add_filter( 'embed_oembed_html', array( __CLASS__, 'video_enqueue_bridge_when_oembed_present' ), 10, 4 );
 	}
@@ -165,10 +155,10 @@ class Initializer {
 	 * @return string|false
 	 */
 	public static function video_enqueue_bridge_when_oembed_present( $cache, $url, $attr, $post_ID ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-		if ( Utils::is_videopress_url( $url ) ) {
+		if ( preg_match( '/^https?:\/\/(video\.wordpress\.com|videopress\.com)\/(v|embed)\//', $url ) // phpcs:ignore WordPress.WP.CapitalPDangit.Misspelled
+			|| preg_match( '|^https?://v\.wordpress\.com/([a-zA-Z\d]{8})(.+)?$|i', $url ) ) { // phpcs:ignore WordPress.WP.CapitalPDangit.Misspelled
 			Jwt_Token_Bridge::enqueue_jwt_token_bridge();
 		}
-
 		return $cache;
 	}
 
@@ -180,158 +170,6 @@ class Initializer {
 	public static function register_videopress_blocks() {
 		// Register VideoPress Video block.
 		self::register_videopress_video_block();
-	}
-
-	/**
-	 * VideoPress video block render method
-	 *
-	 * @param array    $block_attributes - Block attributes.
-	 * @param string   $content          - Current block markup.
-	 * @param WP_Block $block            - Current block.
-	 *
-	 * @return string                    Block markup.
-	 */
-	public static function render_videopress_video_block( $block_attributes, $content, $block ) {
-		global $wp_embed;
-
-		// CSS classes
-		$align        = isset( $block_attributes['align'] ) ? $block_attributes['align'] : null;
-		$align_class  = $align ? ' align' . $align : '';
-		$custom_class = isset( $block_attributes['className'] ) ? ' ' . $block_attributes['className'] : '';
-		$classes      = 'wp-block-jetpack-videopress jetpack-videopress-player' . $custom_class . $align_class;
-
-		// Inline style
-		$style     = '';
-		$max_width = isset( $block_attributes['maxWidth'] ) ? $block_attributes['maxWidth'] : null;
-
-		if ( $max_width && $max_width !== '100%' ) {
-			$style    = sprintf( 'max-width: %s;', $max_width );
-			$classes .= ' wp-block-jetpack-videopress--has-max-width';
-		}
-
-		/*
-		 * <figcaption /> element
-		 * Caption is stored into the block attributes,
-		 * but also it was stored into the <figcaption /> element,
-		 * meaning that it could be stored in two different places.
-		 */
-		$figcaption = '';
-
-		// Caption from block attributes
-		$caption = isset( $block_attributes['caption'] ) ? $block_attributes['caption'] : null;
-
-		/*
-		 * If the caption is not stored into the block attributes,
-		 * try to get it from the <figcaption /> element.
-		 */
-		if ( $caption === null ) {
-			preg_match( '/<figcaption>(.*?)<\/figcaption>/', $content, $matches );
-			$caption = isset( $matches[1] ) ? $matches[1] : null;
-		}
-
-		// If we have a caption, create the <figcaption /> element.
-		if ( $caption !== null ) {
-			$figcaption = sprintf( '<figcaption>%s</figcaption>', wp_kses_post( $caption ) );
-		}
-
-		// Custom anchor from block content
-		$id_attribute = '';
-
-		// Try to get the custom anchor from the block attributes.
-		if ( isset( $block_attributes['anchor'] ) && $block_attributes['anchor'] ) {
-			$id_attribute = sprintf( 'id="%s"', esc_attr( $block_attributes['anchor'] ) );
-		} elseif ( preg_match( '/<figure[^>]*id="([^"]+)"/', $content, $matches ) ) {
-			// Othwerwise, try to get the custom anchor from the <figure /> element.
-			$id_attribute = sprintf( 'id="%s"', $matches[1] );
-		}
-
-		// Preview On Hover data
-		$is_poh_enabled =
-			isset( $block_attributes['posterData']['previewOnHover'] ) &&
-			$block_attributes['posterData']['previewOnHover'];
-
-		$autoplay = isset( $block_attributes['autoplay'] ) ? $block_attributes['autoplay'] : false;
-		$controls = isset( $block_attributes['controls'] ) ? $block_attributes['controls'] : false;
-		$poster   = isset( $block_attributes['posterData']['url'] ) ? $block_attributes['posterData']['url'] : null;
-
-		$preview_on_hover = '';
-
-		if ( $is_poh_enabled ) {
-			$preview_on_hover = array(
-				'previewAtTime'       => $block_attributes['posterData']['previewAtTime'],
-				'previewLoopDuration' => $block_attributes['posterData']['previewLoopDuration'],
-				'autoplay'            => $autoplay,
-				'showControls'        => $controls,
-			);
-
-			// Create inlione style in case video has a custom poster.
-			$inline_style = '';
-			if ( $poster ) {
-				$inline_style = sprintf(
-					'style="background-image: url(%s); background-size: cover; background-position: center center;"',
-					esc_attr( $poster )
-				);
-			}
-
-			// Expose the preview on hover data to the client.
-			$preview_on_hover = sprintf(
-				'<div class="jetpack-videopress-player__overlay" %s></div><script type="application/json">%s</script>',
-				$inline_style,
-				wp_json_encode( $preview_on_hover )
-			);
-
-			// Set `autoplay` and `muted` attributes to the video element.
-			$block_attributes['autoplay'] = true;
-			$block_attributes['muted']    = true;
-		}
-
-		$figure_template = '
-		<figure class="%1$s" style="%2$s" %3$s>
-			%4$s
-			%5$s
-			%6$s
-		</figure>
-		';
-
-		// VideoPress URL
-		$guid           = isset( $block_attributes['guid'] ) ? $block_attributes['guid'] : null;
-		$videopress_url = Utils::get_video_press_url( $guid, $block_attributes );
-
-		$video_wrapper         = '';
-		$video_wrapper_classes = 'jetpack-videopress-player__wrapper';
-
-		if ( $videopress_url ) {
-			$videopress_url = wp_kses_post( $videopress_url );
-			$oembed_html    = apply_filters( 'video_embed_html', $wp_embed->shortcode( array(), $videopress_url ) );
-			$video_wrapper  = sprintf(
-				'<div class="%s">%s %s</div>',
-				$video_wrapper_classes,
-				$preview_on_hover,
-				$oembed_html
-			);
-		}
-
-		// Get premium content from block context
-		$premium_block_plan_id    = isset( $block->context['premium-content/planId'] ) ? intval( $block->context['premium-content/planId'] ) : 0;
-		$is_premium_content_child = isset( $block->context['isPremiumContentChild'] ) ? (bool) $block->context['isPremiumContentChild'] : false;
-		$maybe_premium_script     = '';
-		if ( $is_premium_content_child ) {
-			Access_Control::instance()->set_guid_subscription( $guid, $premium_block_plan_id );
-			$escaped_guid         = esc_js( $guid );
-			$script_content       = "if ( ! window.__guidsToPlanIds ) { window.__guidsToPlanIds = {}; }; window.__guidsToPlanIds['$escaped_guid'] = $premium_block_plan_id;";
-			$maybe_premium_script = '<script>' . $script_content . '</script>';
-		}
-
-		// $id_attribute, $video_wrapper, $figcaption properly escaped earlier on the code
-		return sprintf(
-			$figure_template,
-			esc_attr( $classes ),
-			esc_attr( $style ),
-			$id_attribute,
-			$video_wrapper,
-			$figcaption,
-			$maybe_premium_script
-		);
 	}
 
 	/**
@@ -355,74 +193,14 @@ class Initializer {
 		// Pick the block name straight from the block metadata .json file.
 		$videopress_video_block_name = $videopress_video_metadata->name;
 
-		// Is the block already registered?
-		$is_block_registered = \WP_Block_Type_Registry::get_instance()->is_registered( $videopress_video_block_name );
+		// Register and enqueue scripts used by the VideoPress block.
+		Block_Editor_Extensions::init( $videopress_video_metadata );
 
 		// Do not register if the block is already registered.
-		if ( $is_block_registered ) {
+		if ( \WP_Block_Type_Registry::get_instance()->is_registered( $videopress_video_block_name ) ) {
 			return;
 		}
 
-		// Is this a REST API request?
-		$is_rest = defined( 'REST_API_REQUEST' ) && REST_API_REQUEST;
-
-		if ( $is_rest ) {
-			register_block_type(
-				$videopress_video_metadata_file,
-				array(
-					'render_callback' => array( __CLASS__, 'render_videopress_video_block' ),
-				)
-			);
-			return;
-		}
-
-		$registration = register_block_type(
-			$videopress_video_metadata_file,
-			array(
-				'render_callback' => array( __CLASS__, 'render_videopress_video_block' ),
-				'uses_context'    => array( 'premium-content/planId', 'isPremiumContentChild', 'selectedPlanId' ),
-			)
-		);
-
-		// Do not enqueue scripts if the block could not be registered.
-		if ( empty( $registration ) || empty( $registration->editor_script_handles ) ) {
-			return;
-		}
-
-		// Extensions use Connection_Initial_State::render_script with script handle as parameter.
-		if ( is_array( $registration->editor_script_handles ) ) {
-			$script_handle = $registration->editor_script_handles[0];
-		} else {
-			$script_handle = $registration->editor_script_handles;
-		}
-
-		// Register and enqueue scripts used by the VideoPress video block.
-		Block_Editor_Extensions::init( $script_handle );
-	}
-
-	/**
-	 * Enqueue the VideoPress Iframe API script
-	 * when the URL of oEmbed HTML is a VideoPress URL.
-	 *
-	 * @param string|false $cache   The cached HTML result, stored in post meta.
-	 * @param string       $url     The attempted embed URL.
-	 * @param array        $attr    An array of shortcode attributes.
-	 * @param int          $post_ID Post ID.
-	 *
-	 * @return string|false
-	 */
-	public static function enqueue_videopress_iframe_api_script( $cache, $url, $attr, $post_ID ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-		if ( Utils::is_videopress_url( $url ) ) {
-			// Enqueue the VideoPress IFrame API in the front-end.
-			wp_enqueue_script(
-				self::JETPACK_VIDEOPRESS_IFRAME_API_HANDLER,
-				'https://s0.wp.com/wp-content/plugins/video/assets/js/videojs/videopress-iframe-api.js',
-				array(),
-				gmdate( 'YW' ),
-				false
-			);
-		}
-
-		return $cache;
+		register_block_type( $videopress_video_metadata_file );
 	}
 }

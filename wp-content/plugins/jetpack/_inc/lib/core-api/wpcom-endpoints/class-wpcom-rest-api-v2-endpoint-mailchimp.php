@@ -70,7 +70,7 @@ class WPCOM_REST_API_V2_Endpoint_Mailchimp extends WP_REST_Controller {
 		if ( ! $data ) {
 			return false;
 		}
-		return isset( $data['follower_list_id'] ) && isset( $data['keyring_id'] );
+		return isset( $data['follower_list_id'], $data['keyring_id'] );
 	}
 
 	/**
@@ -122,16 +122,6 @@ class WPCOM_REST_API_V2_Endpoint_Mailchimp extends WP_REST_Controller {
 				403
 			);
 		}
-
-		// Do not attempt to fetch groups if Mailchimp is not connected.
-		if ( ! $this->is_connected() ) {
-			return new WP_Error(
-				'mailchimp_not_connected',
-				__( 'Your site is not connected to Mailchimp yet.', 'jetpack' ),
-				403
-			);
-		}
-
 		$path    = sprintf( '/sites/%d/mailchimp/groups', absint( $site_id ) );
 		$request = Client::wpcom_json_api_request_as_blog( $path );
 		$body    = wp_remote_retrieve_body( $request );

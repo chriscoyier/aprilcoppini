@@ -5,8 +5,6 @@
  * @package WPSEO\Admin\Menu
  */
 
-use Yoast\WP\SEO\Promotions\Application\Promotion_Manager;
-
 /**
  * Admin menu base class.
  */
@@ -257,11 +255,7 @@ abstract class WPSEO_Base_Menu implements WPSEO_WordPress_Integration {
 		static $title = null;
 
 		if ( $title === null ) {
-			$title = __( 'Upgrades', 'wordpress-seo' );
-		}
-
-		if ( YoastSEO()->classes->get( Promotion_Manager::class )->is( 'black-friday-2024-promotion' ) && ! YoastSEO()->helpers->product->is_premium() ) {
-			$title = __( 'Upgrades', 'wordpress-seo' ) . '<span class="yoast-menu-bf-sale-badge">' . __( '30% OFF', 'wordpress-seo' ) . '</span>';
+			$title = __( 'Premium', 'wordpress-seo' );
 		}
 
 		return $title;

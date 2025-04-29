@@ -20,17 +20,16 @@ use WorDBless\BaseTestCase;
 class Test_Post_List extends BaseTestCase {
 
 	/**
-	 * Post_List::configure() should return and instance of the Post_List class.
+	 * Post_List::get_instance() should return and instance of the Post_List class.
 	 */
-	public function test_configure() {
-		$this->assertInstanceOf( Post_List::class, Post_List::configure() );
+	public function test_get_instance() {
+		$this->assertInstanceOf( Post_List::class, Post_List::get_instance() );
 	}
 
 	/**
 	 * Test the register() method.
 	 */
 	public function test_register() {
-		// We use get_instance() here because we're specifically testing register()
 		$post_list = Post_List::get_instance();
 
 		// did_action() Retrieves the number of times an action has been fired during the current request.
@@ -57,7 +56,7 @@ class Test_Post_List extends BaseTestCase {
 	 * Test the enqueue_scripts() method.
 	 */
 	public function test_enqueue_scripts() {
-		$post_list = Post_List::configure();
+		$post_list = Post_List::get_instance();
 
 		// Confirm that our style, filter, and action have not been added before the enqueue_scripts() method call.
 		$this->assertFalse( wp_style_is( 'jetpack_posts_list_ui_style' ) );
@@ -85,9 +84,9 @@ class Test_Post_List extends BaseTestCase {
 	 * Thumbnail should show up on "Pages", but Share should not, because 'publicize' is not supported on "Pages".
 	 */
 	public function test_add_filters_and_actions_for_screen_thumbnail() {
-		$this->confirm_add_filters_and_actions_for_screen_starts_clean();
+		$post_list = Post_List::get_instance();
 
-		$post_list = Post_List::configure();
+		$this->confirm_add_filters_and_actions_for_screen_starts_clean();
 
 		$current_screen = (object) array(
 			'base'      => 'edit',
@@ -104,10 +103,8 @@ class Test_Post_List extends BaseTestCase {
 		$this->assertTrue( has_action( 'manage_posts_custom_column' ) );
 		$this->assertTrue( has_filter( 'manage_pages_columns' ) );
 		$this->assertTrue( has_action( 'manage_pages_custom_column' ) );
-		$this->assertFalse( has_action( 'post_row_actions', array( $post_list, 'add_share_action' ) ) );
-		$this->assertFalse( has_action( 'page_row_actions', array( $post_list, 'add_share_action' ) ) );
-		$this->assertNotFalse( has_action( 'post_row_actions', array( $post_list, 'add_copy_link_action' ) ) );
-		$this->assertNotFalse( has_action( 'page_row_actions', array( $post_list, 'add_copy_link_action' ) ) );
+		$this->assertFalse( has_action( 'post_row_actions' ) );
+		$this->assertFalse( has_action( 'page_row_actions' ) );
 	}
 
 	/**
@@ -116,8 +113,9 @@ class Test_Post_List extends BaseTestCase {
 	 * types that support publicize and the block editor.
 	 */
 	public function test_add_filters_and_actions_for_screen_share() {
+		$post_list = Post_List::get_instance();
+
 		$this->confirm_add_filters_and_actions_for_screen_starts_clean();
-		$post_list = Post_List::configure();
 
 		// Create a custom post type.
 		register_post_type(
@@ -153,8 +151,9 @@ class Test_Post_List extends BaseTestCase {
 	 * The thumbnail and Share action should be available on "Posts".
 	 */
 	public function test_add_filters_and_actions_for_screen_thumbnail_and_share() {
+		$post_list = Post_List::get_instance();
+
 		$this->confirm_add_filters_and_actions_for_screen_starts_clean();
-		$post_list = Post_List::configure();
 
 		$current_screen = (object) array(
 			'base'      => 'edit',
@@ -182,9 +181,9 @@ class Test_Post_List extends BaseTestCase {
 	 * thumbnails show up.
 	 */
 	public function test_add_filters_and_actions_for_screen_share_flag_disabled() {
+		$post_list = Post_List::get_instance();
 
 		$this->confirm_add_filters_and_actions_for_screen_starts_clean();
-		$post_list = Post_List::configure();
 
 		$current_screen = (object) array(
 			'base'      => 'edit',
@@ -199,17 +198,15 @@ class Test_Post_List extends BaseTestCase {
 		$this->assertTrue( has_action( 'manage_posts_custom_column' ) );
 		$this->assertTrue( has_filter( 'manage_pages_columns' ) );
 		$this->assertTrue( has_action( 'manage_pages_custom_column' ) );
-		$this->assertFalse( has_action( 'post_row_actions', array( $post_list, 'add_share_action' ) ) );
-		$this->assertFalse( has_action( 'page_row_actions', array( $post_list, 'add_share_action' ) ) );
-		$this->assertNotFalse( has_action( 'post_row_actions', array( $post_list, 'add_copy_link_action' ) ) );
-		$this->assertNotFalse( has_action( 'page_row_actions', array( $post_list, 'add_copy_link_action' ) ) );
+		$this->assertFalse( has_action( 'post_row_actions' ) );
+		$this->assertFalse( has_action( 'page_row_actions' ) );
 	}
 
 	/**
 	 * Test the add_filters_and_actions_for_screen() method doesn't add thumbnails or Share if screen not 'edit' base.
 	 */
 	public function test_add_filters_and_actions_for_screen_wrong_screen() {
-		$post_list      = Post_List::configure();
+		$post_list      = Post_List::get_instance();
 		$current_screen = (object) array(
 			'base'      => 'edit-tags',
 			'post_type' => 'post',
@@ -249,7 +246,7 @@ class Test_Post_List extends BaseTestCase {
 			'date'       => 'Date',
 		);
 
-		$post_list       = Post_List::configure();
+		$post_list       = Post_List::get_instance();
 		$columns_results = $post_list->add_thumbnail_column( $columns );
 
 		$this->assertSame( $columns_results, $columns_expected );
@@ -268,7 +265,7 @@ class Test_Post_List extends BaseTestCase {
 			'date'       => 'Date',
 		);
 
-		$post_list       = Post_List::configure();
+		$post_list       = Post_List::get_instance();
 		$columns_results = $post_list->add_thumbnail_column( $columns );
 
 		$this->assertSame( $columns_results, $columns );

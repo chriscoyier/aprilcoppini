@@ -9,37 +9,37 @@ use Yoast\WP\SEO\Helpers\Robots_Txt_Helper;
  */
 class Robots_Txt_Presenter extends Abstract_Presenter {
 
-	public const YOAST_OUTPUT_BEFORE_COMMENT = '# START YOAST BLOCK' . \PHP_EOL . '# ---------------------------' . \PHP_EOL;
+	const YOAST_OUTPUT_BEFORE_COMMENT = '# START YOAST BLOCK' . \PHP_EOL . '# ---------------------------' . \PHP_EOL;
 
-	public const YOAST_OUTPUT_AFTER_COMMENT = '# ---------------------------' . \PHP_EOL . '# END YOAST BLOCK';
+	const YOAST_OUTPUT_AFTER_COMMENT = '# ---------------------------' . \PHP_EOL . '# END YOAST BLOCK';
 
 	/**
 	 * Text to be outputted for the allow directive.
 	 *
 	 * @var string
 	 */
-	public const ALLOW_DIRECTIVE = 'Allow';
+	const ALLOW_DIRECTIVE = 'Allow';
 
 	/**
 	 * Text to be outputted for the disallow directive.
 	 *
 	 * @var string
 	 */
-	public const DISALLOW_DIRECTIVE = 'Disallow';
+	const DISALLOW_DIRECTIVE = 'Disallow';
 
 	/**
 	 * Text to be outputted for the user-agent rule.
 	 *
 	 * @var string
 	 */
-	public const USER_AGENT_FIELD = 'User-agent';
+	const USER_AGENT_FIELD = 'User-agent';
 
 	/**
 	 * Text to be outputted for the sitemap rule.
 	 *
 	 * @var string
 	 */
-	public const SITEMAP_FIELD = 'Sitemap';
+	const SITEMAP_FIELD = 'Sitemap';
 
 	/**
 	 * Holds the Robots_Txt_Helper.
@@ -121,12 +121,13 @@ class Robots_Txt_Presenter extends Abstract_Presenter {
 	private function handle_user_agents( $robots_txt_content ) {
 		$user_agents = $this->robots_txt_helper->get_robots_txt_user_agents();
 
-		if ( ! isset( $user_agents['*'] ) ) {
+		if ( \count( $user_agents ) !== 0 ) {
+			$robots_txt_content = $this->add_user_agent_directives( $user_agents, $robots_txt_content );
+		}
+		else {
 			$robots_txt_content .= 'User-agent: *' . \PHP_EOL;
 			$robots_txt_content .= 'Disallow:' . \PHP_EOL . \PHP_EOL;
 		}
-
-		$robots_txt_content = $this->add_user_agent_directives( $user_agents, $robots_txt_content );
 
 		return $robots_txt_content;
 	}

@@ -2,14 +2,12 @@
 /**
  * EU Cookie Law Widget form.
  *
- * @html-template Jetpack_EU_Cookie_Law_Widget::form
  * @package automattic/jetpack
  */
 
 use Automattic\Jetpack\Redirect;
 
-// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable -- HTML template, let Phan handle it.
-
+// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 ?>
 <p>
 	<strong>
@@ -93,7 +91,7 @@ use Automattic\Jetpack\Redirect;
 					<span style="display: block; margin: .5em 0;">
 						<strong><?php esc_html_e( 'Caution:', 'jetpack' ); ?></strong>
 						<?php
-						printf(
+						echo sprintf(
 							wp_kses(
 								/* Translators: %s is the URL to a Jetpack support article. */
 								__( 'For GDPR compliance, please make sure your policy contains <a href="%s" target="_blank">privacy information relating to WordAds</a>.', 'jetpack' ),

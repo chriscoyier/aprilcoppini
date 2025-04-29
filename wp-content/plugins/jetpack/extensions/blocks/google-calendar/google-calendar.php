@@ -12,6 +12,9 @@ namespace Automattic\Jetpack\Extensions\Google_Calendar;
 use Automattic\Jetpack\Blocks;
 use Jetpack_Gutenberg;
 
+const FEATURE_NAME = 'google-calendar';
+const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
+
 /**
  * Registers the block for use in Gutenberg
  * This is done via an action so that we can disable
@@ -19,7 +22,7 @@ use Jetpack_Gutenberg;
  */
 function register_block() {
 	Blocks::jetpack_register_block(
-		__DIR__,
+		BLOCK_NAME,
 		array(
 			'render_callback' => __NAMESPACE__ . '\load_assets',
 		)
@@ -38,9 +41,9 @@ function load_assets( $attr ) {
 	$url     = isset( $attr['url'] )
 		? Jetpack_Gutenberg::validate_block_embed_url( $attr['url'], array( 'calendar.google.com' ) ) :
 		'';
-	$classes = Blocks::classes( Blocks::get_block_feature( __DIR__ ), $attr );
+	$classes = Blocks::classes( FEATURE_NAME, $attr );
 
-	Jetpack_Gutenberg::load_assets_as_required( __DIR__ );
+	Jetpack_Gutenberg::load_assets_as_required( FEATURE_NAME );
 
 	if ( empty( $url ) ) {
 		return '';

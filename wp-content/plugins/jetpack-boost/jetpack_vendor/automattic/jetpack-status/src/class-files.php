@@ -32,9 +32,9 @@ class Files {
 			return $files;
 		}
 
-		// phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition
+		// phpcs:ignore WordPress.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition
 		while ( false !== $file = readdir( $dir ) ) {
-			if ( str_starts_with( $file, '.' ) || ! str_ends_with( $file, '.php' ) ) {
+			if ( '.' === substr( $file, 0, 1 ) || '.php' !== substr( $file, -4 ) ) {
 				continue;
 			}
 

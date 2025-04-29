@@ -1,4 +1,3 @@
-/* globals analytics, deactivate_dialog, tb_remove */
 /**
  * Adds the Deactivation modal.
  *
@@ -29,14 +28,13 @@
 						// NodeList is static, we need to modify this in the DOM
 
 						$( '#TB_window' ).addClass( 'jetpack-disconnect-modal' );
-						window.deactivationModalCentralize();
+						deactivationModalCentralize();
 
-						$( '#TB_closeWindowButton, #TB_overlay' ).on( 'click', function () {
-							window.deactivationModalTrackCloseEvent();
+						$( '#TB_closeWindowButton, #TB_overlay' ).on( 'click', function ( e ) {
+							deactivationModalTrackCloseEvent();
 						} );
 
 						document.onkeyup = function ( e ) {
-							var keycode;
 							if ( e === null ) {
 								// ie
 								keycode = event.keyCode;
@@ -44,9 +42,9 @@
 								// mozilla
 								keycode = e.which;
 							}
-							if ( keycode === 27 ) {
+							if ( keycode == 27 ) {
 								// close
-								window.deactivationModalTrackCloseEvent();
+								deactivationModalTrackCloseEvent();
 							}
 						};
 
@@ -79,14 +77,14 @@
 	deactivateLinkElem.attr( 'title', deactivate_dialog.title );
 	deactivateLinkElem.addClass( 'thickbox' );
 	deactivateLinkElem.html( deactivate_dialog.deactivate_label );
-	deactivateLinkElem.on( 'click', function () {
+	deactivateLinkElem.on( 'click', function ( e ) {
 		observer.observe( body, { childList: true } );
 		analytics.tracks.recordEvent( 'jetpack_termination_dialog_open', tracksProps );
 	} );
 
-	$( '#jetpack_deactivation_dialog_content__button-cancel' ).on( 'click', function () {
+	$( '#jetpack_deactivation_dialog_content__button-cancel' ).on( 'click', function ( e ) {
 		tb_remove();
-		window.deactivationModalTrackCloseEvent();
+		deactivationModalTrackCloseEvent();
 	} );
 
 	$( '#jetpack_deactivation_dialog_content__button-deactivate' ).on( 'click', function ( e ) {
@@ -94,6 +92,6 @@
 
 		$( this ).prop( 'disabled', true );
 		analytics.tracks.recordEvent( 'jetpack_termination_dialog_termination_click', tracksProps );
-		window.deactivateJetpack();
+		deactivateJetpack();
 	} );
 } )( jQuery );

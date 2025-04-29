@@ -14,6 +14,38 @@ class Jetpack_Internet_Defense_League_Widget extends WP_Widget {
 	public $defaults = array();
 
 	/**
+	 * Selected display variant.
+	 *
+	 * @var string
+	 */
+	public $variant;
+	/**
+	 * Display variants.
+	 *
+	 * @var array
+	 */
+	public $variants = array();
+
+	/**
+	 * Selected campaign.
+	 *
+	 * @var string
+	 */
+	public $campaign;
+	/**
+	 * Campaign options.
+	 *
+	 * @var array
+	 */
+	public $campaigns = array();
+	/**
+	 * False when enabling campaigns other than 'none' or empty.
+	 *
+	 * @var bool
+	 */
+	public $no_current = true;
+
+	/**
 	 * Selected badge to display.
 	 *
 	 * @var string
@@ -40,14 +72,31 @@ class Jetpack_Internet_Defense_League_Widget extends WP_Widget {
 			)
 		);
 
+		// When enabling campaigns other than 'none' or empty, change $no_current to false above.
+		$this->campaigns = array(
+			''     => esc_html__( 'All current and future campaigns', 'jetpack' ),
+			'none' => esc_html__( 'None, just display the badge please', 'jetpack' ),
+		);
+
+		$this->variants = array(
+			'banner' => esc_html__( 'Banner at the top of my site', 'jetpack' ),
+			'modal'  => esc_html__( 'Modal (Overlay Box)', 'jetpack' ),
+		);
+
 		$this->badges = array(
 			'shield_badge'   => esc_html__( 'Shield Badge', 'jetpack' ),
 			'super_badge'    => esc_html__( 'Super Badge', 'jetpack' ),
 			'side_bar_badge' => esc_html__( 'Red Cat Badge', 'jetpack' ),
 		);
 
+		if ( false === $this->no_current ) {
+			$this->badges['none'] = esc_html__( 'Don\'t display a badge (just the campaign)', 'jetpack' );
+		}
+
 		$this->defaults = array(
-			'badge' => key( $this->badges ),
+			'campaign' => key( $this->campaigns ),
+			'variant'  => key( $this->variants ),
+			'badge'    => key( $this->badges ),
 		);
 
 		add_filter( 'widget_types_to_hide_from_legacy_widget_block', array( $this, 'hide_widget_in_block_editor' ) );
@@ -79,18 +128,18 @@ class Jetpack_Internet_Defense_League_Widget extends WP_Widget {
 			if ( ! isset( $this->badges[ $instance['badge'] ] ) ) {
 				$instance['badge'] = $this->defaults['badge'];
 			}
-			$badge_url = 'internet-defense-league/' . $instance['badge'] . '.png';
-
+			$badge_url        = esc_url( 'https://www.internetdefenseleague.org/images/badges/final/' . $instance['badge'] . '.png' );
+			$photon_badge_url = jetpack_photon_url( $badge_url );
+			$alt_text         = esc_html__( 'Member of The Internet Defense League', 'jetpack' );
 			echo $args['before_widget']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
-			printf(
-				'<p><a href="%1$s" target="_blank" rel="noopener noreferrer"><img src="%2$s" alt="%3$s" style="max-width: 100%%; height: auto;" /></a></p>',
-				esc_url( 'https://www.fightforthefuture.org/' ),
-				esc_url( plugins_url( $badge_url, __FILE__ ) ),
-				esc_attr__( 'Member of The Internet Defense League', 'jetpack' )
-			);
-
+			echo '<p><a href="https://www.internetdefenseleague.org/"><img src="' . esc_url( $photon_badge_url ) . '" alt="' . esc_attr( $alt_text ) . '" style="max-width: 100%; height: auto;" /></a></p>';
 			echo $args['after_widget']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+
+		if ( 'none' !== $instance['campaign'] ) {
+			$this->campaign = $instance['campaign'];
+			$this->variant  = $instance['variant'];
+			add_action( 'wp_footer', array( $this, 'footer_script' ) );
 		}
 
 		/** This action is already documented in modules/widgets/gravatar-profile.php */
@@ -99,11 +148,34 @@ class Jetpack_Internet_Defense_League_Widget extends WP_Widget {
 
 	/**
 	 * Inline footer script.
-	 *
-	 * @deprecated 12.5 This widget does not enqueue scripts anymore.
 	 */
 	public function footer_script() {
-		_deprecated_function( __METHOD__, 'jetpack-12.5' );
+		if ( ! isset( $this->campaigns[ $this->campaign ] ) ) {
+			$this->campaign = $this->defaults['campaign'];
+		}
+
+		if ( ! isset( $this->variants[ $this->variant ] ) ) {
+			$this->variant = $this->defaults['variant'];
+		}
+
+		// On AMP endpoints, prevent a validation error from the inline script.
+		if ( class_exists( 'Jetpack_AMP_Support' ) && Jetpack_AMP_Support::is_amp_request() ) {
+			return;
+		}
+
+		?>
+		<script type="text/javascript">
+			window._idl = {};
+			_idl.campaign = "<?php echo esc_js( $this->campaign ); ?>";
+			_idl.variant = "<?php echo esc_js( $this->variant ); ?>";
+			(function() {
+				var idl = document.createElement('script');
+				idl.async = true;
+				idl.src = 'https://members.internetdefenseleague.org/include/?url=' + (_idl.url || '') + '&campaign=' + (_idl.campaign || '') + '&variant=' + (_idl.variant || 'banner');
+				document.getElementsByTagName('body')[0].appendChild(idl);
+			})();
+		</script>
+		<?php
 	}
 
 	/**
@@ -116,27 +188,33 @@ class Jetpack_Internet_Defense_League_Widget extends WP_Widget {
 	public function form( $instance ) {
 		$instance = wp_parse_args( $instance, $this->defaults );
 
+		// Hide first two form fields if no current campaigns.
+		if ( false === $this->no_current ) {
+			echo '<p><label>';
+			echo esc_html__( 'Which Internet Defense League campaign do you want to participate in?', 'jetpack' ) . '<br />';
+			$this->select( 'campaign', $this->campaigns, $instance['campaign'] );
+			echo '</label></p>';
+
+			echo '<p><label>';
+			echo esc_html__( 'How do you want to promote the campaign?', 'jetpack' ) . '<br />';
+			$this->select( 'variant', $this->variants, $instance['variant'] );
+			echo '</label></p>';
+		}
+
 		echo '<p><label>';
 		echo esc_html__( 'Which badge would you like to display?', 'jetpack' ) . '<br />';
-
-		echo '<select class="widefat" name="' . esc_attr( $this->get_field_name( 'badge' ) ) . '">';
-		foreach ( $this->badges as $option_slug => $option_name ) {
-			echo '<option value="' . esc_attr( $option_slug ) . '"' . selected( $option_slug, $instance['badge'], false ) . '>' . esc_html( $option_name ) . '</option>';
-		}
-		echo '</select>';
+		$this->select( 'badge', $this->badges, $instance['badge'] );
 		echo '</label></p>';
 
 		echo '<p>' . wp_kses(
 			sprintf(
 				/* translators: %s is an HTML link to the website of an internet campaign called the "Internet Defense League" */
 				_x( 'Learn more about the %s', 'the Internet Defense League', 'jetpack' ),
-				'<a href="https://www.fightforthefuture.org/" target="_blank" rel="noopener noreferrer">Internet Defense League</a>'
+				'<a href="https://www.internetdefenseleague.org/">Internet Defense League</a>'
 			),
 			array(
 				'a' => array(
-					'href'   => array(),
-					'rel'    => array(),
-					'target' => array(),
+					'href' => array(),
 				),
 			)
 		) . '</p>';
@@ -145,14 +223,16 @@ class Jetpack_Internet_Defense_League_Widget extends WP_Widget {
 	/**
 	 * Display a select form field.
 	 *
-	 * @deprecated 12.5 This widget only has one option now, no need for an extracted method.
-	 *
 	 * @param string $field_name Name of the field.
 	 * @param array  $options Array of options.
 	 * @param string $default Default option.
 	 */
-	public function select( $field_name, $options, $default = null ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-		_deprecated_function( __METHOD__, 'jetpack-12.5' );
+	public function select( $field_name, $options, $default = null ) {
+		echo '<select class="widefat" name="' . esc_attr( $this->get_field_name( $field_name ) ) . '">';
+		foreach ( $options as $option_slug => $option_name ) {
+			echo '<option value="' . esc_attr( $option_slug ) . '"' . selected( $option_slug, $default, false ) . '>' . esc_html( $option_name ) . '</option>';
+		}
+		echo '</select>';
 	}
 
 	/**
@@ -166,9 +246,9 @@ class Jetpack_Internet_Defense_League_Widget extends WP_Widget {
 	public function update( $new_instance, $old_instance ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		$instance = array();
 
-		$instance['badge'] = ( isset( $new_instance['badge'] ) && isset( $this->badges[ $new_instance['badge'] ] ) )
-			? $new_instance['badge']
-			: $this->defaults['badge'];
+		$instance['campaign'] = ( isset( $new_instance['campaign'] ) && isset( $this->campaigns[ $new_instance['campaign'] ] ) ) ? $new_instance['campaign'] : $this->defaults['campaign'];
+		$instance['variant']  = ( isset( $new_instance['variant'] ) && isset( $this->variants[ $new_instance['variant'] ] ) ) ? $new_instance['variant'] : $this->defaults['variant'];
+		$instance['badge']    = ( isset( $new_instance['badge'] ) && isset( $this->badges[ $new_instance['badge'] ] ) ) ? $new_instance['badge'] : $this->defaults['badge'];
 
 		return $instance;
 	}
@@ -180,4 +260,5 @@ class Jetpack_Internet_Defense_League_Widget extends WP_Widget {
 function jetpack_internet_defense_league_init() {
 	register_widget( 'Jetpack_Internet_Defense_League_Widget' );
 }
+
 add_action( 'widgets_init', 'jetpack_internet_defense_league_init' );

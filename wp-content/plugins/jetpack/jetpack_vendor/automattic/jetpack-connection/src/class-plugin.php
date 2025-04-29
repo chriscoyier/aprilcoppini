@@ -32,22 +32,12 @@ class Plugin {
 	private $slug;
 
 	/**
-	 * Users Connection Admin instance.
-	 *
-	 * @var Users_Connection_Admin
-	 */
-	private $users_connection_admin;
-
-	/**
 	 * Initialize the plugin manager.
 	 *
 	 * @param string $slug Plugin slug.
 	 */
 	public function __construct( $slug ) {
 		$this->slug = $slug;
-
-		// Initialize Users_Connection_Admin
-		$this->users_connection_admin = new Users_Connection_Admin();
 	}
 
 	/**
@@ -96,5 +86,37 @@ class Plugin {
 		$plugins = Plugin_Storage::get_all();
 
 		return ! $plugins || ( array_key_exists( $this->slug, $plugins ) && 1 === count( $plugins ) );
+	}
+
+	/**
+	 * Add the plugin to the set of disconnected ones.
+	 *
+	 * @deprecated since 1.39.0.
+	 *
+	 * @return bool
+	 */
+	public function disable() {
+		return true;
+	}
+
+	/**
+	 * Remove the plugin from the set of disconnected ones.
+	 *
+	 * @deprecated since 1.39.0.
+	 *
+	 * @return bool
+	 */
+	public function enable() {
+		return true;
+	}
+
+	/**
+	 * Whether this plugin is allowed to use the connection.
+	 *
+	 * @deprecated since 11.0
+	 * @return bool
+	 */
+	public function is_enabled() {
+		return true;
 	}
 }

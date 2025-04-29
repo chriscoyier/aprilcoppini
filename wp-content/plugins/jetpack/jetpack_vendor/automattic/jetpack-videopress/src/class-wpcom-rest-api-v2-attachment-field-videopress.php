@@ -9,11 +9,6 @@
 
 namespace Automattic\Jetpack\VideoPress;
 
-use Automattic\Jetpack\Connection\Manager as Jetpack_Connection;
-use WP_Post;
-use WP_REST_Request;
-use WP_REST_Response;
-
 /**
  * Add per-attachment VideoPress data.
  *
@@ -96,16 +91,15 @@ class WPCOM_REST_API_V2_Attachment_VideoPress_Field {
 	 * @return string
 	 */
 	public function get( $attachment, $request ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-		if ( ! isset( $attachment['id'] ) ) {
-			return array();
+		if ( defined( 'IS_WPCOM' ) && IS_WPCOM ) {
+			$blog_id = get_current_blog_id();
+		} else {
+			$blog_id = \Jetpack_Options::get_option( 'id' );
 		}
 
-		$blog_id = Jetpack_Connection::get_site_id();
-		if ( ! is_int( $blog_id ) ) {
-			return array();
-		}
+		$post_id = absint( $attachment['id'] );
 
-		$videopress_guid = $this->get_videopress_guid( (int) $attachment['id'], $blog_id );
+		$videopress_guid = $this->get_videopress_guid( $post_id, $blog_id );
 
 		if ( ! $videopress_guid ) {
 			return '';
@@ -131,7 +125,7 @@ class WPCOM_REST_API_V2_Attachment_VideoPress_Field {
 	 * @return string
 	 */
 	public function get_videopress_guid( $attachment_id, $blog_id ) {
-		return video_get_info_by_blogpostid( $blog_id, $attachment_id )->guid ?? '';
+		return video_get_info_by_blogpostid( $blog_id, $attachment_id )->guid;
 	}
 
 	/**

@@ -1,4 +1,4 @@
-<?php // phpcs:ignore WordPress.Files.FileName.NotHyphenatedLowercase
+<?php
 /**
  * This file holds a function that needs to be loaded before WordPress itself
  * on WordPress.com.

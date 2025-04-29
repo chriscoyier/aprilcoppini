@@ -28,3 +28,4 @@ function jetpack_register_social_logos() {
 		);
 	}
 }
+add_action( 'init', 'jetpack_register_social_logos', 1 );

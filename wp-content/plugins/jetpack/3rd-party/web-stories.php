@@ -11,7 +11,7 @@
 namespace Automattic\Jetpack\Web_Stories;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit( 0 );
+	exit;
 }
 
 /**

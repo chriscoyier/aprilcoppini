@@ -233,12 +233,12 @@ class Jetpack_Autoupdate {
 		// Bump numbers.
 
 		if ( ! empty( $this->success['theme'] ) ) {
-			$instance->stat( 'autoupdates/theme-success', is_countable( $this->success['theme'] ) ? count( $this->success['theme'] ) : 0 );
+			$instance->stat( 'autoupdates/theme-success', count( $this->success['theme'] ) );
 			$log['themes_success'] = $this->success['theme'];
 		}
 
 		if ( ! empty( $this->failed['theme'] ) ) {
-			$instance->stat( 'autoupdates/theme-fail', is_countable( $this->failed['theme'] ) ? count( $this->failed['theme'] ) : 0 );
+			$instance->stat( 'autoupdates/theme-fail', count( $this->failed['theme'] ) );
 			$log['themes_failed'] = $this->failed['theme'];
 		}
 
@@ -363,6 +363,7 @@ class Jetpack_Autoupdate {
 		}
 		return $slug;
 	}
+
 }
 
 Jetpack_Autoupdate::init();

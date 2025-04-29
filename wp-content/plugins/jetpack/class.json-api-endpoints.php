@@ -6,11 +6,7 @@
  */
 
 use Automattic\Jetpack\Connection\Client;
-use Automattic\Jetpack\Connection\Manager;
-use Automattic\Jetpack\Connection\Rest_Authentication;
-use Automattic\Jetpack\Connection\Tokens;
 use Automattic\Jetpack\Status;
-use Automattic\Jetpack\Status\Host;
 
 require_once __DIR__ . '/json-api-config.php';
 require_once __DIR__ . '/sal/class.json-api-links.php';
@@ -81,7 +77,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 	 * Maximum version of the api for which to serve this endpoint
 	 *
 	 * @var string
-	 * @phan-suppress PhanUndeclaredConstant -- https://github.com/phan/phan/issues/4855
 	 */
 	public $max_version = WPCOM_JSON_API__CURRENT_VERSION;
 
@@ -103,7 +98,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 	 * Version of the endpoint this endpoint is deprecated in favor of.
 	 *
 	 * @var string
-	 * @phan-suppress PhanUndeclaredConstant -- https://github.com/phan/phan/issues/4855
 	 */
 	protected $new_version = WPCOM_JSON_API__CURRENT_VERSION;
 
@@ -127,20 +121,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 	 * @var array
 	 */
 	public $path_labels = array();
-
-	/**
-	 * The REST endpoint if available.
-	 *
-	 * @var string
-	 */
-	public $rest_route;
-
-	/**
-	 * Jetpack Version in which REST support was introduced.
-	 *
-	 * @var string
-	 */
-	public $rest_min_jp_version;
 
 	/**
 	 * Accepted query parameters
@@ -296,32 +276,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 	public $allow_fallback_to_jetpack_blog_token = false;
 
 	/**
-	 * REST namespace.
-	 */
-	const REST_NAMESPACE = 'jetpack/rest';
-
-	/**
-	 * Post object format.
-	 *
-	 * @var array
-	 */
-	public $post_object_format;
-
-	/**
-	 * Comment object format.
-	 *
-	 * @var array
-	 */
-	public $comment_object_format;
-
-	/**
-	 * Dropdown page object format.
-	 *
-	 * @var array
-	 */
-	public $dropdown_page_object_format;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string|array|object $args Args.
@@ -334,7 +288,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 			'allowed_if_deleted'                   => false,
 			'description'                          => '',
 			'group'                                => '',
-			'stat'                                 => '',
 			'method'                               => 'GET',
 			'path'                                 => '/',
 			'min_version'                          => '0',
@@ -344,8 +297,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 			'new_version'                          => WPCOM_JSON_API__CURRENT_VERSION,
 			'jp_disabled'                          => false,
 			'path_labels'                          => array(),
-			'rest_route'                           => null,
-			'rest_min_jp_version'                  => null,
 			'request_format'                       => array(),
 			'response_format'                      => array(),
 			'query_parameters'                     => array(),
@@ -384,9 +335,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 		$this->max_version = $args['max_version'];
 		$this->deprecated  = $args['deprecated'];
 		$this->new_version = $args['new_version'];
-
-		$this->rest_route          = $args['rest_route'];
-		$this->rest_min_jp_version = $args['rest_min_jp_version'];
 
 		// Ensure max version is not less than min version.
 		if ( version_compare( $this->min_version, $this->max_version, '>' ) ) {
@@ -436,10 +384,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 		$this->example_response     = $args['example_response'];
 
 		$this->api->add( $this );
-
-		if ( ( ! defined( 'IS_WPCOM' ) || ! IS_WPCOM ) && $this->rest_route && ( ! defined( 'XMLRPC_REQUEST' ) || ! XMLRPC_REQUEST ) ) {
-			$this->create_rest_route_for_endpoint();
-		}
 	}
 
 	/**
@@ -467,7 +411,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 	 * @return mixed
 	 */
 	public function input( $return_default_values = true, $cast_and_filter = true ) {
-		$return       = null;
 		$input        = trim( (string) $this->api->post_body );
 		$content_type = (string) $this->api->content_type;
 		if ( $content_type ) {
@@ -483,7 +426,11 @@ abstract class WPCOM_JSON_API_Endpoint {
 			case 'text/json':
 				$return = json_decode( $input, true );
 
-				if ( JSON_ERROR_NONE !== json_last_error() ) {
+				if ( function_exists( 'json_last_error' ) ) {
+					if ( JSON_ERROR_NONE !== json_last_error() ) { // phpcs:ignore PHPCompatibility
+						return null;
+					}
+				} elseif ( $return === null && wp_json_encode( null ) !== $input ) {
 					return null;
 				}
 
@@ -639,7 +586,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 				$return[ $key ] = false;
 				break;
 			case 'url':
-				if ( is_object( $value ) && isset( $value->url ) && str_contains( $value->url, 'https://videos.files.wordpress.com/' ) ) {
+				if ( is_object( $value ) && isset( $value->url ) && false !== strpos( $value->url, 'https://videos.files.wordpress.com/' ) ) {
 					$value = $value->url;
 				}
 				// Check for string since esc_url_raw() expects one.
@@ -662,10 +609,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 					if ( ! empty( $types[0] ) && 'false' === $types[0]['type'] ) {
 						$next_type = array_shift( $types );
 						return $this->cast_and_filter_item( $return, $next_type, $key, $value, $types, $for_output );
-					}
-					if ( is_array( $value ) ) {
-						// Give up rather than setting the value to the string 'Array'.
-						break;
 					}
 				}
 				$return[ $key ] = (string) $value;
@@ -691,19 +634,11 @@ abstract class WPCOM_JSON_API_Endpoint {
 							}
 						}
 
-						foreach ( $files as $k => $file ) {
-							if ( ! isset( $file['tmp_name'] ) || ! is_string( $file['tmp_name'] ) || ! is_uploaded_file( $file['tmp_name'] ) ) {
-								unset( $files[ $k ] );
-							}
-						}
-						if ( $files ) {
-							$return[ $key ] = $files;
-						}
-					} elseif ( isset( $value['tmp_name'] ) && is_string( $value['tmp_name'] ) && is_uploaded_file( $value['tmp_name'] ) ) {
-						$return[ $key ] = $value;
+						$return[ $key ] = $files;
+						break;
 					}
 				}
-				break;
+				// no break - treat as 'array'.
 			case 'array':
 				// Fallback array -> string.
 				if ( is_string( $value ) ) {
@@ -824,8 +759,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 					'is_super_admin' => '(bool)',
 					'roles'          => '(array:string)',
 					'ip_address'     => '(string|false)',
-					'wpcom_id'       => '(int|null)',
-					'wpcom_login'    => '(string|null)',
 				);
 				$return[ $key ] = (object) $this->cast_and_filter( $value, $docs, false, $for_output );
 				break;
@@ -1057,7 +990,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 				'>' => 'subtype',
 				'=' => 'default',
 			) as $operator => $meaning ) {
-				if ( str_contains( $type, $operator ) ) {
+				if ( false !== strpos( $type, $operator ) ) {
 					$item     = explode( $operator, $type, 2 );
 					$return[] = array(
 						'type'   => $item[0],
@@ -1141,7 +1074,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 			<?php
 			$requires_auth = $wpdb->get_row( $wpdb->prepare( 'SELECT requires_authentication FROM rest_api_documentation WHERE `version` = %s AND `path` = %s AND `method` = %s LIMIT 1', $version, untrailingslashit( $doc['path_labeled'] ), $doc['method'] ) );
 			?>
-			<td class="type api-index-item-title"><?php echo ( ! empty( $requires_auth->requires_authentication ) ? 'Yes' : 'No' ); ?></td>
+			<td class="type api-index-item-title"><?php echo ( true === (bool) $requires_auth->requires_authentication ? 'Yes' : 'No' ); ?></td>
 		</tr>
 
 	</tbody>
@@ -1194,7 +1127,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 		</td>
 	</tr>
 
-<?php endforeach; ?>
+			<?php endforeach; ?>
 </tbody>
 </table>
 </section>
@@ -1317,11 +1250,9 @@ abstract class WPCOM_JSON_API_Endpoint {
 							}
 						}
 					}
-					$type = '(' . implode( '|', $type ) . ')';
-					if ( str_contains( $description, ')' ) ) {
-						list( , $description ) = explode( ')', $description, 2 );
-					}
-					$description = trim( $description );
+					$type                  = '(' . join( '|', $type ) . ')';
+					list( , $description ) = explode( ')', $description, 2 );
+					$description           = trim( $description );
 					if ( $default ) {
 						$description .= " Default: $default.";
 					}
@@ -1354,18 +1285,18 @@ abstract class WPCOM_JSON_API_Endpoint {
 
 		if ( 'inherit' === $post->post_status ) {
 			$parent_post     = get_post( $post->post_parent );
-			$post_status_obj = get_post_status_object( $parent_post->post_status ?? $post->post_status );
+			$post_status_obj = get_post_status_object( $parent_post->post_status );
 		} else {
 			$post_status_obj = get_post_status_object( $post->post_status );
 		}
 
-		if ( empty( $post_status_obj->public ) ) {
+		if ( ! $post_status_obj->public ) {
 			if ( is_user_logged_in() ) {
-				if ( ! empty( $post_status_obj->protected ) ) {
+				if ( $post_status_obj->protected ) {
 					if ( ! current_user_can( 'edit_post', $post->ID ) ) {
 						return new WP_Error( 'unauthorized', 'User cannot view post', 403 );
 					}
-				} elseif ( ! empty( $post_status_obj->private ) ) {
+				} elseif ( $post_status_obj->private ) {
 					if ( ! current_user_can( 'read_post', $post->ID ) ) {
 						return new WP_Error( 'unauthorized', 'User cannot view post', 403 );
 					}
@@ -1434,127 +1365,93 @@ abstract class WPCOM_JSON_API_Endpoint {
 	 * @return object
 	 */
 	public function get_author( $author, $show_email_and_ip = false ) {
-		$is_jetpack = null;
-		$login      = null;
-		$email      = null;
-		$name       = null;
-		$first_name = null;
-		$last_name  = null;
-		$nice       = null;
-		$url        = null;
 		$ip_address = isset( $author->comment_author_IP ) ? $author->comment_author_IP : '';
-		$site_id    = -1;
 
 		if ( isset( $author->comment_author_email ) ) {
-			$id         = empty( $author->user_id ) ? 0 : (int) $author->user_id;
-			$login      = '';
-			$email      = $author->comment_author_email;
-			$name       = $author->comment_author;
-			$first_name = '';
-			$last_name  = '';
-			$url        = $author->comment_author_url;
-			$avatar_url = $this->api->get_avatar_url( $author );
-			$nice       = '';
-
-			// Add additional user data to the response if a valid user ID is available.
-			if ( 0 < $id ) {
-				$user = get_user_by( 'id', $id );
-				if ( $user instanceof WP_User ) {
-					$login      = $user->user_login ?? '';
-					$first_name = $user->first_name ?? '';
-					$last_name  = $user->last_name ?? '';
-					$nice       = $user->user_nicename ?? '';
-				} else {
-					trigger_error( 'Unknown user', E_USER_WARNING ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
-				}
-			}
+			$id          = ( isset( $author->user_id ) && $author->user_id ) ? $author->user_id : 0;
+			$login       = '';
+			$email       = $author->comment_author_email;
+			$name        = $author->comment_author;
+			$first_name  = '';
+			$last_name   = '';
+			$url         = $author->comment_author_url;
+			$avatar_url  = $this->api->get_avatar_url( $author );
+			$profile_url = 'https://en.gravatar.com/' . md5( strtolower( trim( $email ) ) );
+			$nice        = '';
+			$site_id     = -1;
 
 			// Comment author URLs and Emails are sent through wp_kses() on save, which replaces "&" with "&amp;"
 			// "&" is the only email/URL character altered by wp_kses().
 			foreach ( array( 'email', 'url' ) as $field ) {
 				$$field = str_replace( '&amp;', '&', $$field );
 			}
-		} elseif ( $author instanceof WP_User || isset( $author->user_email ) ) {
-			$author = $author->ID;
-		} elseif ( isset( $author->user_id ) && $author->user_id ) {
-			$author = $author->user_id;
-		} elseif ( isset( $author->post_author ) ) {
-			// then $author is a Post Object.
-			if ( ! $author->post_author ) {
-				return null;
-			}
-			/**
-			 * Filter whether the current site is a Jetpack site.
-			 *
-			 * @module json-api
-			 *
-			 * @since 3.3.0
-			 *
-			 * @param bool false Is the current site a Jetpack site. Default to false.
-			 * @param int get_current_blog_id() Blog ID.
-			 */
-			$is_jetpack = true === apply_filters( 'is_jetpack_site', false, get_current_blog_id() );
-			$post_id    = $author->ID;
-			if ( $is_jetpack && ( defined( 'IS_WPCOM' ) && IS_WPCOM ) ) {
-				$id         = get_post_meta( $post_id, '_jetpack_post_author_external_id', true );
-				$email      = get_post_meta( $post_id, '_jetpack_author_email', true );
-				$login      = '';
-				$name       = get_post_meta( $post_id, '_jetpack_author', true );
-				$first_name = '';
-				$last_name  = '';
-				$url        = '';
-				$nice       = '';
-			} else {
-				$author = $author->post_author;
-			}
-		}
-
-		if ( ! isset( $id ) ) {
-			$user = get_user_by( 'id', $author );
-			if ( ! $user || is_wp_error( $user ) ) {
-				trigger_error( 'Unknown user', E_USER_WARNING ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
-
-				return null;
-			}
-			$id         = $user->ID;
-			$email      = $user->user_email;
-			$login      = $user->user_login;
-			$name       = $user->display_name;
-			$first_name = $user->first_name;
-			$last_name  = $user->last_name;
-			$url        = $user->user_url;
-			$nice       = $user->user_nicename;
-		}
-		if ( defined( 'IS_WPCOM' ) && IS_WPCOM && ! $is_jetpack ) {
-			/**
-			 * Allow customizing the blog ID returned with the author in WordPress.com REST API queries.
-			 *
-			 * @since 12.9
-			 *
-			 * @module json-api
-			 *
-			 * @param bool|int $active_blog  Blog ID, or false by default.
-			 * @param int      $id           User ID.
-			 */
-			$active_blog = apply_filters( 'wpcom_api_pre_get_active_blog_author', false, $id );
-			if ( false === $active_blog ) {
-				$active_blog = get_active_blog_for_user( $id );
-			}
-			if ( ! empty( $active_blog ) ) {
-				$site_id = $active_blog->blog_id;
-			}
-			if ( $site_id > - 1 ) {
-				$site_visible = (
-					- 1 !== (int) $active_blog->public ||
-					is_private_blog_user( $site_id, get_current_user_id() )
-				);
-			}
-			$profile_url = "https://gravatar.com/{$login}";
 		} else {
-			$profile_url = 'https://gravatar.com/' . md5( strtolower( trim( $email ) ) );
-		}
+			if ( isset( $author->user_id ) && $author->user_id ) {
+				$author = $author->user_id;
+			} elseif ( isset( $author->user_email ) ) {
+				$author = $author->ID;
+			} elseif ( isset( $author->post_author ) ) {
+				// then $author is a Post Object.
+				if ( ! $author->post_author ) {
+					return null;
+				}
+				/**
+				 * Filter whether the current site is a Jetpack site.
+				 *
+				 * @module json-api
+				 *
+				 * @since 3.3.0
+				 *
+				 * @param bool false Is the current site a Jetpack site. Default to false.
+				 * @param int get_current_blog_id() Blog ID.
+				 */
+				$is_jetpack = true === apply_filters( 'is_jetpack_site', false, get_current_blog_id() );
+				$post_id    = $author->ID;
+				if ( $is_jetpack && ( defined( 'IS_WPCOM' ) && IS_WPCOM ) ) {
+					$id         = get_post_meta( $post_id, '_jetpack_post_author_external_id', true );
+					$email      = get_post_meta( $post_id, '_jetpack_author_email', true );
+					$login      = '';
+					$name       = get_post_meta( $post_id, '_jetpack_author', true );
+					$first_name = '';
+					$last_name  = '';
+					$url        = '';
+					$nice       = '';
+				} else {
+					$author = $author->post_author;
+				}
+			}
 
-		if ( ! isset( $avatar_url ) ) {
+			if ( ! isset( $id ) ) {
+				$user = get_user_by( 'id', $author );
+				if ( ! $user || is_wp_error( $user ) ) {
+					trigger_error( 'Unknown user', E_USER_WARNING ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
+
+					return null;
+				}
+				$id         = $user->ID;
+				$email      = $user->user_email;
+				$login      = $user->user_login;
+				$name       = $user->display_name;
+				$first_name = $user->first_name;
+				$last_name  = $user->last_name;
+				$url        = $user->user_url;
+				$nice       = $user->user_nicename;
+			}
+			if ( defined( 'IS_WPCOM' ) && IS_WPCOM && ! $is_jetpack ) {
+				$active_blog = get_active_blog_for_user( $id );
+				$site_id     = $active_blog->blog_id;
+				if ( $site_id > -1 ) {
+					$site_visible = (
+						-1 !== (int) $active_blog->public ||
+						is_private_blog_user( $site_id, get_current_user_id() )
+					);
+				}
+				$profile_url = "https://en.gravatar.com/{$login}";
+			} else {
+				$profile_url = 'https://en.gravatar.com/' . md5( strtolower( trim( $email ) ) );
+				$site_id     = -1;
+			}
+
 			$avatar_url = $this->api->get_avatar_url( $email );
 		}
 
@@ -1583,24 +1480,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 		if ( $site_id > -1 ) {
 			$author['site_ID']      = (int) $site_id;
 			$author['site_visible'] = $site_visible;
-		}
-
-		// Only include WordPress.com user data when author_wpcom_data is enabled.
-		$args = $this->query_args();
-
-		if ( ! empty( $id ) && ! empty( $args['author_wpcom_data'] ) ) {
-			if ( ( new Host() )->is_wpcom_simple() ) {
-				$user                  = get_user_by( 'id', $id );
-				$author['wpcom_id']    = isset( $user->ID ) ? (int) $user->ID : null;
-				$author['wpcom_login'] = $user->user_login ?? '';
-			} else {
-				// If this is a Jetpack site, use the connection manager to get the user data.
-				$wpcom_user_data = ( new Manager() )->get_connected_user_data( $id );
-				if ( $wpcom_user_data && isset( $wpcom_user_data['ID'] ) ) {
-					$author['wpcom_id']    = (int) $wpcom_user_data['ID'];
-					$author['wpcom_login'] = $wpcom_user_data['login'] ?? '';
-				}
-			}
 		}
 
 		return (object) $author;
@@ -1771,14 +1650,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 				$response['length'] = $metadata['length'];
 			}
 
-			if ( empty( $response['length'] ) && isset( $metadata['duration'] ) ) {
-				$response['length'] = (int) $metadata['duration'];
-			}
-
-			if ( empty( $response['length'] ) && isset( $metadata['videopress']['duration'] ) ) {
-				$response['length'] = ceil( $metadata['videopress']['duration'] / 1000 );
-			}
-
 			// add VideoPress info.
 			if ( function_exists( 'video_get_info_by_blogpostid' ) ) {
 				$info = video_get_info_by_blogpostid( $this->api->get_blog_id_for_output(), $media_item->ID );
@@ -1821,7 +1692,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 				}
 
 				$thumbnail_query_data = array();
-				if ( ! empty( $info ) && function_exists( 'video_is_private' ) && video_is_private( $info ) ) {
+				if ( function_exists( 'video_is_private' ) && video_is_private( $info ) ) {
 					$thumbnail_query_data['metadata_token'] = video_generate_auth_token( $info );
 				}
 
@@ -1968,9 +1839,9 @@ abstract class WPCOM_JSON_API_Endpoint {
 	 * relative to now and will convert it to local time using either the
 	 * timezone set in the options table for the blog or the GMT offset.
 	 *
-	 * @param string $date_string Date to parse.
+	 * @param datetime string $date_string Date to parse.
 	 *
-	 * @return array{string,string} ( $local_time_string, $gmt_time_string )
+	 * @return array( $local_time_string, $gmt_time_string )
 	 */
 	public function parse_date( $date_string ) {
 		$date_string_info = date_parse( $date_string );
@@ -2122,7 +1993,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 						foreach ( $base_paths as $base_path ) {
 
 							// only copy hooks with functions which are part of the specified files.
-							if ( str_starts_with( $file_name, $base_path ) ) {
+							if ( 0 === strpos( $file_name, $base_path ) ) {
 								add_action(
 									$to_hook,
 									$callback_data['function'],
@@ -2276,11 +2147,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 			return false;
 		}
 
-		// We don't know if this is an upload or a sideload, but in either case the tmp_name should be a path, not a URL.
-		if ( wp_parse_url( $media_item['tmp_name'], PHP_URL_SCHEME ) !== null ) {
-			return false;
-		}
-
 		// Check if video is longer than 5 minutes.
 		$video_meta = wp_read_video_metadata( $media_item['tmp_name'] );
 		if (
@@ -2336,11 +2202,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 
 				if ( ! $user_can_upload_files ) {
 					$media_id = new WP_Error( 'unauthorized', 'User cannot upload media.', 403 );
-				} elseif ( ! is_array( $media_item ) ) {
-					$media_id   = new WP_Error( 'invalid_input', 'Unable to process request.', 400 );
-					$media_item = array(
-						'name' => 'invalid_file',
-					);
 				} elseif ( $this->media_item_is_free_video_mobile_upload_and_too_long( $media_item ) ) {
 					$media_id = new WP_Error( 'upload_video_length', 'Video uploads longer than 5 minutes require a paid plan.', 400 );
 				} else {
@@ -2443,7 +2304,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 				if ( ! empty( $id3_meta ) ) {
 					// Before updating metadata, ensure that the item is audio.
 					$item = $this->get_media_item_v1_1( $media_id );
-					if ( str_starts_with( $item->mime_type, 'audio/' ) ) {
+					if ( 0 === strpos( $item->mime_type, 'audio/' ) ) {
 						wp_update_attachment_metadata( $media_id, $id3_meta );
 					}
 				}
@@ -2581,7 +2442,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 		if ( ! empty( $video_exts ) ) {
 			foreach ( $video_exts as $ext ) {
 				foreach ( $mime_list as $ext_pattern => $mime ) {
-					if ( '' !== $ext && str_contains( $ext_pattern, $ext ) ) {
+					if ( '' !== $ext && strpos( $ext_pattern, $ext ) !== false ) {
 						$video_mimes[ $ext_pattern ] = $mime;
 					}
 				}
@@ -2685,11 +2546,8 @@ abstract class WPCOM_JSON_API_Endpoint {
 		 */
 		if ( function_exists( 'idn_to_utf8' ) ) {
 			// The third parameter is set explicitly to prevent issues with newer PHP versions compiled with an old ICU version.
-			$variant = defined( 'INTL_IDNA_VARIANT_UTS46' )
-				? INTL_IDNA_VARIANT_UTS46
-				// phpcs:ignore PHPCompatibility.Constants.RemovedConstants.intl_idna_variant_2003Deprecated, PHPCompatibility.Constants.RemovedConstants.intl_idna_variant_2003DeprecatedRemoved
-				: INTL_IDNA_VARIANT_2003; // @phan-suppress-current-line PhanUndeclaredConstant
-			$host = idn_to_utf8( $host, IDNA_DEFAULT, $variant );
+			// phpcs:ignore PHPCompatibility.Constants.RemovedConstants.intl_idna_variant_2003Deprecated, PHPCompatibility.Constants.RemovedConstants.intl_idna_variant_2003DeprecatedRemoved
+			$host = idn_to_utf8( $host, IDNA_DEFAULT, defined( 'INTL_IDNA_VARIANT_UTS46' ) ? INTL_IDNA_VARIANT_UTS46 : INTL_IDNA_VARIANT_2003 );
 		}
 		$subdomain = str_replace( array( '-', '.' ), array( '--', '-' ), $host );
 		return array(
@@ -2706,175 +2564,6 @@ abstract class WPCOM_JSON_API_Endpoint {
 	}
 
 	/**
-	 * Register a REST route for this jsonAPI endpoint.
-	 *
-	 * @return void
-	 * @throws Exception The exception if something goes wrong.
-	 */
-	public function create_rest_route_for_endpoint() {
-		register_rest_route(
-			static::REST_NAMESPACE,
-			$this->build_rest_route(),
-			array(
-				'methods'             => $this->method,
-				'callback'            => array( $this, 'rest_callback' ),
-				'permission_callback' => array( $this, 'rest_permission_callback' ),
-			)
-		);
-	}
-
-	/**
-	 * Handle the rest call.
-	 *
-	 * @param WP_REST_Request $request The request object.
-	 *
-	 * @return mixed|WP_Error
-	 */
-	public function rest_callback( WP_REST_Request $request ) {
-		// phpcs:ignore WordPress.PHP.IniSet.display_errors_Disallowed -- Making sure random warnings don't break JSON.
-		ini_set( 'display_errors', false );
-
-		$blog_id = Jetpack_Options::get_option( 'id' );
-
-		$this->api->initialize();
-		$this->api->endpoint = $this;
-
-		$locale = $request->get_param( 'language' );
-		if ( $locale ) {
-			$this->api->init_locale( $locale );
-		}
-
-		if ( $this->in_testing && ! WPCOM_JSON_API__DEBUG ) {
-			return new WP_Error( 'endpoint_not_available' );
-		}
-
-		$token_data = ( new Manager() )->verify_xml_rpc_signature();
-		if ( ! $token_data || empty( $token_data['token_key'] ) || ! array_key_exists( 'user_id', $token_data ) ) {
-			return new WP_Error( 'response_signature_error' );
-		}
-
-		$token = ( new Tokens() )->get_access_token( $token_data['user_id'], $token_data['token_key'] );
-		if ( is_wp_error( $token ) ) {
-			return $token;
-		}
-		if ( ! $token ) {
-			return new WP_Error( 'response_signature_error' );
-		}
-
-		/** This action is documented in class.json-api.php */
-		do_action( 'wpcom_json_api_output', $this->stat );
-
-		$response = call_user_func_array(
-			array( $this, 'callback' ),
-			array_values( array( $this->path, $blog_id ) + $request->get_url_params() )
-		);
-
-		if ( ! $response && ! is_array( $response ) ) {
-			// Dealing with empty non-array response. Phan is wrong about it being an "impossible condition".
-			$response = new WP_Error( 'empty_response', 'Endpoint response is empty', 500 );
-		}
-
-		$status_code = 200;
-
-		if ( is_wp_error( $response ) ) {
-			$status_code = 500;
-
-			if ( $response->get_error_data() && is_scalar( $response->get_error_data() )
-				&& (string) (int) $response->get_error_data() === (string) $response->get_error_data()
-			) {
-				$status_code = (int) $response->get_error_data();
-			}
-
-			$response = WPCOM_JSON_API::serializable_error( $response );
-		}
-
-		if ( $request->get_param( 'http_envelope' ) ) {
-			$response = WPCOM_JSON_API::wrap_http_envelope( $status_code, $response, 'application/json' );
-		}
-
-		$response = wp_json_encode( $response );
-
-		$nonce = wp_generate_password( 10, false );
-		$hmac  = hash_hmac( 'sha1', $nonce . $response, $token->secret );
-
-		return array(
-			$response,
-			(string) $nonce,
-			(string) $hmac,
-		);
-	}
-
-	/**
-	 * The REST endpoint should only be available for requests signed with a valid blog or user token.
-	 * Declaring it "final" so individual endpoints couldn't remove this requirement.
-	 *
-	 * If you need to add custom permissions to individual endpoints, you can override method `rest_permission_callback_custom()`.
-	 *
-	 * @see self::rest_permission_callback_custom()
-	 *
-	 * @return true|WP_Error
-	 */
-	final public function rest_permission_callback() {
-		$manager = new Manager( 'jetpack' );
-		if ( ! $manager->is_connected() ) {
-			return new WP_Error( 'site_not_connected' );
-		}
-
-		if ( ( $this->allow_jetpack_site_auth && Rest_Authentication::is_signed_with_blog_token() ) || ( get_current_user_id() && Rest_Authentication::is_signed_with_user_token() ) ) {
-			$custom_permission_result = $this->rest_permission_callback_custom();
-
-			// Successful custom permission check.
-			if ( $custom_permission_result === true ) {
-				return true;
-			}
-
-			// Custom permission check errored, returning the error.
-			if ( is_wp_error( $custom_permission_result ) ) {
-				return $custom_permission_result;
-			}
-
-			// Custom permission check failed, but didn't return a specific error. Proceed to returning the generic error.
-		}
-
-		$message = esc_html__(
-			'You do not have the correct user permissions to perform this action. Please contact your site admin if you think this is a mistake.',
-			'jetpack'
-		);
-		return new WP_Error( 'rest_api_invalid_permission', $message, array( 'status' => rest_authorization_required_code() ) );
-	}
-
-	/**
-	 * You can override this method in individual endpoints to add custom permission checks.
-	 * This will run on top of `rest_permission_callback()`.
-	 *
-	 * @see self::rest_permission_callback()
-	 *
-	 * @return true|WP_Error
-	 */
-	public function rest_permission_callback_custom() {
-		return true;
-	}
-
-	/**
-	 * Build the REST endpoint URL.
-	 *
-	 * @return string
-	 */
-	public function build_rest_route() {
-		$version_prefix = $this->max_version ? 'v' . $this->max_version : '';
-		return $version_prefix . $this->rest_route;
-	}
-
-	/**
-	 * Get Jetpack Version where support for the endpoint was introduced.
-	 *
-	 * @return string
-	 */
-	public function get_rest_min_jp_version() {
-		return $this->rest_min_jp_version;
-	}
-
-	/**
 	 * Return endpoint response
 	 *
 	 * @param string $path ... determined by ->$path.
@@ -2885,6 +2574,7 @@ abstract class WPCOM_JSON_API_Endpoint {
 	 *  $data: HTTP 200, json_encode( $data ) response body
 	 */
 	abstract public function callback( $path = '' );
+
 }
 
 require_once __DIR__ . '/json-endpoints.php';

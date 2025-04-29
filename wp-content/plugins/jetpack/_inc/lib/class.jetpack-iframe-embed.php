@@ -39,7 +39,7 @@ class Jetpack_Iframe_Embed {
 		if ( defined( 'IS_WPCOM' ) && IS_WPCOM ) {
 			wp_enqueue_script(
 				'jetpack-iframe-embed',
-				'/wp-content/mu-plugins/jetpack-iframe-embed/jetpack-iframe-embed.js',
+				WPMU_PLUGIN_URL . '/jetpack-iframe-embed/jetpack-iframe-embed.js',
 				array( 'jquery' ),
 				$ver,
 				false

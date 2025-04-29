@@ -4,17 +4,12 @@
 	"type": "jetpack-library",
 	"license": "GPL-2.0-or-later",
 	"require": {
-		"php": ">=7.2",
-		"automattic/jetpack-status": "^5.0.7"
+		"automattic/jetpack-status": "^1.15.4"
 	},
 	"require-dev": {
-		"brain/monkey": "^2.6.2",
-		"yoast/phpunit-polyfills": "^1.1.1",
-		"automattic/jetpack-changelogger": "^6.0.1",
-		"automattic/phpunit-select-config": "^1.0.0"
-	},
-	"suggest": {
-		"automattic/jetpack-autoloader": "Allow for better interoperability with other plugins that use this package."
+		"brain/monkey": "2.6.1",
+		"yoast/phpunit-polyfills": "1.0.4",
+		"automattic/jetpack-changelogger": "^3.3.1"
 	},
 	"autoload": {
 		"classmap": [
@@ -23,10 +18,10 @@
 	},
 	"scripts": {
 		"phpunit": [
-			"phpunit-select-config phpunit.#.xml.dist --colors=always"
+			"./vendor/phpunit/phpunit/phpunit --colors=always"
 		],
 		"test-coverage": [
-			"php -dpcov.directory=. ./vendor/bin/phpunit-select-config phpunit.#.xml.dist --coverage-php \"$COVERAGE_DIR/php.cov\""
+			"php -dpcov.directory=. ./vendor/bin/phpunit --coverage-clover \"$COVERAGE_DIR/clover.xml\""
 		],
 		"test-php": [
 			"@composer phpunit"
@@ -41,7 +36,7 @@
 			"link-template": "https://github.com/Automattic/jetpack-redirect/compare/v${old}...v${new}"
 		},
 		"branch-alias": {
-			"dev-trunk": "3.0.x-dev"
+			"dev-trunk": "1.7.x-dev"
 		}
 	}
 }

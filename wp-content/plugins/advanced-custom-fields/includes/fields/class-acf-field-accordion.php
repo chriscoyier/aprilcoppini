@@ -7,9 +7,9 @@ if ( ! class_exists( 'acf_field__accordion' ) ) :
 		public $show_in_rest = false;
 
 		/**
-		 * initialize
+		 *  initialize
 		 *
-		 * This function will setup the field type data
+		 *  This function will setup the field type data
 		 *
 		 * @date  30/10/17
 		 * @since 5.6.3
@@ -17,20 +17,14 @@ if ( ! class_exists( 'acf_field__accordion' ) ) :
 		 * @param  n/a
 		 * @return n/a
 		 */
+
 		function initialize() {
 
 			// vars
-			$this->name          = 'accordion';
-			$this->label         = __( 'Accordion', 'acf' );
-			$this->category      = 'layout';
-			$this->description   = __( 'Allows you to group and organize custom fields into collapsable panels that are shown while editing content. Useful for keeping large datasets tidy.', 'acf' );
-			$this->preview_image = acf_get_url() . '/assets/images/field-type-previews/field-preview-accordion.png';
-			$this->doc_url       = acf_add_url_utm_tags( 'https://www.advancedcustomfields.com/resources/accordion/', 'docs', 'field-type-selection' );
-			$this->supports      = array(
-				'required' => false,
-				'bindings' => false,
-			);
-			$this->defaults      = array(
+			$this->name     = 'accordion';
+			$this->label    = __( 'Accordion', 'acf' );
+			$this->category = 'layout';
+			$this->defaults = array(
 				'open'         => 0,
 				'multi_expand' => 0,
 				'endpoint'     => 0,
@@ -39,9 +33,9 @@ if ( ! class_exists( 'acf_field__accordion' ) ) :
 
 
 		/**
-		 * render_field
+		 *  render_field
 		 *
-		 * Create the HTML interface for your field
+		 *  Create the HTML interface for your field
 		 *
 		 * @date  30/10/17
 		 * @since 5.6.3
@@ -49,6 +43,7 @@ if ( ! class_exists( 'acf_field__accordion' ) ) :
 		 * @param  array $field
 		 * @return n/a
 		 */
+
 		function render_field( $field ) {
 
 			// vars
@@ -62,20 +57,23 @@ if ( ! class_exists( 'acf_field__accordion' ) ) :
 			?>
 		<div <?php echo acf_esc_attrs( $atts ); ?>></div>
 			<?php
+
 		}
 
 
 
-		/**
-		 * Create extra options for your field. This is rendered when editing a field.
-		 * The value of $field['name'] can be used (like bellow) to save extra data to the $field
-		 *
-		 * @param   $field  - an array holding all the field's data
-		 *
-		 * @type    action
-		 * @since   3.6
-		 * @date    23/01/13
-		 */
+		/*
+		*  render_field_settings()
+		*
+		*  Create extra options for your field. This is rendered when editing a field.
+		*  The value of $field['name'] can be used (like bellow) to save extra data to the $field
+		*
+		*  @param   $field  - an array holding all the field's data
+		*
+		*  @type    action
+		*  @since   3.6
+		*  @date    23/01/13
+		*/
 		function render_field_settings( $field ) {
 			acf_render_field_setting(
 				$field,
@@ -91,7 +89,7 @@ if ( ! class_exists( 'acf_field__accordion' ) ) :
 			acf_render_field_setting(
 				$field,
 				array(
-					'label'        => __( 'Multi-Expand', 'acf' ),
+					'label'        => __( 'Multi-expand', 'acf' ),
 					'instructions' => __( 'Allow this accordion to open without closing others.', 'acf' ),
 					'name'         => 'multi_expand',
 					'type'         => 'true_false',
@@ -112,17 +110,20 @@ if ( ! class_exists( 'acf_field__accordion' ) ) :
 		}
 
 
-		/**
-		 * This filter is appied to the $field after it is loaded from the database
-		 *
-		 * @type    filter
-		 * @since   3.6
-		 * @date    23/01/13
-		 *
-		 * @param   $field - the field array holding all the field options
-		 *
-		 * @return  $field - the field array holding all the field options
-		 */
+		/*
+		*  load_field()
+		*
+		*  This filter is appied to the $field after it is loaded from the database
+		*
+		*  @type    filter
+		*  @since   3.6
+		*  @date    23/01/13
+		*
+		*  @param   $field - the field array holding all the field options
+		*
+		*  @return  $field - the field array holding all the field options
+		*/
+
 		function load_field( $field ) {
 
 			// remove name to avoid caching issue
@@ -137,6 +138,7 @@ if ( ! class_exists( 'acf_field__accordion' ) ) :
 			// return
 			return $field;
 		}
+
 	}
 
 

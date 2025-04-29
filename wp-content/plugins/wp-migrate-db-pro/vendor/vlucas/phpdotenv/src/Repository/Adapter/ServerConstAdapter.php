@@ -18,31 +18,22 @@ class ServerConstAdapter implements AvailabilityInterface, ReaderInterface, Writ
     /**
      * Get an environment variable, if it exists.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return \PhpOption\Option<string|null>
      */
     public function get($name)
     {
-        if (!\array_key_exists($name, $_SERVER)) {
-            return None::create();
-        }
-        $value = $_SERVER[$name];
-        if (\is_scalar($value)) {
-            /** @var \PhpOption\Option<string|null> */
-            return Some::create((string) $value);
-        }
-        if (null === $value) {
-            /** @var \PhpOption\Option<string|null> */
-            return Some::create(null);
+        if (\array_key_exists($name, $_SERVER)) {
+            return Some::create($_SERVER[$name]);
         }
         return None::create();
     }
     /**
      * Set an environment variable.
      *
-     * @param non-empty-string $name
-     * @param string|null      $value
+     * @param string      $name
+     * @param string|null $value
      *
      * @return void
      */
@@ -53,7 +44,7 @@ class ServerConstAdapter implements AvailabilityInterface, ReaderInterface, Writ
     /**
      * Clear an environment variable.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return void
      */

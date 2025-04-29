@@ -24,7 +24,7 @@ function JetpackLikesPostMessage( message, target ) {
 	if ( typeof message === 'string' ) {
 		try {
 			message = JSON.parse( message );
-		} catch {
+		} catch ( e ) {
 			return;
 		}
 	}
@@ -38,8 +38,8 @@ function JetpackLikesPostMessage( message, target ) {
 				} ),
 				'*'
 			);
-		} catch {
-			// Ignore error
+		} catch ( e ) {
+			return;
 		}
 	}
 }
@@ -94,7 +94,7 @@ function JetpackLikesMessageListener( event ) {
 	if ( typeof message === 'string' ) {
 		try {
 			message = JSON.parse( message );
-		} catch {
+		} catch ( err ) {
 			return;
 		}
 	}
@@ -125,23 +125,38 @@ function JetpackLikesMessageListener( event ) {
 				const sdTextColorStyles = ( sdTextColor && getComputedStyle( sdTextColor ) ) || {};
 				const sdLinkColorStyles = ( sdLinkColor && getComputedStyle( sdLinkColor ) ) || {};
 
+				if ( document.querySelectorAll( 'iframe.admin-bar-likes-widget' ).length > 0 ) {
+					JetpackLikesPostMessage( { event: 'adminBarEnabled' }, window.frames[ 'likes-master' ] );
+
+					const bgSource = document.querySelector(
+						'#wpadminbar .quicklinks li#wp-admin-bar-wpl-like > a'
+					);
+
+					const wpAdminBar = document.querySelector( '#wpadminbar' );
+
+					stylesData.adminBarStyles = {
+						background: bgSource && getComputedStyle( bgSource ).background,
+						isRtl: wpAdminBar && getComputedStyle( wpAdminBar ).direction === 'rtl',
+					};
+				}
+
 				// enable reblogs if we're on a single post page
 				if ( document.body.classList.contains( 'single' ) ) {
 					JetpackLikesPostMessage( { event: 'reblogsEnabled' }, window.frames[ 'likes-master' ] );
 				}
 
 				stylesData.textStyles = {
-					color: sdTextColorStyles.color,
+					color: sdTextColorStyles[ 'color' ],
 					fontFamily: sdTextColorStyles[ 'font-family' ],
 					fontSize: sdTextColorStyles[ 'font-size' ],
-					direction: sdTextColorStyles.direction,
+					direction: sdTextColorStyles[ 'direction' ],
 					fontWeight: sdTextColorStyles[ 'font-weight' ],
 					fontStyle: sdTextColorStyles[ 'font-style' ],
 					textDecoration: sdTextColorStyles[ 'text-decoration' ],
 				};
 
 				stylesData.linkStyles = {
-					color: sdLinkColorStyles.color,
+					color: sdLinkColorStyles[ 'color' ],
 					fontFamily: sdLinkColorStyles[ 'font-family' ],
 					fontSize: sdLinkColorStyles[ 'font-size' ],
 					textDecoration: sdLinkColorStyles[ 'text-decoration' ],
@@ -161,12 +176,6 @@ function JetpackLikesMessageListener( event ) {
 			if ( placeholder ) {
 				placeholder.style.display = 'none';
 			}
-
-			// Add a `liked` class to the wrapper if the post already has likes.
-			if ( data.total > 0 ) {
-				document.querySelector( `#${ data.id }` ).classList.add( 'liked' );
-			}
-
 			break;
 		}
 
@@ -191,24 +200,8 @@ function JetpackLikesMessageListener( event ) {
 			}
 			break;
 
-		case 'hideOtherGravatars': {
-			hideLikersPopover();
-			break;
-		}
-
-		case 'clickPostLike':
-			// Add or remove the wrapper `liked` class based on the total likes.
-			if ( data.total > 0 ) {
-				document.querySelector( `#${ data.id }` ).classList.add( 'liked' );
-			} else {
-				document.querySelector( `#${ data.id }` ).classList.remove( 'liked' );
-			}
-
-			break;
-
 		case 'showOtherGravatars': {
 			const container = document.querySelector( '#likes-other-gravatars' );
-
 			if ( ! container ) {
 				break;
 			}
@@ -220,146 +213,74 @@ function JetpackLikesMessageListener( event ) {
 
 			container
 				.querySelectorAll( '.likes-text span' )
-				.forEach( item => ( item.textContent = data.totalLikesLabel ) );
+				.forEach( item => ( item.textContent = data.total ) );
 
-			( data.likers || [] ).forEach( async ( liker, index ) => {
+			( data.likers || [] ).forEach( liker => {
 				if ( liker.profile_URL.substr( 0, 4 ) !== 'http' ) {
 					// We only display gravatars with http or https schema
 					return;
 				}
 
 				const element = document.createElement( 'li' );
-				list.append( element );
-
-				const profileLink = encodeURI( liker.profile_URL );
-				const avatarLink = encodeURI( liker.avatar_URL );
-				element.innerHTML = `<a href="${ profileLink }" rel="nofollow" target="_parent" class="wpl-liker">
-						<img src="${ avatarLink }"
+				element.innerHTML = `
+					<a href="${ encodeURI( liker.profile_URL ) }" rel="nofollow" target="_parent" class="wpl-liker">
+						<img src="${ encodeURI( liker.avatar_URL ) }"
 							alt=""
-							style="width: 28px; height: 28px;" />
-						<span></span>
-					</a>`;
+							style="width: 30px; height: 30px; padding-right: 3px;" />
+					</a>
+				`;
+
+				list.append( element );
 
 				// Add some extra attributes through native methods, to ensure strings are sanitized.
 				element.classList.add( liker.css_class );
-				element.querySelector( 'img' ).alt = data.avatarAltTitle.replace( '%s', liker.name );
-				element.querySelector( 'span' ).innerText = liker.name;
-
-				if ( index === data.likers.length - 1 ) {
-					element.addEventListener( 'keydown', e => {
-						if ( e.key === 'Tab' && ! e.shiftKey ) {
-							e.preventDefault();
-							hideLikersPopover();
-
-							JetpackLikesPostMessage(
-								{ event: 'focusLikesCount', parent: data.parent },
-								window.frames[ 'likes-master' ]
-							);
-						}
-					} );
-				}
+				element.querySelector( 'img' ).alt = liker.name;
 			} );
 
-			const positionPopup = function () {
-				const containerStyle = getComputedStyle( container );
-				const isRtl = containerStyle.direction === 'rtl';
-
-				const el = document.querySelector( `*[name='${ data.parent }']` );
-				const rect = el.getBoundingClientRect();
-				const win = el.ownerDocument.defaultView;
-				const offset = {
-					top: rect.top + win.pageYOffset,
-					left: rect.left + win.pageXOffset,
-				};
-
-				let containerLeft = 0;
-				container.style.top = offset.top + data.position.top - 1 + 'px';
-
-				if ( isRtl ) {
-					const visibleAvatarsCount = data && data.likers ? Math.min( data.likers.length, 5 ) : 0;
-					// 24px is the width of the avatar + 4px is the padding between avatars
-					containerLeft = offset.left + data.position.left + 24 * visibleAvatarsCount + 4;
-					container.style.transform = 'translateX(-100%)';
-				} else {
-					containerLeft = offset.left + data.position.left;
-				}
-				container.style.left = containerLeft + 'px';
-
-				// Container width - padding
-				const initContainerWidth = data.width - 20;
-				const rowLength = Math.floor( initContainerWidth / 37 );
-				// # of rows + (avatar + avatar padding) + text above + container padding
-				let height = Math.ceil( data.likers.length / rowLength ) * 37 + 17 + 22;
-				if ( height > 204 ) {
-					height = 204;
-				}
-
-				// If the popup overflows viewport width, we should show it on the next line.
-				// Push it offscreen to calculated rendered width.
-				container.style.left = '-9999px';
-				container.style.display = 'block';
-
-				// If the popup exceeds the viewport width,
-				// flip the position of the popup.
-				const containerWidth = container.offsetWidth;
-				const containerRight = containerLeft + containerWidth;
-				if ( containerRight > win.innerWidth ) {
-					containerLeft = rect.right - containerWidth;
-				}
-
-				// Set the container left
-				container.style.left = containerLeft + 'px';
-				container.setAttribute( 'aria-hidden', 'false' );
+			const el = document.querySelector( `*[name='${ data.parent }']` );
+			const rect = el.getBoundingClientRect();
+			const win = el.ownerDocument.defaultView;
+			const offset = {
+				top: rect.top + win.pageYOffset,
+				left: rect.left + win.pageXOffset,
 			};
 
-			positionPopup();
-			container.focus();
+			container.style.left = offset.left + data.position.left - 10 + 'px';
+			container.style.top = offset.top + data.position.top - 33 + 'px';
 
-			const debounce = function ( func, wait ) {
-				var timeout;
-				return function () {
-					var context = this;
-					var args = arguments;
-					clearTimeout( timeout );
-					timeout = setTimeout( function () {
-						func.apply( context, args );
-					}, wait );
-				};
-			};
+			const rowLength = Math.floor( data.width / 37 );
+			let height = Math.ceil( data.likers.length / rowLength ) * 37 + 13;
+			if ( height > 204 ) {
+				height = 204;
+			}
 
-			const debouncedPositionPopup = debounce( positionPopup, 100 );
+			const containerWidth = rowLength * 37 - 7;
+			container.style.height = height + 'px';
+			container.style.width = containerWidth + 'px';
 
-			// Keep a reference of this function in the element itself
-			// so that we can destroy it later
-			container.__resizeHandler = debouncedPositionPopup;
+			const listWidth = rowLength * 37;
+			list.style.width = listWidth + 'px';
 
-			// When window is resized, resize the popup.
-			window.addEventListener( 'resize', debouncedPositionPopup );
+			container.style.display = 'block';
 
-			container.focus();
+			const scrollbarWidth = list.offsetWidth - list.clientWidth;
+			if ( scrollbarWidth > 0 ) {
+				container.style.width = containerWidth + scrollbarWidth + 'px';
+				list.style.width = listWidth + scrollbarWidth + 'px';
+			}
 		}
 	}
 }
 
 window.addEventListener( 'message', JetpackLikesMessageListener );
 
-function hideLikersPopover() {
+document.addEventListener( 'click', e => {
 	const container = document.querySelector( '#likes-other-gravatars' );
 
-	if ( container ) {
+	if ( container && ! container.contains( e.target ) ) {
 		container.style.display = 'none';
-		container.setAttribute( 'aria-hidden', 'true' );
-
-		// Remove the resize event listener and cleanup.
-		const resizeHandler = container.__resizeHandler;
-		if ( resizeHandler ) {
-			window.removeEventListener( 'resize', resizeHandler );
-			delete container.__resizeHandler;
-		}
 	}
-}
-
-document.addEventListener( 'click', hideLikersPopover );
+} );
 
 function JetpackLikesWidgetQueueHandler() {
 	var wrapperID;

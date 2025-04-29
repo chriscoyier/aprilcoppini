@@ -110,10 +110,8 @@ abstract class Jetpack_Sitemap_Buffer {
 		$this->is_full_flag = false;
 		$this->timestamp    = $time;
 
-		$this->finder                  = new Jetpack_Sitemap_Finder();
-		$this->doc                     = new DOMDocument( '1.0', 'UTF-8' );
-		$this->doc->formatOutput       = true;
-		$this->doc->preserveWhiteSpace = false;
+		$this->finder = new Jetpack_Sitemap_Finder();
+		$this->doc    = new DOMDocument( '1.0', 'UTF-8' );
 
 		$this->item_capacity = max( 1, (int) $item_limit );
 		$this->byte_capacity = max( 1, (int) $byte_limit ) - strlen( $this->doc->saveXML() );
@@ -268,7 +266,6 @@ abstract class Jetpack_Sitemap_Buffer {
 	 * @return string|DOMDocument The rendered XML string or an object if root element is specified.
 	 */
 	protected function array_to_xml_string( $array, $parent = null, $root = null ) {
-		$element       = null;
 		$return_string = false;
 
 		if ( null === $parent ) {

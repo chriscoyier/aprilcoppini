@@ -115,3 +115,4 @@ class WPCOM_JSON_API_Update_Site_Logo_Endpoint extends WPCOM_JSON_API_Endpoint {
 		);
 	}
 }
+

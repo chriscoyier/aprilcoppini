@@ -1,7 +1,9 @@
 <?php
 
 namespace DeliciousBrains\WPMDB\Common\Queue;
-use DateTime;
+
+use DeliciousBrains\WPMDB\Common\Queue\Carbon;
+use Exception;
 
 abstract class Job {
 
@@ -16,17 +18,17 @@ abstract class Job {
 	private $attempts;
 
 	/**
-	 * @var DateTime
+	 * @var Carbon
 	 */
 	private $reserved_at;
 
 	/**
-	 * @var DateTime
+	 * @var Carbon
 	 */
 	private $available_at;
 
 	/**
-	 * @var DateTime
+	 * @var Carbon
 	 */
 	private $created_at;
 
@@ -84,7 +86,7 @@ abstract class Job {
 	/**
 	 * Get reserved at date.
 	 *
-	 * @return DateTime
+	 * @return Carbon
 	 */
 	public function reserved_at() {
 		return $this->reserved_at;
@@ -93,7 +95,7 @@ abstract class Job {
 	/**
 	 * Set reserved at date.
 	 *
-	 * @param null|DateTime $reserved_at
+	 * @param null|Carbon $reserved_at
 	 */
 	public function set_reserved_at( $reserved_at ) {
 		$this->reserved_at = $reserved_at;
@@ -102,7 +104,7 @@ abstract class Job {
 	/**
 	 * Get available at date.
 	 *
-	 * @return DateTime
+	 * @return Carbon
 	 */
 	public function available_at() {
 		return $this->available_at;
@@ -111,16 +113,16 @@ abstract class Job {
 	/**
 	 * Set available at date.
 	 *
-	 * @param DateTime $available_at
+	 * @param Carbon $available_at
 	 */
-	public function set_available_at( DateTime $available_at ) {
+	public function set_available_at( Carbon $available_at ) {
 		$this->available_at = $available_at;
 	}
 
 	/**
 	 * Get created at date.
 	 *
-	 * @return DateTime
+	 * @return Carbon
 	 */
 	public function created_at() {
 		return $this->created_at;
@@ -129,9 +131,9 @@ abstract class Job {
 	/**
 	 * Set created at date.
 	 *
-	 * @param DateTime $created_at
+	 * @param Carbon $created_at
 	 */
-	public function set_created_at( DateTime $created_at ) {
+	public function set_created_at( Carbon $created_at ) {
 		$this->created_at = $created_at;
 	}
 

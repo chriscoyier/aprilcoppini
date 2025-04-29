@@ -53,8 +53,6 @@ class Post_Helper {
 	 * @required
 	 *
 	 * @param Indexable_Repository $repository The indexable repository.
-	 *
-	 * @return void
 	 */
 	public function set_indexable_repository( Indexable_Repository $repository ) {
 		$this->repository = $repository;
@@ -179,9 +177,9 @@ class Post_Helper {
 	 */
 	public function is_post_indexable( $post_id ) {
 		// Don't index posts which are not public (i.e. viewable).
-		$post_type = \get_post_type( $post_id );
-
-		if ( ! $this->post_type->is_of_indexable_post_type( $post_type ) ) {
+		$post_type    = \get_post_type( $post_id );
+		$public_types = $this->post_type->get_indexable_post_types();
+		if ( ! \in_array( $post_type, $public_types, true ) ) {
 			return false;
 		}
 
@@ -221,7 +219,7 @@ class Post_Helper {
 		/**
 		 * Filter: 'wpseo_public_post_statuses' - List of public post statuses.
 		 *
-		 * @param array $post_statuses Post status list, defaults to array( 'publish' ).
+		 * @api array $post_statuses Post status list, defaults to array( 'publish' ).
 		 */
 		return \apply_filters( 'wpseo_public_post_statuses', [ 'publish' ] );
 	}

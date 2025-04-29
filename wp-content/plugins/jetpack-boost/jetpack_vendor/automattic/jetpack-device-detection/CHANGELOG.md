@@ -5,87 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.4] - 2025-03-17
-### Changed
-- Internal updates.
-
-## [3.0.3] - 2025-03-12
-### Changed
-- Internal updates.
-
-## [3.0.2] - 2025-03-05
-### Changed
-- Internal updates.
-
-## [3.0.1] - 2025-02-24
-### Changed
-- Update dependencies.
-
-## [3.0.0] - 2024-11-14
-### Removed
-- General: Update minimum PHP version to 7.2. [#40147]
-
-## [2.1.6] - 2024-11-04
-### Added
-- Enable test coverage. [#39961]
-
-## [2.1.5] - 2024-09-16
-### Changed
-- Device_Detection::get_info() will now memoize its result [#39338]
-
-## [2.1.4] - 2024-08-23
-### Changed
-- Updated package dependencies. [#39004]
-
-## [2.1.3] - 2024-04-08
-### Added
-- Added functionality for extracting the browser and desktop platform from a user agent. [#36568]
-
-### Changed
-- Add new bots. [#36477]
-
-## [2.1.2] - 2024-03-18
-### Changed
-- Internal updates.
-
-## [2.1.1] - 2024-03-14
-### Changed
-- Internal updates.
-
-## [2.1.0] - 2024-02-22
-### Changed
-- Update the bot list with more bots [#35798]
-
-## [2.0.1] - 2023-11-21
-### Changed
-- Added a note of non-usage of PHP8+ functions yet. [#34137]
-
-## [2.0.0] - 2023-11-20
-### Changed
-- Updated required PHP version to >= 7.0. [#34192]
-
-## [1.5.1] - 2023-11-14
-
-## [1.5.0] - 2023-11-13
-### Added
-- Added 'cookieinformationscanner' and 'facebookexternalhit' to the bot user agent list. [#34026]
-
-## [1.4.27] - 2023-08-23
-### Changed
-- Updated package dependencies. [#32605]
-
-## [1.4.26] - 2023-06-12
-### Fixed
-- Catch PHP notice if User Agent is not available [#31279]
-
-## [1.4.25] - 2023-04-10
-### Added
-- Add Jetpack Autoloader package suggestion. [#29988]
-
-## [1.4.24] - 2023-02-20
-### Changed
-- Minor internal updates.
-
 ## [1.4.23] - 2023-01-11
 ### Changed
 - Updated package dependencies.
@@ -228,26 +147,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Moving jetpack_is_mobile into a package
 
-[3.0.4]: https://github.com/Automattic/jetpack-device-detection/compare/v3.0.3...v3.0.4
-[3.0.3]: https://github.com/Automattic/jetpack-device-detection/compare/v3.0.2...v3.0.3
-[3.0.2]: https://github.com/Automattic/jetpack-device-detection/compare/v3.0.1...v3.0.2
-[3.0.1]: https://github.com/Automattic/jetpack-device-detection/compare/v3.0.0...v3.0.1
-[3.0.0]: https://github.com/Automattic/jetpack-device-detection/compare/v2.1.6...v3.0.0
-[2.1.6]: https://github.com/Automattic/jetpack-device-detection/compare/v2.1.5...v2.1.6
-[2.1.5]: https://github.com/Automattic/jetpack-device-detection/compare/v2.1.4...v2.1.5
-[2.1.4]: https://github.com/Automattic/jetpack-device-detection/compare/v2.1.3...v2.1.4
-[2.1.3]: https://github.com/Automattic/jetpack-device-detection/compare/v2.1.2...v2.1.3
-[2.1.2]: https://github.com/Automattic/jetpack-device-detection/compare/v2.1.1...v2.1.2
-[2.1.1]: https://github.com/Automattic/jetpack-device-detection/compare/v2.1.0...v2.1.1
-[2.1.0]: https://github.com/Automattic/jetpack-device-detection/compare/v2.0.1...v2.1.0
-[2.0.1]: https://github.com/Automattic/jetpack-device-detection/compare/v2.0.0...v2.0.1
-[2.0.0]: https://github.com/Automattic/jetpack-device-detection/compare/v1.5.1...v2.0.0
-[1.5.1]: https://github.com/Automattic/jetpack-device-detection/compare/v1.5.0...v1.5.1
-[1.5.0]: https://github.com/Automattic/jetpack-device-detection/compare/v1.4.27...v1.5.0
-[1.4.27]: https://github.com/Automattic/jetpack-device-detection/compare/v1.4.26...v1.4.27
-[1.4.26]: https://github.com/Automattic/jetpack-device-detection/compare/v1.4.25...v1.4.26
-[1.4.25]: https://github.com/Automattic/jetpack-device-detection/compare/v1.4.24...v1.4.25
-[1.4.24]: https://github.com/Automattic/jetpack-device-detection/compare/v1.4.23...v1.4.24
 [1.4.23]: https://github.com/Automattic/jetpack-device-detection/compare/v1.4.22...v1.4.23
 [1.4.22]: https://github.com/Automattic/jetpack-device-detection/compare/v1.4.21...v1.4.22
 [1.4.21]: https://github.com/Automattic/jetpack-device-detection/compare/v1.4.20...v1.4.21

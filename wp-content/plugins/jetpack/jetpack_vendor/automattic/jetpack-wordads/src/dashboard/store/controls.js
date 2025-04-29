@@ -6,7 +6,7 @@ export const UPDATE_WORDADS_SETTINGS = 'UPDATE_WORDADS_SETTINGS';
 /**
  * fetchJetpackSettings action
  *
- * @return {object} - an action object.
+ * @returns {object} - an action object.
  */
 export const fetchWordAdsSettings = () => {
 	return {
@@ -18,7 +18,7 @@ export const fetchWordAdsSettings = () => {
  * updateJetpackSettings action
  *
  * @param {*} settings - Jetpack settings object.
- * @return {object} - an action object.
+ * @returns {object} - an action object.
  */
 export const updateWordAdsSettings = settings => {
 	return {

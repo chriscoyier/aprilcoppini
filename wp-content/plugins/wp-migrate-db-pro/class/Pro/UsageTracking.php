@@ -132,7 +132,6 @@ class UsageTracking
         add_action('wpmdb_cancellation', [$this, 'log_migration_cancellation'], 50);
         add_action('wpmdb_error_migration', [$this, 'log_migration_error'], 10, 1);
         add_filter('wpmdb_notification_strings', [$this, 'template_notice_enable_usage_tracking']);
-        add_action('wpmdb_after_finalize_migration', [$this, 'log_migration_complete']);
     }
 
     public function register_rest_routes()
@@ -148,7 +147,7 @@ class UsageTracking
     }
 
     /**
-     * Send migration update to usage DB
+     * Send migration update to usage DB 
      *
      * @param  string $status complete|error|cancelled
      * @param array $data
@@ -156,7 +155,7 @@ class UsageTracking
      **/
     public function send_migration_update($status = 'complete', $data = [])
     {
-        if ('complete' === $status && isset($_POST['intent']) && in_array($_POST['intent'], ['savefile', 'backup_local'])) {
+        if ('complete' === $status) {
             $this->http->check_ajax_referer('flush');
         }
 
@@ -189,7 +188,7 @@ class UsageTracking
             $form_data = json_decode($state_data['form_data']);
             $migration_guid = $form_data->current_migration->migration_id;
         }
-
+       
         $log_data = [
             'migration_complete_time' => time(),
             'migration_guid'          => $migration_guid,
@@ -257,7 +256,7 @@ class UsageTracking
 
     /**
      * Log Migration Event
-     *
+     * 
      * Callback for log-migration endpoint called at start of Migration
      *
      * @return void
@@ -295,11 +294,8 @@ class UsageTracking
             'licence_key'                            => $license_key,
             'cli'                                    => $this->dynamic_props->doing_cli_migration,
             'setting-compatibility_plugin_installed' => $this->filesystem->file_exists($this->props->mu_plugin_dest),
-            'remote_cookie'                          => $cookie,
-            'local_platform'                      => $state_data['site_details']['local']['platform'],
-            'remote_platform'                     => $state_data['site_details']['remote']['platform'],
+            'remote_cookie'                          => $cookie
         );
-
 
         // ***+=== @TODO - revisit usage of parse_migration_form_data
         foreach ($this->form_data->parse_and_save_migration_form_data($state_data['form_data']) as $key => $val) {

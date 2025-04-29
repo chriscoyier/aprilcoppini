@@ -3,7 +3,7 @@
 ( function ( $ ) {
 	var $document = $( document );
 
-	$document.ready( function () {
+	$document.on( 'ready', function () {
 		var maybeShowNotice = function ( e, policyUrl ) {
 			var $policyUrl = $( policyUrl || this ).closest( '.eu-cookie-law-widget-policy-url' );
 

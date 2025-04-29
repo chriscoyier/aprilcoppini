@@ -8,7 +8,6 @@
 namespace Automattic\Jetpack\Sync\Replicastore;
 
 use Automattic\Jetpack\Sync;
-use Automattic\Jetpack\Sync\Modules\WooCommerce_HPOS_Orders;
 use Exception;
 use WP_Error;
 
@@ -133,14 +132,13 @@ class Table_Checksum {
 	/**
 	 * Table_Checksum constructor.
 	 *
-	 * @param string  $table                   The table to calculate checksums for.
-	 * @param string  $salt                    Optional salt to add to the checksum.
+	 * @param string  $table The table to calculate checksums for.
+	 * @param string  $salt  Optional salt to add to the checksum.
 	 * @param boolean $perform_text_conversion If text fields should be latin1 converted.
-	 * @param array   $additional_columns      Additional columns to add to the checksum calculation.
 	 *
 	 * @throws Exception Throws exception from inner functions.
 	 */
-	public function __construct( $table, $salt = null, $perform_text_conversion = false, $additional_columns = null ) {
+	public function __construct( $table, $salt = null, $perform_text_conversion = false ) {
 
 		if ( ! Sync\Settings::is_checksum_enabled() ) {
 			throw new Exception( 'Checksums are currently disabled.' );
@@ -148,7 +146,7 @@ class Table_Checksum {
 
 		$this->salt = $salt;
 
-		$this->default_tables = static::get_default_tables();
+		$this->default_tables = $this->get_default_tables();
 
 		$this->perform_text_conversion = $perform_text_conversion;
 
@@ -165,8 +163,6 @@ class Table_Checksum {
 
 		$this->prepare_fields( $this->table_configuration );
 
-		$this->prepare_additional_columns( $additional_columns );
-
 		// Run any callbacks to check if a table is enabled or not.
 		if (
 			is_callable( $this->is_table_enabled_callback )
@@ -181,7 +177,7 @@ class Table_Checksum {
 	 *
 	 * @return array
 	 */
-	protected static function get_default_tables() {
+	protected function get_default_tables() {
 		global $wpdb;
 
 		return array(
@@ -295,7 +291,7 @@ class Table_Checksum {
 				'key_fields'                => array( 'order_item_id' ),
 				'checksum_fields'           => array( 'order_id' ),
 				'checksum_text_fields'      => array( 'order_item_name', 'order_item_type' ),
-				'is_table_enabled_callback' => 'Automattic\Jetpack\Sync\Replicastore\Table_Checksum::enable_woocommerce_tables',
+				'is_table_enabled_callback' => array( $this, 'enable_woocommerce_tables' ),
 			),
 			'woocommerce_order_itemmeta' => array(
 				'table'                     => "{$wpdb->prefix}woocommerce_order_itemmeta",
@@ -306,48 +302,7 @@ class Table_Checksum {
 				'parent_table'              => 'woocommerce_order_items',
 				'parent_join_field'         => 'order_item_id',
 				'table_join_field'          => 'order_item_id',
-				'is_table_enabled_callback' => 'Automattic\Jetpack\Sync\Replicastore\Table_Checksum::enable_woocommerce_tables',
-			),
-			'wc_orders'                  => array(
-				'table'                     => "{$wpdb->prefix}wc_orders",
-				'range_field'               => 'id',
-				'key_fields'                => array( 'id' ),
-				'checksum_fields'           => array( 'date_updated_gmt', 'total_amount' ),
-				'checksum_text_fields'      => array( 'type', 'status' ),
-				'filter_values'             => array(
-					'type'   => array(
-						'operator' => 'IN',
-						'values'   => WooCommerce_HPOS_Orders::get_order_types_to_sync( true ),
-					),
-					'status' => array(
-						'operator' => 'IN',
-						'values'   => WooCommerce_HPOS_Orders::get_all_possible_order_status_keys(),
-					),
-				),
-				'is_table_enabled_callback' => 'Automattic\Jetpack\Sync\Replicastore\Table_Checksum::enable_woocommerce_hpos_tables',
-			),
-			'wc_order_addresses'         => array(
-				'table'                     => "{$wpdb->prefix}wc_order_addresses",
-				'range_field'               => 'order_id',
-				'key_fields'                => array( 'order_id', 'address_type' ),
-				'checksum_text_fields'      => array( 'address_type' ),
-				'parent_table'              => 'wc_orders',
-				'parent_join_field'         => 'id',
-				'table_join_field'          => 'order_id',
-				'filter_values'             => array(),
-				'is_table_enabled_callback' => 'Automattic\Jetpack\Sync\Replicastore\Table_Checksum::enable_woocommerce_hpos_tables',
-			),
-			'wc_order_operational_data'  => array(
-				'table'                     => "{$wpdb->prefix}wc_order_operational_data",
-				'range_field'               => 'order_id',
-				'key_fields'                => array( 'order_id' ),
-				'checksum_fields'           => array( 'date_paid_gmt', 'date_completed_gmt' ),
-				'checksum_text_fields'      => array( 'order_key' ),
-				'parent_table'              => 'wc_orders',
-				'parent_join_field'         => 'id',
-				'table_join_field'          => 'order_id',
-				'filter_values'             => array(),
-				'is_table_enabled_callback' => 'Automattic\Jetpack\Sync\Replicastore\Table_Checksum::enable_woocommerce_hpos_tables',
+				'is_table_enabled_callback' => array( $this, 'enable_woocommerce_tables' ),
 			),
 			'users'                      => array(
 				'table'                     => $wpdb->users,
@@ -379,15 +334,6 @@ class Table_Checksum {
 				},
 			),
 		);
-	}
-
-	/**
-	 * Get allowed table configurations.
-	 *
-	 * @return array
-	 */
-	public static function get_allowed_tables() {
-		return apply_filters( 'jetpack_sync_checksum_allowed_tables', static::get_default_tables() );
 	}
 
 	/**
@@ -510,8 +456,7 @@ class Table_Checksum {
 			switch ( $filter['operator'] ) {
 				case 'IN':
 				case 'NOT IN':
-					$filter_values_count = is_countable( $filter['values'] ) ? count( $filter['values'] ) : 0;
-					$values_placeholders = implode( ',', array_fill( 0, $filter_values_count, '%s' ) );
+					$values_placeholders = implode( ',', array_fill( 0, count( $filter['values'] ), '%s' ) );
 					$statement           = "{$key} {$filter['operator']} ( $values_placeholders )";
 
 					// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -728,7 +673,7 @@ class Table_Checksum {
 		// The reason for this is that it leads to a non-performant query that can timeout.
 		// Instead lets get the range based on posts regardless of meta.
 		$filter_values = $this->filter_values;
-		if ( $wpdb->postmeta === $this->table ) {
+		if ( 'postmeta' === $this->table ) {
 			$this->filter_values = null;
 		}
 
@@ -736,7 +681,7 @@ class Table_Checksum {
 		$filters = trim( $this->build_filter_statement( $range_from, $range_to ) );
 
 		// Reset Post meta filter.
-		if ( $wpdb->postmeta === $this->table ) {
+		if ( 'postmeta' === $this->table ) {
 			$this->filter_values = $filter_values;
 		}
 
@@ -881,7 +826,7 @@ class Table_Checksum {
 	 *
 	 * @return bool
 	 */
-	public static function enable_woocommerce_tables() {
+	protected function enable_woocommerce_tables() {
 		/**
 		 * On WordPress.com, we can't directly check if the site has support for WooCommerce.
 		 * Having the option to override the functionality here helps with syncing WooCommerce tables.
@@ -898,82 +843,14 @@ class Table_Checksum {
 			return true;
 		}
 
-		// If the 'woocommerce' module is enabled, this means that WooCommerce class exists.
-		return false !== Sync\Modules::get_module( 'woocommerce' );
-	}
-
-	/**
-	 * Make sure the WooCommerce HPOS tables should be enabled for Checksum/Fix.
-	 *
-	 * @see Automattic\Jetpack\SyncActions::initialize_woocommerce
-	 *
-	 * @since 3.3.0
-	 *
-	 * @return bool
-	 */
-	public static function enable_woocommerce_hpos_tables() {
-		/**
-		 * On WordPress.com, we can't directly check if the site has support for WooCommerce HPOS tables.
-		 * Having the option to override the functionality here helps with syncing WooCommerce HPOS tables.
-		 *
-		 * @since 3.3.0
-		 *
-		 * @param bool If we should we force-enable WooCommerce HPOS tables support.
-		 */
-		$force_woocommerce_hpos_support = apply_filters( 'jetpack_table_checksum_force_enable_woocommerce_hpos', false );
-
-		// If we're forcing WooCommerce HPOS tables support, there's no need to check further.
-		// This is used on WordPress.com.
-		if ( $force_woocommerce_hpos_support ) {
-			return true;
+		// No need to proceed if WooCommerce is not available.
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return false;
 		}
 
-		// If the 'woocommerce_hpos_orders' module is enabled, this means that WooCommerce class exists
-		// and HPOS is enabled too.
-		return false !== Sync\Modules::get_module( 'woocommerce_hpos_orders' );
+		// TODO more checks if needed. Probably query the DB to make sure the tables exist.
+
+		return true;
 	}
 
-	/**
-	 * Prepare and append custom columns to the list of columns that we run the checksum on.
-	 *
-	 * @param string|array $additional_columns List of additional columns.
-	 *
-	 * @return void
-	 * @throws Exception When field validation fails.
-	 */
-	protected function prepare_additional_columns( $additional_columns ) {
-		/**
-		 * No need to do anything if the parameter is not provided or empty.
-		 */
-		if ( empty( $additional_columns ) ) {
-			return;
-		}
-
-		if ( ! is_array( $additional_columns ) ) {
-			if ( ! is_string( $additional_columns ) ) {
-				throw new Exception( 'Invalid value for additional fields' );
-			}
-
-			$additional_columns = explode( ',', $additional_columns );
-		}
-
-		/**
-		 * Validate the fields. If any don't conform to the required norms, we will throw an exception and
-		 * halt code here.
-		 */
-		$this->validate_fields( $additional_columns );
-
-		/**
-		 * Assign the fields to the checksum_fields to be used in the checksum later.
-		 *
-		 * We're adding the fields to the rest of the `checksum_fields`, so we don't need
-		 * to implement extra logic just for the additional fields.
-		 */
-		$this->checksum_fields = array_unique(
-			array_merge(
-				$this->checksum_fields,
-				$additional_columns
-			)
-		);
-	}
 }

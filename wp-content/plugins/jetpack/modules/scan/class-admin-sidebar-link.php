@@ -7,10 +7,8 @@
 
 namespace Automattic\Jetpack\Scan;
 
-use Automattic\Jetpack\Admin_UI\Admin_Menu;
 use Automattic\Jetpack\My_Jetpack\Products\Backup;
 use Automattic\Jetpack\Redirect;
-use Automattic\Jetpack\Status\Host;
 use Jetpack_Core_Json_Api_Endpoints;
 
 /**
@@ -69,37 +67,15 @@ class Admin_Sidebar_Link {
 		}
 
 		if ( $this->should_show_scan() ) {
-			Admin_Menu::add_menu(
-				__( 'Scan', 'jetpack' ),
-				__( 'Scan', 'jetpack' ) . ' <span class="dashicons dashicons-external"></span>',
-				'manage_options',
-				esc_url( Redirect::get_url( 'cloud-scan-history-wp-menu' ) ),
-				null,
-				$this->get_link_offset()
-			);
-		}
-
-		// Add scan item which shows history page only. This is mutally exclusive from the scan item above and is only shown for Atomic sitse.
-		if ( $this->should_show_scan_history_only() ) {
-			Admin_Menu::add_menu(
-				__( 'Scan', 'jetpack' ),
-				__( 'Scan', 'jetpack' ) . ' <span class="dashicons dashicons-external"></span>',
-				'manage_options',
-				esc_url( Redirect::get_url( 'cloud-scan-history-wp-menu' ) ),
-				null,
-				$this->get_link_offset()
-			);
+			$menu_label = __( 'Scan', 'jetpack' );
+			$url        = Redirect::get_url( 'calypso-scanner' );
+			add_submenu_page( 'jetpack', $menu_label, esc_html( $menu_label ) . ' <span class="dashicons dashicons-external"></span>', 'manage_options', esc_url( $url ), null, $this->get_link_offset() );
 		}
 
 		if ( $this->should_show_backup() ) {
-			Admin_Menu::add_menu(
-				__( 'VaultPress Backup', 'jetpack' ),
-				__( 'VaultPress Backup', 'jetpack' ) . ' <span class="dashicons dashicons-external"></span>',
-				'manage_options',
-				esc_url( Redirect::get_url( 'calypso-backups' ) ),
-				null,
-				$this->get_link_offset()
-			);
+			$menu_label = __( 'VaultPress', 'jetpack' );
+			$url        = Redirect::get_url( 'calypso-backups' );
+			add_submenu_page( 'jetpack', $menu_label, esc_html( $menu_label ) . ' <span class="dashicons dashicons-external"></span>', 'manage_options', esc_url( $url ), null, $this->get_link_offset() );
 		}
 	}
 
@@ -112,7 +88,7 @@ class Admin_Sidebar_Link {
 	 */
 	private function get_link_offset() {
 		global $submenu;
-		$offset = 9;
+		$offset = 0;
 
 		if ( ! array_key_exists( 'jetpack', $submenu ) ) {
 			return $offset;
@@ -153,29 +129,18 @@ class Admin_Sidebar_Link {
 			return false;
 		}
 
-		return $this->should_show_scan() || $this->should_show_backup() || $this->should_show_scan_history_only();
+		return $this->should_show_scan() || $this->should_show_backup();
 	}
 
 	/**
 	 * Check if we should display the Scan menu item.
 	 *
-	 * It will only be displayed if site has Scan enabled, is not an Atomic site, and the stand-alone Protect plugin is not active, because it will have a menu item of its own.
+	 * It will only be displayed if site has Scan enabled and the stand-alone Protect plugin is not active, because it will have a menu item of its own.
 	 *
 	 * @return boolean
 	 */
 	private function should_show_scan() {
-		return $this->has_scan() && ! $this->has_protect_plugin() && ! ( new Host() )->is_woa_site();
-	}
-
-	/**
-	 * Check if we should display the Scan menu item history.
-	 *
-	 * It will only be displayed if site has Scan enabled, is an Atomic site.
-	 *
-	 * @return boolean
-	 */
-	private function should_show_scan_history_only() {
-		return $this->has_scan() && ( new Host() )->is_woa_site() && get_option( 'wpcom_admin_interface' ) === 'wp-admin';
+		return $this->has_scan() && ! $this->has_protect_plugin();
 	}
 
 	/**
@@ -234,7 +199,7 @@ class Admin_Sidebar_Link {
 	 * @return boolean
 	 */
 	private function has_backup_plugin() {
-		return Backup::is_standalone_plugin_active();
+		return Backup::is_active();
 	}
 
 	/**

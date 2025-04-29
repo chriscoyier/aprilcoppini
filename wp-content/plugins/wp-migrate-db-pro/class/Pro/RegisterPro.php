@@ -101,10 +101,6 @@ class RegisterPro
      * @var AddonsFacade|mixed
      */
     private $addons_facade;
-    /**
-     * @var RemoteUpdatesManager
-     */
-    private $remote_updates_manager;
 
     public function register()
     {

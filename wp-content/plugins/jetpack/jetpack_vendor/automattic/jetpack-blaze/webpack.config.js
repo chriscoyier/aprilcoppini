@@ -45,7 +45,11 @@ module.exports = [
 		optimization: {
 			...jetpackWebpackConfig.optimization,
 		},
-		plugins: [ ...jetpackWebpackConfig.StandardPlugins() ],
+		plugins: [
+			...jetpackWebpackConfig.StandardPlugins( {
+				DependencyExtractionPlugin: { injectPolyfill: true },
+			} ),
+		],
 		resolve: {
 			...jetpackWebpackConfig.resolve,
 		},

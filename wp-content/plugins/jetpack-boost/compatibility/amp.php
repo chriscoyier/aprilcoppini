@@ -7,23 +7,23 @@
 
 namespace Automattic\Jetpack_Boost\Compatibility\Amp;
 
-use Automattic\Jetpack_Boost\Modules\Optimizations\Critical_CSS\Critical_CSS;
+use Automattic\Jetpack_Boost\Features\Optimizations\Critical_CSS\CriticalCSS;
 
 /**
  * Class AMP.
  */
 class Amp {
 	/**
-	 * Critical_CSS module instance.
+	 * CriticalCSS module instance.
 	 *
-	 * @var Critical_CSS
+	 * @var CriticalCSS
 	 */
 	private static $critical_css;
 
 	/**
 	 * Init AMP compatibility actions after modules are initialized.
 	 *
-	 * @param Critical_CSS $module Critical_CSS Module instance.
+	 * @param CriticalCSS $module CriticalCSS Module instance.
 	 */
 	public static function init_compatibility( $module ) {
 		self::$critical_css = $module;

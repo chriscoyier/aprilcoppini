@@ -36,7 +36,7 @@ interface ConnectionInterface {
 	 *
 	 * @param Job $job
 	 */
-	public function release( Job $job );
+	public function release( $job );
 
 	/**
 	 * Push a job onto the failure queue.

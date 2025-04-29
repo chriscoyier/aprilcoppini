@@ -7,9 +7,8 @@
 
 namespace Automattic\Jetpack\My_Jetpack;
 
-use Automattic\Jetpack\Connection\Client;
+use Automattic\Jetpack\Connection\Client as Client;
 use Automattic\Jetpack\Connection\Manager as Connection_Manager;
-use WP_Error;
 
 /**
  * Registers the REST routes for Purchases.
@@ -43,7 +42,7 @@ class REST_Purchases {
 		$is_site_connected = $connection->is_connected();
 
 		if ( ! $is_site_connected ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'not_connected',
 				__( 'Your site is not connected to Jetpack.', 'jetpack-my-jetpack' ),
 				array(
@@ -52,13 +51,13 @@ class REST_Purchases {
 			);
 		}
 
-		return current_user_can( 'edit_posts' );
+		return current_user_can( 'manage_options' );
 	}
 
 	/**
 	 * Site purchases endpoint.
 	 *
-	 * @return array|WP_Error of site purchases.
+	 * @return array of site purchases.
 	 */
 	public static function get_site_current_purchases() {
 		$site_id           = \Jetpack_Options::get_option( 'id' );
@@ -69,9 +68,9 @@ class REST_Purchases {
 		$body              = json_decode( wp_remote_retrieve_body( $response ) );
 
 		if ( is_wp_error( $response ) || empty( $response['body'] ) || 200 !== $response_code ) {
-			return new WP_Error( 'site_data_fetch_failed', 'Site data fetch failed', array( 'status' => $response_code ? $response_code : 400 ) );
+			return new \WP_Error( 'site_data_fetch_failed', 'Site data fetch failed', array( 'status' => $response_code ? $response_code : 400 ) );
 		}
 
-		return rest_ensure_response( $body );
+		return rest_ensure_response( $body, 200 );
 	}
 }

@@ -59,7 +59,6 @@ class Error extends Result
      */
     public function mapSuccess(callable $f)
     {
-        /** @var \Dotenv\Result\Result<S,E> */
         return self::create($this->value);
     }
     /**

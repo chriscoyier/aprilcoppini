@@ -7,6 +7,8 @@
 
 namespace Automattic\Jetpack\VideoPress;
 
+use Automattic\Jetpack\Assets;
+
 /**
  * VideoPress Jwt_Token_Bridge class.
  */
@@ -25,11 +27,13 @@ class Jwt_Token_Bridge {
 	 * This method should be called only once by the Initializer class. Do not call this method again.
 	 */
 	public static function init() {
+
 		if ( ! Status::is_active() ) {
 			return;
 		}
 
-		// Expose the VideoPress token to the Block Editor context.
+		// Expose the VideoPress token to the Block Editor context, including the front-end editor.
+		add_action( 'enqueue_block_assets', array( __CLASS__, 'enqueue_jwt_token_bridge' ), 1 );
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue_jwt_token_bridge' ), 1 );
 
 		// Expose the VideoPress token to the WPAdmin context.
@@ -42,7 +46,12 @@ class Jwt_Token_Bridge {
 	 * @return string
 	 */
 	public static function get_bridge_url() {
-		return plugins_url( '../build/lib/token-bridge.js', __FILE__ );
+		// TODO: use minified version in production.
+		return Assets::get_file_url_for_environment(
+			'../build/lib/videopress-token-bridge.js', // <- production
+			'client/lib/videopress-token-bridge.js', // <- development
+			__FILE__
+		);
 	}
 
 	/**

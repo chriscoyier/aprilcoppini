@@ -4,7 +4,6 @@
  *
  * @package automattic/jetpack
  */
-
 /**
  * Base class for WPCOM_JSON_API_Metadata
  */
@@ -31,11 +30,11 @@ class WPCOM_JSON_API_Metadata {
 			return true;
 		}
 
-		if ( str_starts_with( $key, 'geo_' ) ) {
+		if ( 0 === strpos( $key, 'geo_' ) ) {
 			return true;
 		}
 
-		if ( str_starts_with( $key, '_wpas_' ) ) {
+		if ( 0 === strpos( $key, '_wpas_' ) ) {
 			return true;
 		}
 
@@ -54,23 +53,11 @@ class WPCOM_JSON_API_Metadata {
 			return false;
 		}
 
-		// We want to always return the `_jetpack_newsletter_access` key to
-		// display the correct newsletter access in Calypso.
-		$whitelist = array(
-			'_jetpack_newsletter_access',
-			'_jetpack_newsletter_tier_id',
-			'_jetpack_dont_email_post_to_subs',
-		);
-
-		if ( in_array( $key, $whitelist, true ) ) {
-			return false;
-		}
-
-		if ( str_starts_with( $key, '_jetpack_' ) ) {
+		if ( 0 === strpos( $key, '_jetpack_' ) ) {
 			return true;
 		}
 
-		if ( str_starts_with( $key, '_elasticsearch_' ) ) {
+		if ( 0 === strpos( $key, '_elasticsearch_' ) ) {
 			return true;
 		}
 

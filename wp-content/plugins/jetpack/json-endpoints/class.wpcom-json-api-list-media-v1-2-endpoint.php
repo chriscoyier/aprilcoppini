@@ -73,7 +73,7 @@ class WPCOM_JSON_API_List_Media_v1_2_Endpoint extends WPCOM_JSON_API_List_Media_
 
 		$media_list = $response['media'];
 
-		if ( ! is_countable( $media_list ) || count( $media_list ) === array() ) {
+		if ( count( $media_list ) < 1 ) {
 			return $response;
 		}
 
@@ -88,3 +88,4 @@ class WPCOM_JSON_API_List_Media_v1_2_Endpoint extends WPCOM_JSON_API_List_Media_
 		return $response;
 	}
 }
+

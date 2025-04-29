@@ -16,35 +16,35 @@ class Yoast_Notification {
 	 *
 	 * @var string
 	 */
-	public const MATCH_ALL = 'all';
+	const MATCH_ALL = 'all';
 
 	/**
 	 * Type of capability check.
 	 *
 	 * @var string
 	 */
-	public const MATCH_ANY = 'any';
+	const MATCH_ANY = 'any';
 
 	/**
 	 * Notification type.
 	 *
 	 * @var string
 	 */
-	public const ERROR = 'error';
+	const ERROR = 'error';
 
 	/**
 	 * Notification type.
 	 *
 	 * @var string
 	 */
-	public const WARNING = 'warning';
+	const WARNING = 'warning';
 
 	/**
 	 * Notification type.
 	 *
 	 * @var string
 	 */
-	public const UPDATED = 'updated';
+	const UPDATED = 'updated';
 
 	/**
 	 * Options of this Notification.
@@ -72,7 +72,7 @@ class Yoast_Notification {
 	private $defaults = [
 		'type'             => self::UPDATED,
 		'id'               => '',
-		'user_id'          => null,
+		'user'             => null,
 		'nonce'            => null,
 		'priority'         => 0.5,
 		'data_json'        => [],
@@ -112,14 +112,10 @@ class Yoast_Notification {
 	/**
 	 * Retrieve the user to show the notification for.
 	 *
-	 * @deprecated 21.6
-	 * @codeCoverageIgnore
-	 *
 	 * @return WP_User The user to show this notification for.
 	 */
 	public function get_user() {
-		_deprecated_function( __METHOD__, 'Yoast SEO 21.6' );
-		return null;
+		return $this->options['user'];
 	}
 
 	/**
@@ -130,7 +126,10 @@ class Yoast_Notification {
 	 * @return int The user id
 	 */
 	public function get_user_id() {
-		return ( $this->options['user_id'] ?? get_current_user_id() );
+		if ( $this->get_user() !== null ) {
+			return $this->get_user()->ID;
+		}
+		return get_current_user_id();
 	}
 
 	/**
@@ -148,8 +147,6 @@ class Yoast_Notification {
 
 	/**
 	 * Make sure the nonce is up to date.
-	 *
-	 * @return void
 	 */
 	public function refresh_nonce() {
 		if ( $this->options['id'] ) {
@@ -223,7 +220,7 @@ class Yoast_Notification {
 	 */
 	public function match_capabilities() {
 		// Super Admin can do anything.
-		if ( is_multisite() && is_super_admin( $this->options['user_id'] ) ) {
+		if ( is_multisite() && is_super_admin( $this->options['user']->ID ) ) {
 			return true;
 		}
 
@@ -283,15 +280,7 @@ class Yoast_Notification {
 	 * @return bool
 	 */
 	private function has_capability( $capability ) {
-		$user_id = $this->options['user_id'];
-		if ( ! is_numeric( $user_id ) ) {
-			return false;
-		}
-		$user = get_user_by( 'id', $user_id );
-		if ( ! $user ) {
-			return false;
-		}
-
+		$user = $this->options['user'];
 		return $user->has_cap( $capability );
 	}
 
@@ -356,15 +345,6 @@ class Yoast_Notification {
 	}
 
 	/**
-	 * Get the message for the notification.
-	 *
-	 * @return string The message.
-	 */
-	public function get_message() {
-		return wpautop( $this->message );
-	}
-
-	/**
 	 * Wraps the message with a Yoast SEO icon.
 	 *
 	 * @param string $message The message to wrap.
@@ -416,9 +396,9 @@ class Yoast_Notification {
 			$options['capabilities'] = [ 'wpseo_manage_options' ];
 		}
 
-		// Set to the id of the current user if not supplied.
-		if ( $options['user_id'] === null ) {
-			$options['user_id'] = get_current_user_id();
+		// Set to the current user if not supplied.
+		if ( $options['user'] === null ) {
+			$options['user'] = wp_get_current_user();
 		}
 
 		return $options;
@@ -429,8 +409,6 @@ class Yoast_Notification {
 	 *
 	 * @param string $value Attribute value.
 	 * @param string $key   Attribute name.
-	 *
-	 * @return void
 	 */
 	private function parse_attributes( &$value, $key ) {
 		$value = sprintf( '%s="%s"', sanitize_key( $key ), esc_attr( $value ) );

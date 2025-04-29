@@ -8,8 +8,6 @@
 namespace Automattic\Jetpack\JITMS;
 
 use Automattic\Jetpack\Connection\REST_Connector;
-use WP_Error;
-use WP_REST_Request;
 use WP_REST_Server;
 
 /**
@@ -57,10 +55,7 @@ class Rest_Api_Endpoints {
 			return array();
 		}
 
-		// add the search term to the query params if it exists
-		$query_param = $request['query'] ?? '';
-
-		return $jitm->get_messages( $request['message_path'], urldecode_deep( array( 'query' => $query_param ) ), 'true' === $request['full_jp_logo_exists'] );
+		return $jitm->get_messages( $request['message_path'], urldecode_deep( $request['query'] ), 'true' === $request['full_jp_logo_exists'] ? true : false );
 	}
 
 	/**
@@ -90,6 +85,7 @@ class Rest_Api_Endpoints {
 			return true;
 		}
 
-		return new WP_Error( 'invalid_user_permission_jetpack_delete_jitm_message', REST_Connector::get_user_permissions_error_msg(), array( 'status' => rest_authorization_required_code() ) );
+		return new \WP_Error( 'invalid_user_permission_jetpack_delete_jitm_message', REST_Connector::get_user_permissions_error_msg(), array( 'status' => rest_authorization_required_code() ) );
 	}
+
 }

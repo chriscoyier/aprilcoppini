@@ -129,7 +129,7 @@ add_filter( 'jetpack_learn_more_button_publicize', 'publicize_load_more_link' );
  */
 function publicize_more_info() {
 	esc_html_e(
-		'Automatically share and promote newly published posts to Facebook, Tumblr,
+		'Automatically share and promote newly published posts to Facebook, Twitter, Tumblr,
 		and LinkedIn. You can add connections for yourself or for all users on your site.',
 		'jetpack'
 	);
@@ -241,6 +241,26 @@ function jetpack_subscriptions_more_info() {
 add_action( 'jetpack_module_more_info_subscriptions', 'jetpack_subscriptions_more_info' );
 
 /**
+ * Enhanced Distribution support link.
+ */
+function jetpack_enhanced_distribution_more_link() {
+	echo esc_url( Redirect::get_url( 'jetpack-support-enhanced-distribution' ) );
+}
+add_action( 'jetpack_learn_more_button_enhanced-distribution', 'jetpack_enhanced_distribution_more_link' );
+
+/**
+ * Enhanced Distribution description.
+ */
+function jetpack_enhanced_distribution_more_info() {
+	esc_html_e(
+		'Jetpack will automatically take your great published content and share it instantly with third-party services
+		like search engines, increasing your reach and traffic.',
+		'jetpack'
+	);
+}
+add_action( 'jetpack_module_more_info_enhanced-distribution', 'jetpack_enhanced_distribution_more_info' );
+
+/**
  * Protect support link.
  */
 function jetpack_protect_more_link() {
@@ -315,7 +335,7 @@ add_action( 'jetpack_learn_more_button_comments', 'jetpack_comments_learn_more_b
  */
 function jetpack_comments_more_info() {
 	esc_html_e(
-		'Allow visitors to use their WordPress.com or Facebook accounts when commenting on
+		'Allow visitors to use their WordPress.com, Twitter, or Facebook accounts when commenting on
 		your site. Jetpack will match your site\'s color scheme automatically (but you can adjust that).',
 		'jetpack'
 	);
@@ -341,6 +361,46 @@ function jetpack_carousel_more_info() {
 	);
 }
 add_action( 'jetpack_module_more_info_carousel', 'jetpack_carousel_more_info' );
+
+/**
+ * Custom CSS support link.
+ */
+function jetpack_custom_css_more_button() {
+	echo esc_url( Redirect::get_url( 'jetpack-support-custom-css' ) );
+}
+add_action( 'jetpack_learn_more_button_custom-css', 'jetpack_custom_css_more_button' );
+
+/**
+ * Custom CSS description.
+ */
+function jetpack_custom_css_more_info() {
+	esc_html_e(
+		"Add to or replace your theme's CSS including mobile styles, LESS, and SaSS.
+		Includes syntax coloring, auto-indentation, and immediate CSS validation.",
+		'jetpack'
+	);
+}
+add_action( 'jetpack_module_more_info_custom-css', 'jetpack_custom_css_more_info' );
+
+/**
+ * Masterbar support link.
+ */
+function jetpack_masterbar_more_link() {
+	echo esc_url( Redirect::get_url( 'jetpack-support-masterbar' ) );
+}
+add_action( 'jetpack_learn_more_button_masterbar', 'jetpack_masterbar_more_link' );
+
+/**
+ * Masterbar description.
+ */
+function jetpack_masterbar_more_info() {
+	esc_html_e(
+		'Quickly access your Stats, Notifications, Posts and more on WordPress.com.
+		The Toolbar is displayed for any user on the site that is connected to WordPress.com.',
+		'jetpack'
+	);
+}
+add_action( 'jetpack_module_more_info_masterbar', 'jetpack_masterbar_more_info' );
 
 /**
  * Infinite Scroll support link.
@@ -400,6 +460,27 @@ function jetpack_photon_more_info() {
 	);
 }
 add_action( 'jetpack_module_more_info_photon', 'jetpack_photon_more_info' );
+
+/**
+ * Lazy Images support link.
+ */
+function jetpack_lazy_images_more_link() {
+	echo esc_url( Redirect::get_url( 'jetpack-support-lazy-images' ) );
+}
+add_action( 'jetpack_learn_more_button_lazy-images', 'jetpack_lazy_images_more_link' );
+
+/**
+ * Lazy Images description.
+ */
+function jetpack_lazy_images_more_info() {
+	esc_html_e(
+		'Improve your site\'s speed by only loading images visible on the screen.
+		New images will load just before they scroll into view. This prevents viewers
+		from having to download all the images on a page all at once, even ones they can\'t see.',
+		'jetpack'
+	);
+}
+add_action( 'jetpack_module_more_info_lazy-images', 'jetpack_lazy_images_more_info' );
 
 /**
  * Tiled Galleries support link.
@@ -843,19 +924,3 @@ function jetpack_more_info_waf() {
 	esc_html_e( 'The Jetpack Firewall is a web application firewall designed to protect your WordPress site from malicious requests.', 'jetpack' );
 }
 add_action( 'jetpack_module_more_info_waf', 'jetpack_more_info_waf' );
-
-/**
- * Blaze support link.
- */
-function jetpack_blaze_more_link() {
-	echo esc_url( Redirect::get_url( 'jetpack-support-blaze' ) );
-}
-add_action( 'jetpack_learn_more_button_blaze', 'jetpack_blaze_more_link' );
-
-/**
- * Blaze description.
- */
-function jetpack_more_info_blaze() {
-	esc_html_e( 'Grow your audience by promoting your content across Tumblr and WordPress.com.', 'jetpack' );
-}
-add_action( 'jetpack_module_more_info_blaze', 'jetpack_more_info_blaze' );

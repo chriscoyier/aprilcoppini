@@ -185,10 +185,6 @@ class QueueHelper
 
         $q_data = $this->queue_manager->list_jobs($count, $offset);
 
-        if (is_wp_error($q_data)) {
-            return $this->http->end_ajax($q_data);
-        }
-
         if (empty($q_data)) {
             delete_site_transient('wpmdb_queue_status');
 
@@ -227,3 +223,4 @@ class QueueHelper
         return $result_set;
     }
 }
+

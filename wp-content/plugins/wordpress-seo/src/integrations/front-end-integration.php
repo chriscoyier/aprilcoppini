@@ -2,11 +2,11 @@
 
 namespace Yoast\WP\SEO\Integrations;
 
-use WP_HTML_Tag_Processor;
 use WPSEO_Replace_Vars;
 use Yoast\WP\SEO\Conditionals\Front_End_Conditional;
 use Yoast\WP\SEO\Context\Meta_Tags_Context;
 use Yoast\WP\SEO\Helpers\Options_Helper;
+use Yoast\WP\SEO\Helpers\Request_Helper;
 use Yoast\WP\SEO\Memoizers\Meta_Tags_Context_Memoizer;
 use Yoast\WP\SEO\Presenters\Abstract_Indexable_Presenter;
 use Yoast\WP\SEO\Presenters\Debug\Marker_Close_Presenter;
@@ -40,6 +40,13 @@ class Front_End_Integration implements Integration_Interface {
 	 * @var Options_Helper
 	 */
 	protected $options;
+
+	/**
+	 * Represents the request helper.
+	 *
+	 * @var Request_Helper
+	 */
+	protected $request;
 
 	/**
 	 * The helpers surface.
@@ -100,7 +107,7 @@ class Front_End_Integration implements Integration_Interface {
 	/**
 	 * The Open Graph specific presenters that should be output on error pages.
 	 *
-	 * @var array<string>
+	 * @var array
 	 */
 	protected $open_graph_error_presenters = [
 		'Open_Graph\Locale',
@@ -111,7 +118,7 @@ class Front_End_Integration implements Integration_Interface {
 	/**
 	 * The Twitter card specific presenters.
 	 *
-	 * @var array<string>
+	 * @var string[]
 	 */
 	protected $twitter_card_presenters = [
 		'Twitter\Card',
@@ -125,7 +132,7 @@ class Front_End_Integration implements Integration_Interface {
 	/**
 	 * The Slack specific presenters.
 	 *
-	 * @var array<string>
+	 * @var string[]
 	 */
 	protected $slack_presenters = [
 		'Slack\Enhanced_Data',
@@ -134,7 +141,7 @@ class Front_End_Integration implements Integration_Interface {
 	/**
 	 * The Webmaster verification specific presenters.
 	 *
-	 * @var array<string>
+	 * @var string[]
 	 */
 	protected $webmaster_verification_presenters = [
 		'Webmaster\Baidu',
@@ -147,7 +154,7 @@ class Front_End_Integration implements Integration_Interface {
 	/**
 	 * Presenters that are only needed on singular pages.
 	 *
-	 * @var array<string>
+	 * @var string[]
 	 */
 	protected $singular_presenters = [
 		'Meta_Author',
@@ -162,30 +169,16 @@ class Front_End_Integration implements Integration_Interface {
 	/**
 	 * The presenters we want to be last in our output.
 	 *
-	 * @var array<string>
+	 * @var string[]
 	 */
 	protected $closing_presenters = [
 		'Schema',
 	];
 
 	/**
-	 * The next output.
-	 *
-	 * @var string
-	 */
-	protected $next;
-
-	/**
-	 * The prev output.
-	 *
-	 * @var string
-	 */
-	protected $prev;
-
-	/**
 	 * Returns the conditionals based on which this loadable should be active.
 	 *
-	 * @return array<string> The conditionals.
+	 * @return array The conditionals.
 	 */
 	public static function get_conditionals() {
 		return [ Front_End_Conditional::class ];
@@ -199,6 +192,7 @@ class Front_End_Integration implements Integration_Interface {
 	 * @param Meta_Tags_Context_Memoizer $context_memoizer  The meta tags context memoizer.
 	 * @param ContainerInterface         $service_container The DI container.
 	 * @param Options_Helper             $options           The options helper.
+	 * @param Request_Helper             $request           The request helper.
 	 * @param Helpers_Surface            $helpers           The helpers surface.
 	 * @param WPSEO_Replace_Vars         $replace_vars      The replace vars helper.
 	 */
@@ -206,12 +200,14 @@ class Front_End_Integration implements Integration_Interface {
 		Meta_Tags_Context_Memoizer $context_memoizer,
 		ContainerInterface $service_container,
 		Options_Helper $options,
+		Request_Helper $request,
 		Helpers_Surface $helpers,
 		WPSEO_Replace_Vars $replace_vars
 	) {
 		$this->container        = $service_container;
 		$this->context_memoizer = $context_memoizer;
 		$this->options          = $options;
+		$this->request          = $request;
 		$this->helpers          = $helpers;
 		$this->replace_vars     = $replace_vars;
 	}
@@ -221,12 +217,8 @@ class Front_End_Integration implements Integration_Interface {
 	 *
 	 * Removes some actions to remove metadata that WordPress shows on the frontend,
 	 * to avoid duplicate and/or mismatched metadata.
-	 *
-	 * @return void
 	 */
 	public function register_hooks() {
-		\add_filter( 'render_block', [ $this, 'query_loop_next_prev' ], 1, 2 );
-
 		\add_action( 'wp_head', [ $this, 'call_wpseo_head' ], 1 );
 		// Filter the title for compatibility with other plugins and themes.
 		\add_filter( 'wp_title', [ $this, 'filter_title' ], 15 );
@@ -271,90 +263,11 @@ class Front_End_Integration implements Integration_Interface {
 	}
 
 	/**
-	 * Filters the next and prev links in the query loop block.
-	 *
-	 * @param string                   $html  The HTML output.
-	 * @param array<string|array|null> $block The block.
-	 * @return string The filtered HTML output.
-	 */
-	public function query_loop_next_prev( $html, $block ) {
-		if ( $block['blockName'] === 'core/query' ) {
-			// Check that the query does not inherit the main query.
-			if ( isset( $block['attrs']['query']['inherit'] ) && ! $block['attrs']['query']['inherit'] ) {
-				\add_filter( 'wpseo_adjacent_rel_url', [ $this, 'adjacent_rel_url' ], 1, 3 );
-			}
-		}
-
-		if ( $block['blockName'] === 'core/query-pagination-next' ) {
-			$this->next = $html;
-		}
-
-		if ( $block['blockName'] === 'core/query-pagination-previous' ) {
-			$this->prev = $html;
-		}
-
-		return $html;
-	}
-
-	/**
-	 * Returns correct adjacent pages when Query loop block does not inherit query from template.
-	 * Prioritizes existing prev and next links.
-	 * Includes a safety check for full urls though it is not expected in the query pagination block.
-	 *
-	 * @param string                      $link         The current link.
-	 * @param string                      $rel          Link relationship, prev or next.
-	 * @param Indexable_Presentation|null $presentation The indexable presentation.
-	 *
-	 * @return string The correct link.
-	 */
-	public function adjacent_rel_url( $link, $rel, $presentation = null ) {
-		// Prioritize existing prev and next links.
-		if ( $link ) {
-			return $link;
-		}
-
-		// Safety check for rel value.
-		if ( $rel !== 'next' && $rel !== 'prev' ) {
-			return $link;
-		}
-
-		// Check $this->next or $this->prev for existing links.
-		if ( \is_null( $this->$rel ) ) {
-			return $link;
-		}
-
-		$processor = new WP_HTML_Tag_Processor( $this->$rel );
-
-		if ( ! $processor->next_tag( [ 'tag_name' => 'a' ] ) ) {
-			return $link;
-		}
-
-		$href = $processor->get_attribute( 'href' );
-
-		if ( ! $href ) {
-			return $link;
-		}
-
-		// Safety check for full url, not expected.
-		if ( \strpos( $href, 'http' ) === 0 ) {
-			return $href;
-		}
-
-		// Check if $href is relative and append last part of the url to permalink.
-		if ( \strpos( $href, '/' ) === 0 ) {
-			$href_parts = \explode( '/', $href );
-			return $presentation->permalink . \end( $href_parts );
-		}
-
-		return $link;
-	}
-
-	/**
 	 * Filters our robots presenter, but only when wp_robots is attached to the wp_head action.
 	 *
-	 * @param array<string> $presenters The presenters for current page.
+	 * @param array $presenters The presenters for current page.
 	 *
-	 * @return array<string> The filtered presenters.
+	 * @return array The filtered presenters.
 	 */
 	public function filter_robots_presenter( $presenters ) {
 		if ( ! \function_exists( 'wp_robots' ) ) {
@@ -365,7 +278,7 @@ class Front_End_Integration implements Integration_Interface {
 			return $presenters;
 		}
 
-		if ( \wp_is_serving_rest_request() ) {
+		if ( $this->request->is_rest_request() ) {
 			return $presenters;
 		}
 
@@ -376,8 +289,6 @@ class Front_End_Integration implements Integration_Interface {
 	 * Presents the head in the front-end. Resets wp_query if it's not the main query.
 	 *
 	 * @codeCoverageIgnore It just calls a WordPress function.
-	 *
-	 * @return void
 	 */
 	public function call_wpseo_head() {
 		global $wp_query;
@@ -394,8 +305,6 @@ class Front_End_Integration implements Integration_Interface {
 
 	/**
 	 * Echoes all applicable presenters for a page.
-	 *
-	 * @return void
 	 */
 	public function present_head() {
 		$context    = $this->context_memoizer->for_current_page();
@@ -404,8 +313,7 @@ class Front_End_Integration implements Integration_Interface {
 		/**
 		 * Filter 'wpseo_frontend_presentation' - Allow filtering the presentation used to output our meta values.
 		 *
-		 * @param Indexable_Presention $presentation The indexable presentation.
-		 * @param Meta_Tags_Context    $context      The meta tags context for the current page.
+		 * @api Indexable_Presention The indexable presentation.
 		 */
 		$presentation = \apply_filters( 'wpseo_frontend_presentation', $context->presentation, $context );
 
@@ -439,7 +347,7 @@ class Front_End_Integration implements Integration_Interface {
 
 		$needed_presenters = $this->get_needed_presenters( $page_type );
 
-		$callback   = static function ( $presenter ) {
+		$callback   = static function( $presenter ) {
 			if ( ! \class_exists( $presenter ) ) {
 				return null;
 			}
@@ -450,8 +358,10 @@ class Front_End_Integration implements Integration_Interface {
 		/**
 		 * Filter 'wpseo_frontend_presenters' - Allow filtering the presenter instances in or out of the request.
 		 *
-		 * @param Abstract_Indexable_Presenter[] $presenters List of presenter instances.
-		 * @param Meta_Tags_Context              $context    The meta tags context for the current page.
+		 * @param array             $presenters The presenters.
+		 * @param Meta_Tags_Context $context    The meta tags context for the current page.
+		 *
+		 * @api Abstract_Indexable_Presenter[] List of presenter instances.
 		 */
 		$presenter_instances = \apply_filters( 'wpseo_frontend_presenters', $presenters, $context );
 
@@ -525,11 +435,6 @@ class Front_End_Integration implements Integration_Interface {
 			$presenters = \array_diff( $presenters, $this->singular_presenters );
 		}
 
-		// Filter out `twitter:data` presenters for static home pages.
-		if ( $page_type === 'Static_Home_Page' ) {
-			$presenters = \array_diff( $presenters, $this->slack_presenters );
-		}
-
 		return $presenters;
 	}
 
@@ -571,7 +476,7 @@ class Front_End_Integration implements Integration_Interface {
 	 */
 	private function maybe_remove_title_presenter( $presenters ) {
 		// Do not remove the title if we're on a REST request.
-		if ( \wp_is_serving_rest_request() ) {
+		if ( $this->request->is_rest_request() ) {
 			return $presenters;
 		}
 

@@ -13,28 +13,25 @@ namespace Automattic\Jetpack\Jetpack_Backup;
 use Automattic\Jetpack\Plugins_Installer;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit( 0 );
+	exit;
 }
 
 const PLUGIN_SLUG = 'jetpack-backup';
 const PLUGIN_FILE = 'jetpack-backup/jetpack-backup.php';
 
-if ( isset( $_GET['jetpack-backup-install-error'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	add_action( 'admin_notices', __NAMESPACE__ . '\error_notice' );
-}
-
-if ( isset( $_GET['jetpack-backup-action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	add_action( 'admin_init', __NAMESPACE__ . '\try_install' );
-}
+add_action( 'admin_notices', __NAMESPACE__ . '\error_notice' );
+add_action( 'admin_init', __NAMESPACE__ . '\try_install' );
 
 /**
  * Verify the intent to install Jetpack Backup, and kick off installation.
  *
  * This works in tandem with a JITM set up in the JITM package.
- *
- * @return never
  */
 function try_install() {
+	if ( ! isset( $_GET['jetpack-backup-action'] ) ) {
+		return;
+	}
+
 	check_admin_referer( 'jetpack-backup-install' );
 
 	$result = false;
@@ -43,7 +40,7 @@ function try_install() {
 
 	// Attempt to install and activate the plugin.
 	if ( current_user_can( 'activate_plugins' ) ) {
-		switch ( $_GET['jetpack-backup-action'] ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Function only hooked if set.
+		switch ( $_GET['jetpack-backup-action'] ) {
 			case 'install':
 				$result = install_and_activate();
 				break;
@@ -63,7 +60,7 @@ function try_install() {
 
 	wp_safe_redirect( $redirect );
 
-	exit( 0 );
+	exit;
 }
 
 /**
@@ -97,11 +94,13 @@ function activate() {
  * Notify the user that the installation of Jetpack Backup failed.
  */
 function error_notice() {
-	wp_admin_notice(
-		esc_html__( 'There was an error installing Jetpack Backup. Please try again.', 'jetpack' ),
-		array(
-			'type'        => 'error',
-			'dismissible' => true,
-		)
-	);
+	if ( empty( $_GET['jetpack-backup-install-error'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return;
+	}
+
+	?>
+	<div class="notice notice-error is-dismissible">
+		<p><?php esc_html_e( 'There was an error installing Jetpack Backup. Please try again.', 'jetpack' ); ?></p>
+	</div>
+	<?php
 }

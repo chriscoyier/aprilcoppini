@@ -15,10 +15,9 @@
  */
 
 use Automattic\Jetpack\Connection\Manager as Connection_Manager;
-use Automattic\Jetpack\Status\Host;
 
 if ( ! defined( 'JETPACK_NOTES__CACHE_BUSTER' ) ) {
-	define( 'JETPACK_NOTES__CACHE_BUSTER', JETPACK__VERSION . '-' . gmdate( 'oW' ) . '-lite' );
+	define( 'JETPACK_NOTES__CACHE_BUSTER', JETPACK__VERSION . '-' . gmdate( 'oW' ) );
 }
 
 /**
@@ -106,12 +105,9 @@ class Jetpack_Notifications {
 	 * @return void
 	 */
 	public function styles_and_scripts() {
-		if ( self::is_block_editor() ) {
-			return;
-		}
 		$is_rtl = is_rtl();
 
-		if ( ( new Host() )->is_woa_site() ) {
+		if ( Jetpack::is_module_active( 'masterbar' ) ) {
 			/**
 			 * Can be used to force Notifications to display in RTL style.
 			 *
@@ -134,14 +130,28 @@ class Jetpack_Notifications {
 
 		$this->print_js();
 
+		// attempt to use core or plugin libraries if registered.
 		$script_handles = array();
-		wp_register_script( 'wpcom-notes-common', $this->wpcom_static_url( '/wp-content/mu-plugins/notes/notes-common-lite.min.js' ), array(), JETPACK_NOTES__CACHE_BUSTER, true );
+		if ( ! wp_script_is( 'mustache', 'registered' ) ) {
+			wp_register_script( 'mustache', $this->wpcom_static_url( '/wp-content/js/mustache.js' ), null, JETPACK_NOTES__CACHE_BUSTER, true );
+		}
+		$script_handles[] = 'mustache';
+		if ( ! wp_script_is( 'underscore', 'registered' ) ) {
+			wp_register_script( 'underscore', $this->wpcom_static_url( '/wp-includes/js/underscore.min.js' ), null, JETPACK_NOTES__CACHE_BUSTER, true );
+		}
+		$script_handles[] = 'underscore';
+		if ( ! wp_script_is( 'backbone', 'registered' ) ) {
+			wp_register_script( 'backbone', $this->wpcom_static_url( '/wp-includes/js/backbone.min.js' ), array( 'underscore' ), JETPACK_NOTES__CACHE_BUSTER, true );
+		}
+		$script_handles[] = 'backbone';
+
+		wp_register_script( 'wpcom-notes-common', $this->wpcom_static_url( '/wp-content/mu-plugins/notes/notes-common-v2.js' ), array( 'jquery', 'underscore', 'backbone', 'mustache' ), JETPACK_NOTES__CACHE_BUSTER, true );
 		$script_handles[] = 'wpcom-notes-common';
+		$script_handles[] = 'jquery';
+		$script_handles[] = 'jquery-migrate';
+		$script_handles[] = 'jquery-core';
 		wp_enqueue_script( 'wpcom-notes-admin-bar', $this->wpcom_static_url( '/wp-content/mu-plugins/notes/admin-bar-v2.js' ), array( 'wpcom-notes-common' ), JETPACK_NOTES__CACHE_BUSTER, true );
 		$script_handles[] = 'wpcom-notes-admin-bar';
-
-		$wp_notes_args = 'var wpNotesArgs = ' . wp_json_encode( array( 'cacheBuster' => JETPACK_NOTES__CACHE_BUSTER ) ) . ';';
-		wp_add_inline_script( 'wpcom-notes-admin-bar', $wp_notes_args, 'before' );
 
 		if ( class_exists( 'Jetpack_AMP_Support' ) && Jetpack_AMP_Support::is_amp_request() ) {
 			add_filter(
@@ -170,11 +180,7 @@ class Jetpack_Notifications {
 			return;
 		}
 
-		if ( self::is_block_editor() ) {
-			return;
-		}
-
-		$user_locale = get_user_locale();
+		$wpcom_locale = get_locale();
 
 		if ( ! class_exists( 'GP_Locales' ) ) {
 			if ( defined( 'JETPACK__GLOTPRESS_LOCALES_PATH' ) && file_exists( JETPACK__GLOTPRESS_LOCALES_PATH ) ) {
@@ -183,42 +189,28 @@ class Jetpack_Notifications {
 		}
 
 		if ( class_exists( 'GP_Locales' ) ) {
-			$jetpack_locale_object = GP_Locales::by_field( 'slug', $user_locale );
-			if ( $jetpack_locale_object instanceof GP_Locale ) {
-				$user_locale = $jetpack_locale_object->slug;
+			$wpcom_locale_object = GP_Locales::by_field( 'wp_locale', $wpcom_locale );
+			if ( $wpcom_locale_object instanceof GP_Locale ) {
+				$wpcom_locale = $wpcom_locale_object->slug;
 			}
 		}
 
 		$third_party_cookie_check_iframe = '<span style="display:none;"><iframe class="jetpack-notes-cookie-check" src="https://widgets.wp.com/3rd-party-cookie-check/index.html"></iframe></span>';
 
-		$title = self::get_notes_markup();
-
-		// The default fallback is `en_US`. Remove underscore if present, noting that lang codes can be more than three chars.
-		$user_locale = strtolower( explode( '_', $user_locale, 2 )[0] );
-
+		$classes = 'wpnt-loading wpn-read';
 		$wp_admin_bar->add_menu(
 			array(
 				'id'     => 'notes',
-				'title'  => $title,
+				'title'  => '<span id="wpnt-notes-unread-count" class="' . esc_attr( $classes ) . '">
+					<span class="noticon noticon-notification"></span>
+					</span>',
 				'meta'   => array(
-					'html'  => '<div id="wpnt-notes-panel2" class="intrinsic-ignore" style="display:none" lang="' . esc_attr( $user_locale ) . '" dir="' . ( is_rtl() ? 'rtl' : 'ltr' ) . '"><div class="wpnt-notes-panel-header"><span class="wpnt-notes-header">' . __( 'Notifications', 'jetpack' ) . '</span><span class="wpnt-notes-panel-link"></span></div></div>' . $third_party_cookie_check_iframe,
+					'html'  => '<div id="wpnt-notes-panel2" class="intrinsic-ignore" style="display:none" lang="' . esc_attr( $wpcom_locale ) . '" dir="' . ( is_rtl() ? 'rtl' : 'ltr' ) . '"><div class="wpnt-notes-panel-header"><span class="wpnt-notes-header">' . __( 'Notifications', 'jetpack' ) . '</span><span class="wpnt-notes-panel-link"></span></div></div>' . $third_party_cookie_check_iframe,
 					'class' => 'menupop',
 				),
 				'parent' => 'top-secondary',
-				'href'   => 'https://wordpress.com/notifications',
 			)
 		);
-	}
-
-	/**
-	 * Returns the HTML markup for used by notification in top bar
-	 *
-	 * @return string
-	 */
-	private static function get_notes_markup() {
-		return '<span id="wpnt-notes-unread-count" class="wpnt-loading wpn-read"></span>
-<span class="noticon noticon-bell ab-icon"></span>
-<span class="screen-reader-text">' . esc_html__( 'Notifications', 'jetpack' ) . '</span>';
 	}
 
 	/**
@@ -237,22 +229,25 @@ class Jetpack_Notifications {
 	var wpNotesLinkAccountsURL = '<?php echo esc_url( $link_accounts_url ); ?>';
 <?php endif; ?>
 /* ]]> */
+	window.addEventListener('message', function ( event ) {
+		// Confirm that the message is from the right origin.
+		if ('https://widgets.wp.com' !== event.origin) {
+			return;
+		}
+		// Check whether 3rd Party Cookies are blocked
+		var has3PCBlocked = 'WPCOM:3PC:blocked' === event.data;
+
+		var tagerElement = document.getElementById('wp-admin-bar-notes');
+
+		if ( has3PCBlocked && tagerElement ) {
+			// Hide the notification button/icon
+			tagerElement.style.display = 'none';
+		}
+	}, false );
 </script>
 		<?php
 	}
 
-	/**
-	 * Checks to see if we're in the block editor.
-	 */
-	public static function is_block_editor() {
-		if ( function_exists( 'get_current_screen' ) ) {
-			$current_screen = get_current_screen();
-			if ( ! empty( $current_screen ) && $current_screen->is_block_editor() ) {
-				return true;
-			}
-		}
-		return false;
-	}
 }
 
 Jetpack_Notifications::init();

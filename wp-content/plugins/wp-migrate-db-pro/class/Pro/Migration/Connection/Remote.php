@@ -206,7 +206,7 @@ class Remote
                     if (version_compare($filtered_post['version'], '2.0b1', '<')) {
                         $return['error']    = 1;
                         $return['error_id'] = 'version_mismatch';
-                        $return             = json_encode($return);
+                        $return             = serialize($return);
                         return $this->http->end_ajax($return, false, true);
                     }
                 }
@@ -252,6 +252,10 @@ class Remote
                 )
             );
         }
+        if (method_exists('WpeCommon', 'get_wpe_auth_cookie_value')) {
+            $cookie_value = \WpeCommon::get_wpe_auth_cookie_value();
+            $return['wpe_cookie'] = $cookie_value;
+        }
 
         $site_details = $this->util->site_details();
 
@@ -285,9 +289,8 @@ class Remote
         $return['subsites']               = $site_details['subsites']; // TODO: Remove backwards compatibility.
         $return['site_details']           = $site_details;
         $return['beta_optin']             = BetaManager::has_beta_optin($this->settings);
-        $return['firewall_plugins']       = $site_details['firewall_plugins'];
         $return                           = apply_filters('wpmdb_establish_remote_connection_data', $return);
-        $result                           = $this->http->end_ajax(json_encode($return), false, true);
+        $result                           = $this->http->end_ajax($return, false, true);
 
         return $result;
     }
@@ -397,9 +400,9 @@ class Remote
 
         UsageTracking::log_usage($state_data['intent'] . '-remote');
 
-        $state_data['site_details'] = json_decode(
+        $state_data['site_details'] = Util::unserialize(
             base64_decode($filtered_post['site_details']),
-            true
+            __METHOD__
         );
 
         // ***+=== @TODO - revisit usage of parse_migration_form_data

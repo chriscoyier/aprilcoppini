@@ -8,19 +8,11 @@ if ( ! class_exists( 'ACF_Ajax_User_Setting' ) ) :
 
 	class ACF_Ajax_User_Setting extends ACF_Ajax {
 
-		/**
-		 * The AJAX action name.
-		 *
-		 * @var string
-		 */
-		public $action = 'acf/ajax/user_setting';
+		/** @var string The AJAX action name. */
+		var $action = 'acf/ajax/user_setting';
 
-		/**
-		 * Prevents access for non-logged in users.
-		 *
-		 * @var boolean
-		 */
-		public $public = false;
+		/** @var bool Prevents access for non-logged in users. */
+		var $public = true;
 
 		/**
 		 * get_response
@@ -33,10 +25,7 @@ if ( ! class_exists( 'ACF_Ajax_User_Setting' ) ) :
 		 * @param   array $request The request args.
 		 * @return  mixed The response data or WP_Error.
 		 */
-		public function get_response( $request ) {
-			if ( ! acf_current_user_can_admin() ) {
-				return new WP_Error( 'acf_invalid_permissions', __( 'Sorry, you do not have permission to do that.', 'acf' ) );
-			}
+		function get_response( $request ) {
 
 			// update
 			if ( $this->has( 'value' ) ) {
@@ -50,4 +39,5 @@ if ( ! class_exists( 'ACF_Ajax_User_Setting' ) ) :
 	}
 
 	acf_new_instance( 'ACF_Ajax_User_Setting' );
+
 endif; // class_exists check

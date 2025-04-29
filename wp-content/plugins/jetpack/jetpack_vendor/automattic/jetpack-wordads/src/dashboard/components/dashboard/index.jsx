@@ -14,10 +14,13 @@ import './style.scss';
 /**
  * WordAdsDashboard component definition.
  *
- * @return {React.Component} Search dashboard component.
+ * @returns {React.Component} Search dashboard component.
  */
 export default function WordAdsDashboard() {
 	useSelect( select => select( STORE_ID ).getWordAdsModuleStatus(), [] );
+
+	const siteAdminUrl = useSelect( select => select( STORE_ID ).getSiteAdminUrl() );
+	const aboutPageUrl = siteAdminUrl + 'admin.php?page=jetpack_about';
 
 	const updateOptions = useDispatch( STORE_ID ).updateJetpackSettings;
 	const isModuleEnabled = useSelect( select => select( STORE_ID ).isModuleEnabled() );
@@ -61,7 +64,7 @@ export default function WordAdsDashboard() {
 				<Spinner className="jp-wordads-dashboard-page-loading-spinner" color="#000" size={ 32 } />
 			) }
 			{ ! isLoading && (
-				<AdminPage moduleName={ __( 'WordAds', 'jetpack-wordads' ) }>
+				<AdminPage a8cLogoHref={ aboutPageUrl } moduleName={ __( 'WordAds', 'jetpack-wordads' ) }>
 					<AdminSection>
 						<Container horizontalSpacing={ 5 }>
 							<Col sm={ 4 }>

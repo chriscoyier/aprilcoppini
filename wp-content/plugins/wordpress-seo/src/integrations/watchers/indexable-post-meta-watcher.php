@@ -21,14 +21,14 @@ class Indexable_Post_Meta_Watcher implements Integration_Interface {
 	/**
 	 * An array of post IDs that need to be updated.
 	 *
-	 * @var array<int>
+	 * @var array
 	 */
 	protected $post_ids_to_update = [];
 
 	/**
 	 * Returns the conditionals based on which this loadable should be active.
 	 *
-	 * @return string[]
+	 * @return array
 	 */
 	public static function get_conditionals() {
 		return [ Migrations_Conditional::class ];
@@ -47,8 +47,6 @@ class Indexable_Post_Meta_Watcher implements Integration_Interface {
 	 * Initializes the integration.
 	 *
 	 * This is the place to register hooks and filters.
-	 *
-	 * @return void
 	 */
 	public function register_hooks() {
 		// Register all posts whose meta have changed.
@@ -78,7 +76,7 @@ class Indexable_Post_Meta_Watcher implements Integration_Interface {
 	 */
 	public function add_post_id( $meta_id, $post_id, $meta_key ) {
 		// Only register changes to our own meta.
-		if ( \is_string( $meta_key ) && \strpos( $meta_key, WPSEO_Meta::$meta_prefix ) !== 0 ) {
+		if ( \strpos( $meta_key, WPSEO_Meta::$meta_prefix ) !== 0 ) {
 			return;
 		}
 

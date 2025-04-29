@@ -92,4 +92,5 @@ class Options {
 		 */
 		return apply_filters( 'jetpack_search_has_vip_index', $has_vip_index );
 	}
+
 }

@@ -7,7 +7,7 @@ module.exports = [
 			index: './src/js/index.js',
 		},
 		mode: jetpackWebpackConfig.mode,
-		devtool: jetpackWebpackConfig.devtool,
+		devtool: jetpackWebpackConfig.isDevelopment ? 'source-map' : false,
 		output: {
 			...jetpackWebpackConfig.output,
 			path: path.resolve( './build' ),
@@ -19,7 +19,11 @@ module.exports = [
 			...jetpackWebpackConfig.resolve,
 		},
 		node: false,
-		plugins: [ ...jetpackWebpackConfig.StandardPlugins() ],
+		plugins: [
+			...jetpackWebpackConfig.StandardPlugins( {
+				DependencyExtractionPlugin: { injectPolyfill: true },
+			} ),
+		],
 		module: {
 			strictExportPresence: true,
 			rules: [

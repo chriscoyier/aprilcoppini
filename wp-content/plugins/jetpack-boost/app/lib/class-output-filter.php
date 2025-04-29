@@ -50,9 +50,9 @@ class Output_Filter {
 	/**
 	 * One chunk always remains in the buffer to allow for cross-seam matching.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	private $buffered_chunk = '';
+	private $buffered_chunk;
 
 	/**
 	 * Whether we allow the callbacks to filter incoming chunks of output.
@@ -91,21 +91,12 @@ class Output_Filter {
 	 * @return string Buffer data to be flushed to browser.
 	 */
 	public function tick( $buffer, $phase ) {
-		// Bail early if not filtering.
+		// Don't do anything if we're not support to do any filtering.
 		if ( ! $this->is_filtering ) {
 			return $buffer;
 		}
 
-		// Check if this the first or last buffer. Use the $phase bitmask to figure it out.
-		// $phase can contain multiple PHP_OUTPUT_HANDLER_* constants.
-		// e.g.: PHP_OUTPUT_HANDLER_END = 8 (binary 1000), PHP_OUTPUT_HANDLER_START = 1 (binary 0001). Both = 9 (binary 1001).
-		// Use bitwise AND to read individual flags from $phase.
-		$is_first_chunk = ( $phase & PHP_OUTPUT_HANDLER_START ) > 0;
-		$is_last_chunk  = ( $phase & PHP_OUTPUT_HANDLER_END ) > 0;
-
-		// Don't handle the first chunk (unless it's also the last) - we want to output
-		// one chunk behind the latest to allow for cross-seam matching.
-		if ( $is_first_chunk && ! $is_last_chunk ) {
+		if ( ! isset( $this->buffered_chunk ) ) {
 			$this->buffered_chunk = $buffer;
 
 			return '';
@@ -122,20 +113,11 @@ class Output_Filter {
 
 		// If the second part of the buffer is the last chunk,
 		// merge the buffer back together to ensure whole output.
-		if ( $is_last_chunk ) {
+		if ( PHP_OUTPUT_HANDLER_END === $phase ) {
 			// If more buffer chunks arrive, don't apply callbacks to them.
 			$this->is_filtering = false;
 
 			// Join remaining buffers and allow plugin to append anything to them.
-			/**
-			 * Filter the Critical CSS output buffer
-			 *
-			 * @param string $joint_buffer The entire output buffer
-			 * @param string $buffer_start The top half of the buffer
-			 * @param string $buffer_end The bottom half of the buffer
-			 *
-			 * @since   1.0.0
-			 */
 			return apply_filters( 'jetpack_boost_output_filtering_last_buffer', $joint_buffer, $buffer_start, $buffer_end );
 		}
 

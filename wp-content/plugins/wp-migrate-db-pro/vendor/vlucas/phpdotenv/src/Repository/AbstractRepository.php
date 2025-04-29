@@ -4,7 +4,6 @@ namespace DeliciousBrains\WPMDB\Container\Dotenv\Repository;
 
 use DeliciousBrains\WPMDB\Container\Dotenv\Repository\Adapter\ArrayAdapter;
 use InvalidArgumentException;
-use ReturnTypeWillChange;
 abstract class AbstractRepository implements RepositoryInterface
 {
     /**
@@ -42,15 +41,15 @@ abstract class AbstractRepository implements RepositoryInterface
      */
     public function get($name)
     {
-        if (!\is_string($name) || '' === $name) {
-            throw new InvalidArgumentException('Expected name to be a non-empty string.');
+        if (!\is_string($name)) {
+            throw new InvalidArgumentException('Expected name to be a string.');
         }
         return $this->getInternal($name);
     }
     /**
      * Get an environment variable.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return string|null
      */
@@ -67,8 +66,8 @@ abstract class AbstractRepository implements RepositoryInterface
      */
     public function set($name, $value = null)
     {
-        if (!\is_string($name) || '' === $name) {
-            throw new InvalidArgumentException('Expected name to be a non-empty string.');
+        if (!\is_string($name)) {
+            throw new InvalidArgumentException('Expected name to be a string.');
         }
         // Don't overwrite existing environment variables if we're immutable
         // Ruby's dotenv does this with `ENV[key] ||= value`.
@@ -81,8 +80,8 @@ abstract class AbstractRepository implements RepositoryInterface
     /**
      * Set an environment variable.
      *
-     * @param non-empty-string $name
-     * @param string|null      $value
+     * @param string      $name
+     * @param string|null $value
      *
      * @return void
      */
@@ -98,8 +97,8 @@ abstract class AbstractRepository implements RepositoryInterface
      */
     public function clear($name)
     {
-        if (!\is_string($name) || '' === $name) {
-            throw new InvalidArgumentException('Expected name to be a non-empty string.');
+        if (!\is_string($name)) {
+            throw new InvalidArgumentException('Expected name to be a string.');
         }
         // Don't clear anything if we're immutable.
         if ($this->immutable) {
@@ -110,7 +109,7 @@ abstract class AbstractRepository implements RepositoryInterface
     /**
      * Clear an environment variable.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return void
      */
@@ -124,12 +123,11 @@ abstract class AbstractRepository implements RepositoryInterface
      */
     public function has($name)
     {
-        return \is_string($name) && $name !== '' && $this->get($name) !== null;
+        return \is_string($name) && $this->get($name) !== null;
     }
     /**
      * {@inheritdoc}
      */
-    #[ReturnTypeWillChange]
     public function offsetExists($offset)
     {
         return $this->has($offset);
@@ -137,7 +135,6 @@ abstract class AbstractRepository implements RepositoryInterface
     /**
      * {@inheritdoc}
      */
-    #[ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->get($offset);
@@ -145,7 +142,6 @@ abstract class AbstractRepository implements RepositoryInterface
     /**
      * {@inheritdoc}
      */
-    #[ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         $this->set($offset, $value);
@@ -153,7 +149,6 @@ abstract class AbstractRepository implements RepositoryInterface
     /**
      * {@inheritdoc}
      */
-    #[ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         $this->clear($offset);

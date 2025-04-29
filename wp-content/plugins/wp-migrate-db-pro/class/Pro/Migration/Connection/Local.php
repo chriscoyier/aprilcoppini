@@ -142,21 +142,20 @@ class Local
 	    }
 
 	    $response = false;
-        if ( Util::is_json( $remote_response ) ) {
-		    $response = json_decode( $remote_response, true );
+	    if ( is_serialized( $remote_response ) ) {
+		    $response = unserialize( $remote_response );
 	    }
 
-        if ( !$response ) {
+	    if ( !$response ) {
 		    return $this->http->end_ajax(
-			    new \WP_Error( 'json-decode-failure', __( 'Failed attempting to decode the response from the remote server. Please contact support.', 'wp-migrate-db' ) ),
+			    new \WP_Error( 'unserialize-failure', __( 'Failed attempting to unserialize the response from the remote server. Please contact support.', 'wp-migrate-db' ) ),
 			    $remote_response
 		    );
 	    }
 
-        if (isset($response['site_details']['wpe_cookie'])) {
-            Persistence::storeRemoteWPECookie($response['site_details']['wpe_cookie']);
+        if (isset($response['wpe_cookie'])) {
+            Persistence::storeRemoteWPECookie($response['wpe_cookie']);
         }
-
         $data['scheme'] = $url_bits['scheme'];
 	    $data += $response;
 

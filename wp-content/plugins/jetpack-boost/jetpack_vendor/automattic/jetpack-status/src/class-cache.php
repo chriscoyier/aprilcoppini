@@ -25,7 +25,7 @@ class Cache {
 	 *
 	 * @param string $key Key to fetch.
 	 * @param mixed  $default Default value to return if the key is not set.
-	 * @return mixed Data.
+	 * @returns mixed Data.
 	 */
 	public static function get( $key, $default = null ) {
 		$blog_id = get_current_blog_id();
@@ -51,4 +51,5 @@ class Cache {
 	public static function clear() {
 		self::$cache = array();
 	}
+
 }

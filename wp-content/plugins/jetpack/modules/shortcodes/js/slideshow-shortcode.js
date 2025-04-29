@@ -1,4 +1,4 @@
-/* global jetpackSlideshowSettings */
+/* global jetpackSlideshowSettings, escape */
 
 function JetpackSlideshow( element, transition, autostart ) {
 	this.element = element;
@@ -34,6 +34,7 @@ JetpackSlideshow.prototype.init = function () {
 		img.src = imageInfo.src;
 		img.title = typeof imageInfo.title !== 'undefined' ? imageInfo.title : '';
 		img.alt = typeof imageInfo.alt !== 'undefined' ? imageInfo.alt : '';
+		img.align = 'middle';
 		img.setAttribute( 'itemprop', 'image' );
 		img.nopin = 'nopin';
 		var caption = document.createElement( 'div' );
@@ -54,7 +55,7 @@ JetpackSlideshow.prototype.init = function () {
 					self.finishInit_();
 				}, 1 );
 			} else {
-				img.addEventListener( 'load', function () {
+				jQuery( img ).load( function () {
 					self.finishInit_();
 				} );
 			}
@@ -90,7 +91,7 @@ JetpackSlideshow.prototype.finishInit_ = function () {
 	var self = this;
 	if ( this.images.length > 1 ) {
 		// Initialize Cycle instance.
-		jQuery( this.element ).cycle( {
+		this.element.cycle( {
 			fx: this.transition,
 			prev: this.controls.prev,
 			next: this.controls.next,
@@ -104,27 +105,23 @@ JetpackSlideshow.prototype.finishInit_ = function () {
 		var slideshow = this.element;
 
 		if ( ! this.autostart ) {
-			jQuery( slideshow ).cycle( 'pause' );
-			this.controls.stop.classList.remove( 'running' );
-			this.controls.stop.classList.add( 'paused' );
+			slideshow.cycle( 'pause' );
+			jQuery( this.controls.stop ).removeClass( 'running' );
+			jQuery( this.controls.stop ).addClass( 'paused' );
 		}
 
-		this.controls.stop.addEventListener( 'click', function ( event ) {
-			var button = event.currentTarget;
-
-			if ( button === event.target ) {
-				event.preventDefault();
-
-				if ( ! button.classList.contains( 'paused' ) ) {
-					jQuery( slideshow ).cycle( 'pause' );
-					button.classList.remove( 'running' );
-					button.classList.add( 'paused' );
-				} else {
-					button.classList.add( 'running' );
-					button.classList.remove( 'paused' );
-					jQuery( slideshow ).cycle( 'resume', true );
-				}
+		jQuery( this.controls.stop ).click( function () {
+			var button = jQuery( this );
+			if ( ! button.hasClass( 'paused' ) ) {
+				slideshow.cycle( 'pause' );
+				button.removeClass( 'running' );
+				button.addClass( 'paused' );
+			} else {
+				button.addClass( 'running' );
+				button.removeClass( 'paused' );
+				slideshow.cycle( 'resume', true );
 			}
+			return false;
 		} );
 	} else {
 		this.element.children( ':first' ).show();
@@ -170,7 +167,7 @@ JetpackSlideshow.prototype.onCyclePrevNextClick_ = function ( isNext, i /*, slid
 	stats.src =
 		document.location.protocol +
 		'//pixel.wp.com/g.gif?host=' +
-		encodeURIComponent( document.location.host ) +
+		escape( document.location.host ) +
 		'&rand=' +
 		Math.random() +
 		'&blog=' +
@@ -182,32 +179,32 @@ JetpackSlideshow.prototype.onCyclePrevNextClick_ = function ( isNext, i /*, slid
 		'&post=' +
 		postid +
 		'&ref=' +
-		encodeURIComponent( document.location );
+		escape( document.location );
 };
 
-( function () {
+( function ( $ ) {
 	function jetpack_slideshow_init() {
-		document.querySelectorAll( '.jetpack-slideshow-noscript' ).forEach( function ( element ) {
-			element.remove();
-		} );
-		document.querySelectorAll( '.jetpack-slideshow' ).forEach( function ( container ) {
-			if ( container.dataset.processed === 'true' ) {
+		$( '.jetpack-slideshow-noscript' ).remove();
+
+		$( '.jetpack-slideshow' ).each( function () {
+			var container = $( this );
+
+			if ( container.data( 'processed' ) ) {
 				return;
 			}
 
-			// Extract data attributes manually
-			var transition = container.dataset.trans;
-			var autostart = container.dataset.autostart === 'true';
-			var gallery = JSON.parse( container.dataset.gallery || '[]' );
-
-			var slideshow = new JetpackSlideshow( container, transition, autostart );
-			slideshow.images = gallery;
+			var slideshow = new JetpackSlideshow(
+				container,
+				container.data( 'trans' ),
+				container.data( 'autostart' )
+			);
+			slideshow.images = container.data( 'gallery' );
 			slideshow.init();
 
-			container.dataset.processed = 'true';
+			container.data( 'processed', true );
 		} );
 	}
 
-	document.addEventListener( 'DOMContentLoaded', jetpack_slideshow_init );
-	document.body.addEventListener( 'post-load', jetpack_slideshow_init );
-} )();
+	$( document ).ready( jetpack_slideshow_init );
+	$( 'body' ).on( 'post-load', jetpack_slideshow_init );
+} )( jQuery );

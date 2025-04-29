@@ -5,7 +5,7 @@
  * @package automattic/jetpack-autoloader
  */
 
-namespace Automattic\Jetpack\Autoloader\jpb1e77e6231d50e7663f84529b6a3dfda_jetpack_boostⓥ3_11_0\al5_0_4;
+namespace Automattic\Jetpack\Autoloader\jpb1e77e6231d50e7663f84529b6a3dfda_jetpack_boostⓥ1_7_0;
 
  // phpcs:ignore
 
@@ -58,26 +58,6 @@ class Version_Loader {
 	}
 
 	/**
-	 * Fetch the classmap.
-	 *
-	 * @since 3.1.0
-	 * @return array<string, array>
-	 */
-	public function get_class_map() {
-		return $this->classmap;
-	}
-
-	/**
-	 * Fetch the psr-4 mappings.
-	 *
-	 * @since 3.1.0
-	 * @return array<string, array>
-	 */
-	public function get_psr4_map() {
-		return $this->psr4_map;
-	}
-
-	/**
 	 * Finds the file path for the given class.
 	 *
 	 * @param string $class_name The class to find.
@@ -86,7 +66,7 @@ class Version_Loader {
 	 */
 	public function find_class_file( $class_name ) {
 		$data = $this->select_newest_file(
-			$this->classmap[ $class_name ] ?? null,
+			isset( $this->classmap[ $class_name ] ) ? $this->classmap[ $class_name ] : null,
 			$this->find_psr4_file( $class_name )
 		);
 		if ( ! isset( $data ) ) {
@@ -143,7 +123,7 @@ class Version_Loader {
 	 * @return array|null $data The version and path path to the file if found, null otherwise.
 	 */
 	private function find_psr4_file( $class_name ) {
-		if ( empty( $this->psr4_map ) ) {
+		if ( ! isset( $this->psr4_map ) ) {
 			return null;
 		}
 

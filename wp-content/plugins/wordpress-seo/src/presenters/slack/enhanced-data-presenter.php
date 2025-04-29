@@ -28,8 +28,8 @@ class Enhanced_Data_Presenter extends Abstract_Indexable_Presenter {
 		$i             = 1;
 		$class         = \is_admin_bar_showing() ? ' class="yoast-seo-meta-tag"' : '';
 		foreach ( $enhanced_data as $label => $value ) {
-			$twitter_tags .= \sprintf( "\t" . '<meta name="twitter:label%1$d" content="%2$s"' . $class . ' />' . "\n", $i, \esc_attr( $label ) );
-			$twitter_tags .= \sprintf( "\t" . '<meta name="twitter:data%1$d" content="%2$s"' . $class . ' />' . "\n", $i, \esc_attr( $value ) );
+			$twitter_tags .= \sprintf( "\t" . '<meta name="twitter:label%1$d" content="%2$s"' . $class . ' />' . "\n", $i, $label );
+			$twitter_tags .= \sprintf( "\t" . '<meta name="twitter:data%1$d" content="%2$s"' . $class . ' />' . "\n", $i, $value );
 			++$i;
 		}
 
@@ -58,7 +58,8 @@ class Enhanced_Data_Presenter extends Abstract_Indexable_Presenter {
 		/**
 		 * Filter: 'wpseo_enhanced_slack_data' - Allows filtering of the enhanced data for sharing on Slack.
 		 *
-		 * @param array                  $data         The enhanced Slack sharing data.
+		 * @api array $data The enhanced Slack sharing data.
+		 *
 		 * @param Indexable_Presentation $presentation The presentation of an indexable.
 		 */
 		return \apply_filters( 'wpseo_enhanced_slack_data', $data, $this->presentation );

@@ -5,6 +5,8 @@
  * @package WPSEO\Admin\Notifications
  */
 
+use Yoast\WP\SEO\Conditionals\Indexables_Page_Conditional;
+
 /**
  * Class Yoast_Notifications.
  */
@@ -15,7 +17,7 @@ class Yoast_Notifications {
 	 *
 	 * @var string
 	 */
-	public const ADMIN_PAGE = 'wpseo_dashboard';
+	const ADMIN_PAGE = 'wpseo_dashboard';
 
 	/**
 	 * Total notifications count.
@@ -76,21 +78,16 @@ class Yoast_Notifications {
 
 	/**
 	 * Add hooks
-	 *
-	 * @return void
 	 */
 	private function add_hooks() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reason: We are not processing form information.
-		if ( isset( $_GET['page'] ) && is_string( $_GET['page'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reason: We are not processing form information.
-			$page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
-			if ( $page === self::ADMIN_PAGE ) {
-				add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
-			}
+
+		$page = filter_input( INPUT_GET, 'page' );
+		if ( $page === self::ADMIN_PAGE ) {
+			add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		}
 
 		// Needed for adminbar and Notifications page.
-		add_action( 'admin_init', [ self::class, 'collect_notifications' ], 99 );
+		add_action( 'admin_init', [ __CLASS__, 'collect_notifications' ], 99 );
 
 		// Add AJAX hooks.
 		add_action( 'wp_ajax_yoast_dismiss_notification', [ $this, 'ajax_dismiss_notification' ] );
@@ -99,19 +96,20 @@ class Yoast_Notifications {
 
 	/**
 	 * Enqueue assets.
-	 *
-	 * @return void
 	 */
 	public function enqueue_assets() {
 		$asset_manager = new WPSEO_Admin_Asset_Manager();
 
-		$asset_manager->enqueue_style( 'notifications' );
+		if ( YoastSEO()->classes->get( Indexables_Page_Conditional::class )->is_met() ) {
+			$asset_manager->enqueue_style( 'notifications-new' );
+		}
+		else {
+			$asset_manager->enqueue_style( 'notifications' );
+		}
 	}
 
 	/**
 	 * Handle ajax request to dismiss a notification.
-	 *
-	 * @return void
 	 */
 	public function ajax_dismiss_notification() {
 
@@ -128,8 +126,6 @@ class Yoast_Notifications {
 
 	/**
 	 * Handle ajax request to restore a notification.
-	 *
-	 * @return void
 	 */
 	public function ajax_restore_notification() {
 
@@ -148,8 +144,6 @@ class Yoast_Notifications {
 	 * Create AJAX response data.
 	 *
 	 * @param string $type Notification type.
-	 *
-	 * @return void
 	 */
 	private function output_ajax_response( $type ) {
 
@@ -204,29 +198,18 @@ class Yoast_Notifications {
 	/**
 	 * Extract the Yoast Notification from the AJAX request.
 	 *
-	 * This function does not handle nonce verification.
-	 *
-	 * @return Yoast_Notification|null A Yoast_Notification on success, null on failure.
+	 * @return Yoast_Notification|null
 	 */
 	private function get_notification_from_ajax_request() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Reason: This function does not handle nonce verification.
-		if ( ! isset( $_POST['notification'] ) || ! is_string( $_POST['notification'] ) ) {
-			return null;
-		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Reason: This function does not handle nonce verification.
-		$notification_id = sanitize_text_field( wp_unslash( $_POST['notification'] ) );
 
-		if ( empty( $notification_id ) ) {
-			return null;
-		}
 		$notification_center = Yoast_Notification_Center::get();
+		$notification_id     = filter_input( INPUT_POST, 'notification' );
+
 		return $notification_center->get_notification_by_id( $notification_id );
 	}
 
 	/**
 	 * Collect the notifications and group them together.
-	 *
-	 * @return void
 	 */
 	public static function collect_notifications() {
 
@@ -235,12 +218,12 @@ class Yoast_Notifications {
 		$notifications            = $notification_center->get_sorted_notifications();
 		self::$notification_count = count( $notifications );
 
-		self::$errors           = array_filter( $notifications, [ self::class, 'filter_error_notifications' ] );
-		self::$dismissed_errors = array_filter( self::$errors, [ self::class, 'filter_dismissed_notifications' ] );
+		self::$errors           = array_filter( $notifications, [ __CLASS__, 'filter_error_notifications' ] );
+		self::$dismissed_errors = array_filter( self::$errors, [ __CLASS__, 'filter_dismissed_notifications' ] );
 		self::$active_errors    = array_diff( self::$errors, self::$dismissed_errors );
 
-		self::$warnings           = array_filter( $notifications, [ self::class, 'filter_warning_notifications' ] );
-		self::$dismissed_warnings = array_filter( self::$warnings, [ self::class, 'filter_dismissed_notifications' ] );
+		self::$warnings           = array_filter( $notifications, [ __CLASS__, 'filter_warning_notifications' ] );
+		self::$dismissed_warnings = array_filter( self::$warnings, [ __CLASS__, 'filter_dismissed_notifications' ] );
 		self::$active_warnings    = array_diff( self::$warnings, self::$dismissed_warnings );
 	}
 

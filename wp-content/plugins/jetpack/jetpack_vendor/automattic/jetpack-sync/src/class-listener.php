@@ -8,7 +8,6 @@
 namespace Automattic\Jetpack\Sync;
 
 use Automattic\Jetpack\Connection\Manager as Connection_Manager;
-use Automattic\Jetpack\IP\Utils as IP_Utils;
 use Automattic\Jetpack\Roles;
 
 /**
@@ -216,7 +215,6 @@ class Listener {
 		 * If we add any items to the queue, we should try to ensure that our script
 		 * can't be killed before they are sent.
 		 */
-		// https://plugins.trac.wordpress.org/ticket/2041
 		if ( function_exists( 'ignore_user_abort' ) ) {
 			ignore_user_abort( true );
 		}
@@ -320,7 +318,6 @@ class Listener {
 		 * If we add any items to the queue, we should try to ensure that our script
 		 * can't be killed before they are sent.
 		 */
-		// https://plugins.trac.wordpress.org/ticket/2041
 		if ( function_exists( 'ignore_user_abort' ) ) {
 			ignore_user_abort( true );
 		}
@@ -429,9 +426,15 @@ class Listener {
 		);
 
 		if ( $this->should_send_user_data_with_actor( $current_filter ) ) {
-			$ip = IP_Utils::get_ip();
+			$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? filter_var( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+			if ( defined( 'JETPACK__PLUGIN_DIR' ) ) {
+				if ( ! function_exists( 'jetpack_protect_get_ip' ) ) {
+					require_once JETPACK__PLUGIN_DIR . 'modules/protect/shared-functions.php';
+				}
+				$ip = jetpack_protect_get_ip();
+			}
 
-			$actor['ip']         = $ip ? $ip : '';
+			$actor['ip']         = $ip;
 			$actor['user_agent'] = isset( $_SERVER['HTTP_USER_AGENT'] ) ? filter_var( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : 'unknown';
 		}
 
@@ -476,7 +479,7 @@ class Listener {
 	 * @return string Request URL, if known. Otherwise, wp-admin or home_url.
 	 */
 	public function get_request_url() {
-		if ( isset( $_SERVER['HTTP_HOST'] ) && isset( $_SERVER['REQUEST_URI'] ) ) {
+		if ( isset( $_SERVER['HTTP_HOST'], $_SERVER['REQUEST_URI'] ) ) {
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- False positive, sniff misses the call to esc_url_raw.
 			return esc_url_raw( 'http' . ( isset( $_SERVER['HTTPS'] ) ? 's' : '' ) . '://' . wp_unslash( "{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}" ) );
 		}

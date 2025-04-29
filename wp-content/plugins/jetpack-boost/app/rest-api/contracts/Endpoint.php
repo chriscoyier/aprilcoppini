@@ -11,4 +11,5 @@ interface Endpoint {
 	public function response( $request );
 
 	public function permissions();
+
 }

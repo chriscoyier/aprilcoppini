@@ -12,6 +12,9 @@ namespace Automattic\Jetpack\Extensions\Gif;
 use Automattic\Jetpack\Blocks;
 use Jetpack_Gutenberg;
 
+const FEATURE_NAME = 'gif';
+const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
+
 /**
  * Registers the block for use in Gutenberg
  * This is done via an action so that we can disable
@@ -19,7 +22,7 @@ use Jetpack_Gutenberg;
  */
 function register_block() {
 	Blocks::jetpack_register_block(
-		__DIR__,
+		BLOCK_NAME,
 		array( 'render_callback' => __NAMESPACE__ . '\render_block' )
 	);
 }
@@ -45,7 +48,7 @@ function render_block( $attr ) {
 		return null;
 	}
 
-	$classes = Blocks::classes( Blocks::get_block_feature( __DIR__ ), $attr );
+	$classes = Blocks::classes( FEATURE_NAME, $attr );
 
 	$placeholder = sprintf( '<a href="%s">%s</a>', esc_url( $giphy_url ), esc_attr( $search_text ) );
 
@@ -72,7 +75,7 @@ function render_block( $attr ) {
 	<?php
 	$html = ob_get_clean();
 
-	Jetpack_Gutenberg::load_assets_as_required( __DIR__ );
+	Jetpack_Gutenberg::load_assets_as_required( FEATURE_NAME );
 
 	return $html;
 }

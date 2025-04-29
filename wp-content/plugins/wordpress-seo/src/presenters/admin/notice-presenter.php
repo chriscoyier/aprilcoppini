@@ -3,6 +3,7 @@
 namespace Yoast\WP\SEO\Presenters\Admin;
 
 use WPSEO_Admin_Asset_Manager;
+use Yoast\WP\SEO\Conditionals\Indexables_Page_Conditional;
 use Yoast\WP\SEO\Presenters\Abstract_Presenter;
 
 /**
@@ -83,7 +84,12 @@ class Notice_Presenter extends Abstract_Presenter {
 			$this->asset_manager = new WPSEO_Admin_Asset_Manager();
 		}
 
-		$this->asset_manager->enqueue_style( 'notifications' );
+		if ( \YoastSEO()->classes->get( Indexables_Page_Conditional::class )->is_met() ) {
+			$this->asset_manager->enqueue_style( 'notifications-new' );
+		}
+		else {
+			$this->asset_manager->enqueue_style( 'notifications' );
+		}
 	}
 
 	/**
@@ -104,16 +110,14 @@ class Notice_Presenter extends Abstract_Presenter {
 		$out .= '<div class="notice-yoast__header">';
 		$out .= '<span class="yoast-icon"></span>';
 		$out .= \sprintf(
-			'<h2 class="notice-yoast__header-heading yoast-notice-migrated-header">%s</h2>',
+			'<h2 class="notice-yoast__header-heading">%s</h2>',
 			\esc_html( $this->title )
 		);
 		$out .= '</div>';
-		$out .= '<div class="notice-yoast-content">';
 		$out .= '<p>' . $this->content . '</p>';
 		if ( ! \is_null( $this->button ) ) {
 			$out .= '<p>' . $this->button . '</p>';
 		}
-		$out .= '</div>';
 		$out .= '</div>';
 
 		if ( ! \is_null( $this->image_filename ) ) {

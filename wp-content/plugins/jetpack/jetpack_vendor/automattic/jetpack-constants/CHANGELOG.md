@@ -5,58 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.3] - 2025-03-05
-### Changed
-- Internal updates.
-
-## [3.0.2] - 2025-02-24
-### Changed
-- Update dependencies.
-
-## [3.0.1] - 2024-11-25
-### Changed
-- Updated package dependencies. [#40258]
-
-## [3.0.0] - 2024-11-14
-### Removed
-- General: Update minimum PHP version to 7.2. [#40147]
-
-## [2.0.5] - 2024-11-04
-### Added
-- Enable test coverage. [#39961]
-
-## [2.0.4] - 2024-08-23
-### Changed
-- Updated package dependencies. [#39004]
-
-## [2.0.3] - 2024-05-29
-### Fixed
-- Fix phpdoc type on `Constants::set_constant()` value parameter. [#37606]
-
-## [2.0.2] - 2024-04-30
-### Changed
-- Internal updates.
-
-## [2.0.1] - 2024-03-12
-### Changed
-- Internal updates.
-
-## [2.0.0] - 2023-11-20
-### Changed
-- Updated required PHP version to >= 7.0. [#34192]
-
-## [1.6.23] - 2023-08-23
-### Changed
-- Updated package dependencies. [#32605]
-
-## [1.6.22] - 2023-04-10
-### Added
-- Add Jetpack Autoloader package suggestion. [#29988]
-
-## [1.6.21] - 2023-02-20
-### Changed
-- Minor internal updates.
-
 ## [1.6.20] - 2022-12-02
 ### Changed
 - Updated package dependencies. [#27688]
@@ -194,19 +142,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Packages: Finish the constants package
 
-[3.0.3]: https://github.com/Automattic/jetpack-constants/compare/v3.0.2...v3.0.3
-[3.0.2]: https://github.com/Automattic/jetpack-constants/compare/v3.0.1...v3.0.2
-[3.0.1]: https://github.com/Automattic/jetpack-constants/compare/v3.0.0...v3.0.1
-[3.0.0]: https://github.com/Automattic/jetpack-constants/compare/v2.0.5...v3.0.0
-[2.0.5]: https://github.com/Automattic/jetpack-constants/compare/v2.0.4...v2.0.5
-[2.0.4]: https://github.com/Automattic/jetpack-constants/compare/v2.0.3...v2.0.4
-[2.0.3]: https://github.com/Automattic/jetpack-constants/compare/v2.0.2...v2.0.3
-[2.0.2]: https://github.com/Automattic/jetpack-constants/compare/v2.0.1...v2.0.2
-[2.0.1]: https://github.com/Automattic/jetpack-constants/compare/v2.0.0...v2.0.1
-[2.0.0]: https://github.com/Automattic/jetpack-constants/compare/v1.6.23...v2.0.0
-[1.6.23]: https://github.com/Automattic/jetpack-constants/compare/v1.6.22...v1.6.23
-[1.6.22]: https://github.com/Automattic/jetpack-constants/compare/v1.6.21...v1.6.22
-[1.6.21]: https://github.com/Automattic/jetpack-constants/compare/v1.6.20...v1.6.21
 [1.6.20]: https://github.com/Automattic/jetpack-constants/compare/v1.6.19...v1.6.20
 [1.6.19]: https://github.com/Automattic/jetpack-constants/compare/v1.6.18...v1.6.19
 [1.6.18]: https://github.com/Automattic/jetpack-constants/compare/v1.6.17...v1.6.18

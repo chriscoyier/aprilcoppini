@@ -53,7 +53,7 @@ class Jetpack_Network_Sites_List_Table extends WP_List_Table {
 		// Setup pagination.
 		$per_page     = 25;
 		$current_page = $this->get_pagenum();
-		$total_items  = is_countable( $sites ) ? count( $sites ) : 0;
+		$total_items  = count( $sites );
 		$sites        = array_slice( $sites, ( ( $current_page - 1 ) * $per_page ), $per_page );
 		$this->set_pagination_args(
 			array(
@@ -118,7 +118,7 @@ class Jetpack_Network_Sites_List_Table extends WP_List_Table {
 		switch_to_blog( $item->blog_id );
 
 		// Checks for both the stock version of Jetpack and the one managed by the Jetpack Beta Plugin.
-		if ( ! is_plugin_active( 'jetpack/jetpack.php' ) && ! is_plugin_active( 'jetpack-dev/jetpack.php' ) && ! array_key_exists( 'jetpack.php', get_mu_plugins() ) ) {
+		if ( ! is_plugin_active( 'jetpack/jetpack.php' ) && ! is_plugin_active( 'jetpack-dev/jetpack.php' ) ) {
 			$title  = __( 'Jetpack is not active on this site.', 'jetpack' );
 			$action = array(
 				'manage-plugins' => '<a href="' . get_admin_url( $item->blog_id, 'plugins.php', 'admin' ) . '">' . __( 'Manage Plugins', 'jetpack' ) . '</a>',

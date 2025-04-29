@@ -31,58 +31,6 @@ class Remote
      * @var TableHelper
      */
     private $table_helper;
-    /**
-     * @var WPMDBRestAPIServer
-     */
-    private $rest_API_server;
-    /**
-     * @var FinalizeComplete
-     */
-    private $finalize_complete;
-    /**
-     * @var BackupExport
-     */
-    private $backup_export;
-    /**
-     * @var Table
-     */
-    private $table;
-    /**
-     * @var MigrationManager
-     */
-    private $migration_manager;
-    /**
-     * @var FormData
-     */
-    private $form_data;
-    /**
-     * @var Properties
-     */
-    private $props;
-    /**
-     * @var ErrorLog
-     */
-    private $error_log;
-    /**
-     * @var Helper
-     */
-    private $http_helper;
-    /**
-     * @var Http
-     */
-    private $http;
-    /**
-     * @var MigrationStateManager
-     */
-    private $migration_state_manager;
-    /**
-     * @var array
-     */
-    private $settings;
-    /**
-     * @var Scramble
-     */
-    private $scrambler;
 
     public function __construct(
         Scramble $scrambler,
@@ -167,9 +115,9 @@ class Remote
             return wp_send_json_error($state_data->get_error_message());
         }
 
-        $state_data['find_replace_pairs'] = json_decode(base64_decode($state_data['find_replace_pairs']), true);
+        $state_data['find_replace_pairs'] = unserialize(base64_decode($state_data['find_replace_pairs']));
         $state_data['form_data']          = base64_decode($state_data['form_data']);
-        $state_data['site_details']       = json_decode(base64_decode($state_data['site_details']), true);
+        $state_data['site_details']       = unserialize(base64_decode($state_data['site_details']));
         $state_data['primary_keys']       = base64_decode($state_data['primary_keys']);
         $state_data['source_prefix']      = base64_decode($state_data['source_prefix']);
         $state_data['destination_prefix'] = base64_decode($state_data['destination_prefix']);

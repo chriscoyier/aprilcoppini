@@ -156,10 +156,6 @@ class ProPluginManager extends PluginManagerBase
         add_action('current_screen', array($this, 'check_again_clear_transients'));
 
         add_action('rest_api_init', [$this, 'register_rest_routes']);
-
-        add_filter('admin_footer_text', [$this, 'admin_footer_text']);
-
-        add_filter( 'update_footer', [$this, 'update_footer'], 20 );
     }
 
     public function filter_wpmdb_data($data)
@@ -168,30 +164,19 @@ class ProPluginManager extends PluginManagerBase
         $data['valid_licence']  = $valid_license ? 1 : 0;
         $data['has_licence']    = $this->license->get_licence_key() === '' ? 0 : 1;
         $data['licence_status'] = $this->license->check_license_status();
-        $data['license_errors'] = [];
         $data['api_data']       = [];
 
-        if ($data['has_licence']) {
+        if ($valid_license) {
             $api_data = $this->license->get_api_data();
             if (!empty($api_data)) {
                 $data['api_data'] = $api_data;
                 //Get expired license notification messages
                 if ($data['licence_status'] === 'subscription_expired') {
                     $data['api_data']['errors']['subscription_expired'] = [];
-                    $licence_status_messages                            = $this->license->get_licence_status_message(
-                        null,
-                        'all'
-                    );
+                    $licence_status_messages = $this->license->get_licence_status_message( null, 'all' );
                     foreach ($licence_status_messages as $frontend_context => $status_message) {
-                        $data['api_data']['errors']['subscription_expired'][$frontend_context] = sprintf(
-                            '<div class="notification-message warning-notice inline-message invalid-licence">%s</div>',
-                            $status_message
-                        );
+                        $data['api_data']['errors']['subscription_expired'][ $frontend_context ] = sprintf( '<div class="notification-message warning-notice inline-message invalid-licence">%s</div>', $status_message );
                     }
-                } elseif (!empty($api_data['errors'][$data['licence_status']])) {
-                    $data['api_data']['errors'][$data['licence_status']] = [];
-                    $data['api_data']['errors'][$data['licence_status']]['default'] = $this->license->get_licence_status_message();
-                    $data['license_errors'][$data['licence_status']] = $data['api_data']['errors'][$data['licence_status']]['default'];
                 }
             }
         }
@@ -208,7 +193,6 @@ class ProPluginManager extends PluginManagerBase
         $templates[$notice_name] = [
             'message' => $this->license->get_licence_status_message(),
             'id'      => $notice_name,
-            'error'   => true,
         ];
 
         return $templates;
@@ -635,40 +619,9 @@ class ProPluginManager extends PluginManagerBase
         delete_site_transient('wpmdb_dbrains_api_down');
     }
 
-    /**
-     * Get the plugin title
-     *
-     * @return string
-     **/
     public function get_plugin_title()
     {
         return __('WP Migrate', 'wp-migrate-db');
-    }
-
-    /**
-     * Get the plugin version
-     *
-     * @return string
-     **/
-    public function get_plugin_version()
-    {
-        if (!isset($GLOBALS['wpmdb_meta']['wp-migrate-db-pro']['version'])) {
-            return '0';
-        }
-        return $GLOBALS['wpmdb_meta']['wp-migrate-db-pro']['version'];
-    }
-
-    /**
-     * Get the plugin page url
-     *
-     * @return string
-     **/
-    public static function plugin_page_url()
-    {
-        if (is_multisite()) {
-            return menu_page_url('tools_page_wp-migrate-db-pro');
-        }
-        return menu_page_url('settings_page_wp-migrate-db-pro-network');
     }
 
     public function register_rest_routes()
@@ -685,89 +638,5 @@ class ProPluginManager extends PluginManagerBase
             'tpf_available' => (string)Util::is_addon_registered('tpf'),
             'mf_available'  => (string)Util::is_addon_registered('mf'),
         ]);
-    }
-
-     /**
-     * Filter admin footer text for Migrate pages
-     *
-     * @param string $text
-     * @return string
-     * @handles admin_footer_text
-     **/
-    public function admin_footer_text($text)
-    {
-        if (!$this->util->isMDBPage()) {
-            return $text;
-        }
-        $product_link = Util::external_link(
-			static::delicious_brains_url(
-				'/wp-migrate-db-pro/',
-				[
-                    'utm_source'   => 'MDB%2BPaid',
-                    'utm_medium'   => 'insideplugin',
-                    'utm_campaign' => 'plugin_footer',
-                    'utm_content'  => 'footer_colophon'
-                ]
-			),
-			$this->get_plugin_title()
-		);
-        $wpe_link = Util::external_link(
-            static::wpe_url(
-                '',
-                [
-                    'utm_source' => 'migrate_plugin',
-                    'utm_content' => 'migrate_pro_plugin_footer_text'
-                ]
-            ), 
-            'WP Engine'
-        );
-        return $this->generate_admin_footer_text($text, $product_link, $wpe_link);
-    }
-
-    /**
-     * Filter update footer text for Migrate pages
-     *
-     * @param string $content
-     * @return string
-     * @handles update_footer
-     **/
-    public function update_footer($content)
-    {
-        if (!$this->util->isMDBPage()) {
-            return $content;
-        }
-        $utm_params = [
-            'utm_source'   => 'migrate_pro',
-            'utm_campaign' => 'plugin_footer',
-            'utm_content'  => 'footer_navigation'
-        ];
-
-        $links[] = Util::external_link(
-			static::delicious_brains_url(
-				'/wp-migrate-db-pro/docs/getting-started/',
-				$utm_params
-			),
-			__('Documentation', 'wp-migrate-db')
-		);
-
-		$links[] = '<a href="' . static::plugin_page_url() . '#help">' . __( 'Support', 'wp-migrate-db' ) . '</a>';
-
-		$links[] = Util::external_link(
-			static::delicious_brains_url(
-				'/wp-migrate-db-pro/feedback/',
-				$utm_params
-			),
-			__('Feedback', 'wp-migrate-db')
-		);
-
-		$links[] = Util::external_link(
-			static::delicious_brains_url(
-				'/wp-migrate-db-pro/whats-new/',
-				$utm_params
-			),
-			$this->get_plugin_title() . ' ' . $this->get_plugin_version(),
-			'whats-new'
-		);
-        return join( ' &#8729; ', $links );
     }
 }

@@ -1,5 +1,5 @@
 import { Gridicon } from '@automattic/jetpack-components';
-import clsx from 'clsx';
+import classnames from 'classnames';
 import noop from 'lodash/noop';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -96,7 +96,7 @@ export default class SimpleNotice extends React.Component {
 			text,
 			dismissText,
 		} = this.props;
-		const classes = clsx( 'dops-notice', status, className, {
+		const classes = classnames( 'dops-notice', status, className, {
 			'is-compact': isCompact,
 			'is-dismissable': showDismiss,
 		} );

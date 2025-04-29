@@ -78,4 +78,5 @@ class Jetpack_JSON_API_Get_Comment_Backup_Endpoint extends Jetpack_JSON_API_Endp
 			'meta'    => is_array( $comment_meta ) ? $comment_meta : array(),
 		);
 	}
+
 }

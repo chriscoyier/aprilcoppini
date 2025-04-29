@@ -6,5 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    '81db02b30f563b92907e271b66bd7559' => $vendorDir . '/yoast/whip/src/Facades/wordpress.php',
+    '995b589e693a50f54393aa31ee1c3763' => $vendorDir . '/yoast/whip/src/facades/wordpress.php',
 );

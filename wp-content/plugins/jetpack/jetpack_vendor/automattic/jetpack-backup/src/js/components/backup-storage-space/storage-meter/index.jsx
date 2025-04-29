@@ -1,4 +1,4 @@
-import { ProgressBar } from '@automattic/jetpack-components';
+import ProgressBar from '@automattic/components/dist/esm/progress-bar';
 import { StorageUsageLevels } from '../storage-usage-levels';
 import './style.scss';
 
@@ -14,9 +14,10 @@ const StorageMeter = ( { storageUsed, storageLimit, usageLevel } ) => {
 		<>
 			<div className="backup-storage-space__progress-bar">
 				<ProgressBar
-					className={ [ 'progress-bar', STORAGE_METER_CLASS_NAMES[ usageLevel ] ] }
-					progressClassName={ 'progress-bar__progress' }
-					progress={ ( storageUsed ?? 0 ) / ( storageLimit ?? Infinity ) }
+					className={ STORAGE_METER_CLASS_NAMES[ usageLevel ] }
+					value={ storageUsed ?? 0 }
+					total={ storageLimit ?? Infinity }
+					canGoBackwards={ true }
 				/>
 			</div>
 		</>

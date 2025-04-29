@@ -1,4 +1,7 @@
 <?php //phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
+
+use Automattic\Jetpack\Assets;
+
 /**
  * Presentations
  * Presentations plugin based on the work done by <a href="http://darylkoop.com/">Daryl Koopersmith</a>. Powered by jmpress.js
@@ -52,8 +55,6 @@
  *
  * @package automattic/jetpack
  */
-
-use Automattic\Jetpack\Assets;
 
 if ( ! class_exists( 'Presentations' ) ) :
 	/**
@@ -248,23 +249,26 @@ if ( ! class_exists( 'Presentations' ) ) :
 			$out .= "<p class='not-supported-msg' style='display: inherit; padding: 25%; text-align: center;'>";
 			$out .= __( 'This slideshow could not be started. Try refreshing the page or viewing it in another browser.', 'jetpack' ) . '</p>';
 
-			$out .= sprintf(
-				'<div class="presentation" duration="%s" data-autoplay="%s" style="%s">',
-				esc_attr( $duration ),
-				esc_attr( $autoplay ),
-				esc_attr( $style )
-			);
-			$out .= "<div class='nav-arrow-left'></div>";
-			$out .= "<div class='nav-arrow-right'></div>";
-			$out .= "<div class='nav-fullscreen-button'></div>";
+			// Bail out unless the scripts were added.
+			if ( $this->scripts_and_style_included ) {
+				$out .= sprintf(
+					'<div class="presentation" duration="%s" data-autoplay="%s" style="%s">',
+					esc_attr( $duration ),
+					esc_attr( $autoplay ),
+					esc_attr( $style )
+				);
+				$out .= "<div class='nav-arrow-left'></div>";
+				$out .= "<div class='nav-arrow-right'></div>";
+				$out .= "<div class='nav-fullscreen-button'></div>";
 
-			if ( $autoplay ) {
-				$out .= '<div class="autoplay-overlay" style="display: none;"><p class="overlay-msg">';
-				$out .= __( 'Click to autoplay the presentation!', 'jetpack' );
-				$out .= '</p></div>';
+				if ( $autoplay ) {
+					$out .= '<div class="autoplay-overlay" style="display: none;"><p class="overlay-msg">';
+					$out .= __( 'Click to autoplay the presentation!', 'jetpack' );
+					$out .= '</p></div>';
+				}
+
+				$out .= do_shortcode( $content );
 			}
-
-			$out .= do_shortcode( $content );
 
 			$out .= '</section>';
 

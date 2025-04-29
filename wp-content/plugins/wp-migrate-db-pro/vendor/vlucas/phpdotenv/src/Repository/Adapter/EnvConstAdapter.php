@@ -18,31 +18,22 @@ class EnvConstAdapter implements AvailabilityInterface, ReaderInterface, WriterI
     /**
      * Get an environment variable, if it exists.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return \PhpOption\Option<string|null>
      */
     public function get($name)
     {
-        if (!\array_key_exists($name, $_ENV)) {
-            return None::create();
-        }
-        $value = $_ENV[$name];
-        if (\is_scalar($value)) {
-            /** @var \PhpOption\Option<string|null> */
-            return Some::create((string) $value);
-        }
-        if (null === $value) {
-            /** @var \PhpOption\Option<string|null> */
-            return Some::create(null);
+        if (\array_key_exists($name, $_ENV)) {
+            return Some::create($_ENV[$name]);
         }
         return None::create();
     }
     /**
      * Set an environment variable.
      *
-     * @param non-empty-string $name
-     * @param string|null      $value
+     * @param string      $name
+     * @param string|null $value
      *
      * @return void
      */
@@ -53,7 +44,7 @@ class EnvConstAdapter implements AvailabilityInterface, ReaderInterface, WriterI
     /**
      * Clear an environment variable.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return void
      */

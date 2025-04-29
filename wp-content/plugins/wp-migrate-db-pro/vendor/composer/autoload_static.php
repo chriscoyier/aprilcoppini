@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitc3a9210a8f67f3c808c5ed9072cde06b
+class ComposerStaticInit0321b3b0a573485e7aeb2e6c21c7f37a
 {
     public static $files = array (
         'dbi_mdb_320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
@@ -22,7 +22,6 @@ class ComposerStaticInitc3a9210a8f67f3c808c5ed9072cde06b
             'DeliciousBrains\\WPMDB\\Container\\Interop\\Container\\' => 50,
             'DeliciousBrains\\WPMDB\\Container\\Dotenv\\' => 39,
             'DeliciousBrains\\WPMDB\\Container\\DI\\' => 35,
-            'DeliciousBrains\\WPMDB\\Container\\Brumann\\Polyfill\\' => 49,
         ),
     );
 
@@ -59,10 +58,6 @@ class ComposerStaticInitc3a9210a8f67f3c808c5ed9072cde06b
         array (
             0 => __DIR__ . '/..' . '/php-di/php-di/src/DI',
         ),
-        'DeliciousBrains\\WPMDB\\Container\\Brumann\\Polyfill\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/brumann/polyfill-unserialize/src',
-        ),
     );
 
     public static $classMap = array (
@@ -72,9 +67,9 @@ class ComposerStaticInitc3a9210a8f67f3c808c5ed9072cde06b
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitc3a9210a8f67f3c808c5ed9072cde06b::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitc3a9210a8f67f3c808c5ed9072cde06b::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInitc3a9210a8f67f3c808c5ed9072cde06b::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit0321b3b0a573485e7aeb2e6c21c7f37a::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit0321b3b0a573485e7aeb2e6c21c7f37a::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit0321b3b0a573485e7aeb2e6c21c7f37a::$classMap;
 
         }, null, ClassLoader::class);
     }

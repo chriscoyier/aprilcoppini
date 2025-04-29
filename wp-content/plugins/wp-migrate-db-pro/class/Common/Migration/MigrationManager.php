@@ -215,7 +215,7 @@ class MigrationManager
             'current_row'         => 'numeric',
             'form_data'           => 'json',
             'last_table'          => 'positive_int',
-            'primary_keys'        => 'json',
+            'primary_keys'        => 'serialized',
             'gzip'                => 'int',
             'nonce'               => 'key',
             'bottleneck'          => 'positive_int',
@@ -227,9 +227,6 @@ class MigrationManager
 
         if (!Util::is_json($_POST['form_data'])) {
             $_POST['form_data'] = stripslashes($_POST['form_data']);
-        }
-        if (!Util::is_json($_POST['primary_keys'])) {
-            $_POST['primary_keys'] = stripslashes($_POST['primary_keys']);
         }
 
         $state_data = Persistence::setPostData($key_rules, __METHOD__);
@@ -255,10 +252,9 @@ class MigrationManager
                 $return = $this->handle_table_backup();
             }
 
-            if (Util::is_json($return)) {
-                $return = json_decode($return, true);
-            }
-            return $this->http->end_ajax($return);
+            $decoded = json_decode($return, true);
+
+            return $this->http->end_ajax(maybe_unserialize($return));
         }
 
         // Pull and push need to be handled differently for obvious reasons,
@@ -340,7 +336,7 @@ class MigrationManager
 
             $sig_data = $data;
             unset($sig_data['find_replace_pairs'], $sig_data['form_data'], $sig_data['source_prefix'], $sig_data['destination_prefix']);
-            $data['find_replace_pairs'] = base64_encode(json_encode($data['find_replace_pairs']));
+            $data['find_replace_pairs'] = base64_encode(serialize($data['find_replace_pairs']));
             $data['form_data']          = base64_encode($data['form_data']);
             $data['primary_keys']       = base64_encode($data['primary_keys']);
             $data['source_prefix']      = base64_encode($data['source_prefix']);
@@ -349,7 +345,7 @@ class MigrationManager
             $data['sig'] = $this->http_helper->create_signature($sig_data, $state_data['key']);
 
             // Don't add to computed signature
-            $data['site_details'] = base64_encode(json_encode($state_data['site_details']));
+            $data['site_details'] = base64_encode(serialize($state_data['site_details']));
             $ajax_url = $this->util->ajax_url();
             $response = $this->remote_post->post($ajax_url, $data, __FUNCTION__);
 
@@ -368,7 +364,7 @@ class MigrationManager
             // need to split this up into a chunk and row_tracker
             // only strip the last new line if it exists
             $row_information = false !== strpos($response, "\n") ? trim(substr(strrchr($response, "\n"), 1)) : trim($response);
-            $row_information = explode('##MDB_SEPARATOR##', $row_information);
+            $row_information = explode(',', $row_information);
             $chunk           = substr($response, 0, strrpos($response, ";\n") + 1);
 
             if (!empty($chunk)) {

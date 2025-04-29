@@ -91,7 +91,6 @@ class Initializer {
 		}
 		require_once Package::get_installed_path() . 'compatibility/search-0.15.2.php';
 		require_once Package::get_installed_path() . 'compatibility/search-0.17.0.php';
-		require_once Package::get_installed_path() . 'compatibility/unsupported-browsers.php';
 	}
 
 	/**
@@ -113,20 +112,11 @@ class Initializer {
 		// We could provide CLI to enable search/instant search, so init them regardless of whether the module is active or not.
 		static::init_cli();
 
-		$success                   = false;
-		$is_instant_search_enabled = ( new Module_Control() )->is_instant_search_enabled();
-		if ( $is_instant_search_enabled ) {
+		$success = false;
+		if ( ( new Module_Control() )->is_instant_search_enabled() ) {
 			// Enable Instant search experience.
 			$success = static::init_instant_search( $blog_id );
-		}
-		/**
-		 * Filter whether classic search should be enabled. By this stage, search module would be enabled already.
-		 *
-		 * @since 0.39.6
-		 * @param boolean initial value whether classic search is enabled.
-		 * @param boolean filtered result whether classic search is enabled.
-		 */
-		if ( apply_filters( 'jetpack_search_classic_search_enabled', ! $is_instant_search_enabled ) ) {
+		} else {
 			// Enable the classic search experience.
 			$success = static::init_classic_search( $blog_id );
 		}
@@ -162,10 +152,9 @@ class Initializer {
 		new Settings();
 		// Instantiate "Customberg", the live search configuration interface.
 		Customberg::instance();
-		// Enable configuring instant search within the Customizer iff it's not using a block theme.
-		if ( ! wp_is_block_theme() ) {
-			new Customizer();
-		}
+		// Enable configuring instant search within the Customizer.
+		// Not need to check existence of `WP_Customize_Manager`, because which is not loaded all the time.
+		new Customizer();
 		return true;
 	}
 
@@ -196,7 +185,6 @@ class Initializer {
 	 */
 	protected static function init_cli() {
 		if ( defined( 'WP_CLI' ) && \WP_CLI ) {
-			// @phan-suppress-next-line PhanUndeclaredFunctionInCallable -- https://github.com/phan/phan/issues/4763
 			\WP_CLI::add_command( 'jetpack-search', __NAMESPACE__ . '\CLI' );
 		}
 	}

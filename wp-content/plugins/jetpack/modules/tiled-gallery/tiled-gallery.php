@@ -1,7 +1,6 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
 use Automattic\Jetpack\Assets;
-use Automattic\Jetpack\Image_CDN\Image_CDN;
 use Automattic\Jetpack\Status;
 
 // Include the class file containing methods for rounding constrained array elements.
@@ -17,20 +16,6 @@ require_once __DIR__ . '/tiled-gallery/tiled-gallery-circle.php';
  * Jetpack tiled gallery class.
  */
 class Jetpack_Tiled_Gallery {
-	/**
-	 * Shortcode attributes.
-	 *
-	 * @var array
-	 */
-	public $atts;
-
-	/**
-	 * Text direction (right or left).
-	 *
-	 * @var string
-	 */
-	public $float;
-
 	/**
 	 * Supported gallery design types.
 	 *
@@ -182,12 +167,9 @@ class Jetpack_Tiled_Gallery {
 			),
 			array(),
 			JETPACK__VERSION,
-			array(
-				'in_footer' => true,
-				'strategy'  => 'defer',
-			)
+			false
 		);
-		wp_enqueue_style( 'tiled-gallery', plugins_url( 'tiled-gallery/tiled-gallery.css', __FILE__ ), array(), '2023-08-21' );
+		wp_enqueue_style( 'tiled-gallery', plugins_url( 'tiled-gallery/tiled-gallery.css', __FILE__ ), array(), '2012-09-21' );
 		wp_style_add_data( 'tiled-gallery', 'rtl', 'replace' );
 	}
 
@@ -235,11 +217,11 @@ class Jetpack_Tiled_Gallery {
 			$gallery       = new $gallery_class( $attachments, $this->atts['link'], $this->atts['grayscale'], (int) $this->atts['columns'] );
 			$gallery_html  = $gallery->HTML();
 
-			if ( $gallery_html && class_exists( 'Jetpack' ) && class_exists( Image_CDN::class ) ) {
+			if ( $gallery_html && class_exists( 'Jetpack' ) && class_exists( 'Jetpack_Photon' ) ) {
 				// Tiled Galleries in Jetpack require that Photon be active.
 				// If it's not active, run it just on the gallery output.
-				if ( ! Image_CDN::is_enabled() && ! ( new Status() )->is_offline_mode() ) {
-					$gallery_html = Image_CDN::filter_the_content( $gallery_html );
+				if ( ! in_array( 'photon', Jetpack::get_active_modules(), true ) && ! ( new Status() )->is_offline_mode() ) {
+					$gallery_html = Jetpack_Photon::filter_the_content( $gallery_html );
 				}
 			}
 

@@ -8,7 +8,7 @@ namespace Yoast\WP\SEO\Generators\Schema;
 class FAQ extends Abstract_Schema_Piece {
 
 	/**
-	 * Determines whether a piece should be added to the graph.
+	 * Determines whether or not a piece should be added to the graph.
 	 *
 	 * @return bool
 	 */
@@ -34,13 +34,11 @@ class FAQ extends Abstract_Schema_Piece {
 	private function generate_ids() {
 		$ids = [];
 		foreach ( $this->context->blocks['yoast/faq-block'] as $block ) {
-			if ( isset( $block['attrs']['questions'] ) ) {
-				foreach ( $block['attrs']['questions'] as $question ) {
-					if ( empty( $question['jsonAnswer'] ) ) {
-						continue;
-					}
-					$ids[] = [ '@id' => $this->context->canonical . '#' . \esc_attr( $question['id'] ) ];
+			foreach ( $block['attrs']['questions'] as $index => $question ) {
+				if ( ! isset( $question['jsonAnswer'] ) || empty( $question['jsonAnswer'] ) ) {
+					continue;
 				}
+				$ids[] = [ '@id' => $this->context->canonical . '#' . \esc_attr( $question['id'] ) ];
 			}
 		}
 
@@ -56,10 +54,8 @@ class FAQ extends Abstract_Schema_Piece {
 		$graph = [];
 
 		$questions = [];
-		foreach ( $this->context->blocks['yoast/faq-block'] as $block ) {
-			if ( isset( $block['attrs']['questions'] ) ) {
-				$questions = \array_merge( $questions, $block['attrs']['questions'] );
-			}
+		foreach ( $this->context->blocks['yoast/faq-block'] as $index => $block ) {
+			$questions = \array_merge( $questions, $block['attrs']['questions'] );
 		}
 		foreach ( $questions as $index => $question ) {
 			if ( ! isset( $question['jsonAnswer'] ) || empty( $question['jsonAnswer'] ) ) {
@@ -92,7 +88,9 @@ class FAQ extends Abstract_Schema_Piece {
 			'acceptedAnswer' => $this->add_accepted_answer_property( $question ),
 		];
 
-		return $this->helpers->schema->language->add_piece_language( $data );
+		$data = $this->helpers->schema->language->add_piece_language( $data );
+
+		return $data;
 	}
 
 	/**
@@ -108,6 +106,8 @@ class FAQ extends Abstract_Schema_Piece {
 			'text'  => $this->helpers->schema->html->sanitize( $question['jsonAnswer'] ),
 		];
 
-		return $this->helpers->schema->language->add_piece_language( $data );
+		$data = $this->helpers->schema->language->add_piece_language( $data );
+
+		return $data;
 	}
 }

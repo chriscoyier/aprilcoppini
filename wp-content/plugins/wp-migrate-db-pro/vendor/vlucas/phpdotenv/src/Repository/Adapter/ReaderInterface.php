@@ -7,7 +7,7 @@ interface ReaderInterface extends AvailabilityInterface
     /**
      * Get an environment variable, if it exists.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return \PhpOption\Option<string|null>
      */

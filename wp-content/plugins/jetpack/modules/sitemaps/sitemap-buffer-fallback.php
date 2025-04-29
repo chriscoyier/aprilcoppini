@@ -151,4 +151,5 @@ abstract class Jetpack_Sitemap_Buffer_Fallback extends Jetpack_Sitemap_Buffer {
 
 		return $string;
 	}
+
 }

@@ -12,13 +12,6 @@
 use Automattic\Jetpack\Connection\Client;
 use Automattic\Jetpack\Connection\Manager;
 
-/**
- * Disable direct access.
- */
-if ( ! defined( 'ABSPATH' ) ) {
-	exit( 0 );
-}
-
 if ( ! class_exists( IXR_Client::class ) ) {
 	require_once ABSPATH . WPINC . '/class-IXR.php';
 }
@@ -77,7 +70,7 @@ class Jetpack_IXR_Client extends IXR_Client {
 	/**
 	 * Perform the IXR request.
 	 *
-	 * @param mixed ...$args IXR method and args.
+	 * @param string[] ...$args IXR args.
 	 *
 	 * @return bool True if request succeeded, false otherwise.
 	 */
@@ -153,10 +146,10 @@ class Jetpack_IXR_Client extends IXR_Client {
 			$code    = $match[1];
 			$message = $match[2];
 			$status  = $fault_code;
-			return new WP_Error( $code, $message, $status );
+			return new \WP_Error( $code, $message, $status );
 		}
 
-		return new WP_Error( "IXR_{$fault_code}", $fault_string );
+		return new \WP_Error( "IXR_{$fault_code}", $fault_string );
 	}
 
 	/**

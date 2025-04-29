@@ -4,7 +4,6 @@ namespace Yoast\WP\SEO\Actions\Indexing;
 
 use wpdb;
 use Yoast\WP\SEO\Builders\Indexable_Link_Builder;
-use Yoast\WP\SEO\Helpers\Indexable_Helper;
 use Yoast\WP\SEO\Models\SEO_Links;
 use Yoast\WP\SEO\Repositories\Indexable_Repository;
 
@@ -19,13 +18,6 @@ abstract class Abstract_Link_Indexing_Action extends Abstract_Indexing_Action {
 	 * @var Indexable_Link_Builder
 	 */
 	protected $link_builder;
-
-	/**
-	 * The indexable helper.
-	 *
-	 * @var Indexable_Helper
-	 */
-	protected $indexable_helper;
 
 	/**
 	 * The indexable repository.
@@ -44,21 +36,18 @@ abstract class Abstract_Link_Indexing_Action extends Abstract_Indexing_Action {
 	/**
 	 * Indexable_Post_Indexing_Action constructor
 	 *
-	 * @param Indexable_Link_Builder $link_builder     The indexable link builder.
-	 * @param Indexable_Helper       $indexable_helper The indexable repository.
-	 * @param Indexable_Repository   $repository       The indexable repository.
-	 * @param wpdb                   $wpdb             The WordPress database instance.
+	 * @param Indexable_Link_Builder $link_builder The indexable link builder.
+	 * @param Indexable_Repository   $repository   The indexable repository.
+	 * @param wpdb                   $wpdb         The WordPress database instance.
 	 */
 	public function __construct(
 		Indexable_Link_Builder $link_builder,
-		Indexable_Helper $indexable_helper,
 		Indexable_Repository $repository,
 		wpdb $wpdb
 	) {
-		$this->link_builder     = $link_builder;
-		$this->indexable_helper = $indexable_helper;
-		$this->repository       = $repository;
-		$this->wpdb             = $wpdb;
+		$this->link_builder = $link_builder;
+		$this->repository   = $repository;
+		$this->wpdb         = $wpdb;
 	}
 
 	/**
@@ -72,12 +61,10 @@ abstract class Abstract_Link_Indexing_Action extends Abstract_Indexing_Action {
 		$indexables = [];
 		foreach ( $objects as $object ) {
 			$indexable = $this->repository->find_by_id_and_type( $object->id, $object->type );
-			if ( $indexable ) {
-				$this->link_builder->build( $indexable, $object->content );
-				$this->indexable_helper->save_indexable( $indexable );
+			$this->link_builder->build( $indexable, $object->content );
+			$indexable->save();
 
-				$indexables[] = $indexable;
-			}
+			$indexables[] = $indexable;
 		}
 
 		if ( \count( $indexables ) > 0 ) {
@@ -109,7 +96,7 @@ abstract class Abstract_Link_Indexing_Action extends Abstract_Indexing_Action {
 		/**
 		 * Filter 'wpseo_link_indexing_limit' - Allow filtering the number of texts indexed during each link indexing pass.
 		 *
-		 * @param int $limit The maximum number of texts indexed.
+		 * @api int The maximum number of texts indexed.
 		 */
 		return \apply_filters( 'wpseo_link_indexing_limit', 5 );
 	}

@@ -24,21 +24,17 @@ export const getUsageLevel = (
 	available: number | undefined,
 	minDaysOfBackupsAllowed: number,
 	daysOfBackupsAllowed: number,
-	retentionDays: number,
+	planRetentionDays: number,
 	daysOfBackupsSaved: number
 ): StorageUsageLevelName | null => {
 	if ( available === undefined || used === undefined ) {
 		return null;
 	}
 
-	if ( available === null || used === null ) {
-		return null;
-	}
-
 	if (
 		!! minDaysOfBackupsAllowed &&
 		!! daysOfBackupsAllowed &&
-		!! retentionDays &&
+		!! planRetentionDays &&
 		!! daysOfBackupsSaved
 	) {
 		// if current days of backups saved is less than or equal to the minimum and storage is overlimit.
@@ -53,7 +49,7 @@ export const getUsageLevel = (
 
 		// if current allowed days of backups is less than plan's retention days, that means
 		// we discarded some backups to make other fit in current storage limit.
-		if ( daysOfBackupsAllowed < retentionDays ) {
+		if ( daysOfBackupsAllowed < planRetentionDays ) {
 			return StorageUsageLevels.BackupsDiscarded;
 		}
 	}

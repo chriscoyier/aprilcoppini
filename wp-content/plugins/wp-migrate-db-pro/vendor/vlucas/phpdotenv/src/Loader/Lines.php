@@ -37,14 +37,13 @@ class Lines
      */
     private static function multilineProcess($multiline, $line, array $buffer)
     {
-        $startsOnCurrentLine = $multiline ? \false : self::looksLikeMultilineStart($line);
         // check if $line can be multiline variable
-        if ($startsOnCurrentLine) {
+        if ($started = self::looksLikeMultilineStart($line)) {
             $multiline = \true;
         }
         if ($multiline) {
             \array_push($buffer, $line);
-            if (self::looksLikeMultilineStop($line, $startsOnCurrentLine)) {
+            if (self::looksLikeMultilineStop($line, $started)) {
                 $multiline = \false;
                 $line = \implode("\n", $buffer);
                 $buffer = [];

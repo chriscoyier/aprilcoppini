@@ -91,7 +91,9 @@
 				if ( ! ( 'WidgetGalleryEdit' in media.controller ) ) {
 					// Remove the gallery settings sidebar when editing widgets.
 					media.controller.WidgetGalleryEdit = media.controller.GalleryEdit.extend( {
-						gallerySettings: function ( /*browser*/ ) {},
+						gallerySettings: function (/*browser*/) {
+							return;
+						},
 					} );
 				}
 
@@ -108,7 +110,7 @@
 	} );
 
 	function setupStyleOptions() {
-		$( '.widget-inside .gallery-widget-style' ).each( function ( /*i*/ ) {
+		$( '.widget-inside .gallery-widget-style' ).each( function (/*i*/) {
 			var style = $( this ).val();
 
 			var form = $( this ).parents( 'form' );

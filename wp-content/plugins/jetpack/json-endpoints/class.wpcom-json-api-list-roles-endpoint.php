@@ -85,16 +85,25 @@ class WPCOM_JSON_API_List_Roles_Endpoint extends WPCOM_JSON_API_Endpoint {
 		$a_is_core_role  = in_array( $a->name, $core_role_names, true );
 		$b_is_core_role  = in_array( $b->name, $core_role_names, true );
 
-		// Core roles always come before non-core roles.
-		if ( $a_is_core_role !== $b_is_core_role ) {
-			return $b_is_core_role <=> $a_is_core_role;
+		// if $a is a core_role and $b is not, $a always comes first.
+		if ( $a_is_core_role && ! $b_is_core_role ) {
+			return -1;
+		}
+
+		// if $b is a core_role and $a is not, $b always comes first.
+		if ( $b_is_core_role && ! $a_is_core_role ) {
+			return 1;
 		}
 
 		// otherwise the one with the > number of capabilities comes first.
-		$a_cap_count = is_countable( $a->capabilities ) ? count( $a->capabilities ) : 0;
-		$b_cap_count = is_countable( $b->capabilities ) ? count( $b->capabilities ) : 0;
+		$a_cap_count = count( $a->capabilities );
+		$b_cap_count = count( $b->capabilities );
 
-		return $b_cap_count <=> $a_cap_count;
+		if ( $a_cap_count === $b_cap_count ) {
+			return 0;
+		}
+
+		return ( $a_cap_count > $b_cap_count ) ? -1 : 1;
 	}
 
 	/**
@@ -124,7 +133,7 @@ class WPCOM_JSON_API_List_Roles_Endpoint extends WPCOM_JSON_API_Endpoint {
 			return new WP_Error( 'unauthorized', 'User cannot view roles for specified site', 403 );
 		}
 
-		if ( $wp_roles instanceof WP_Roles ) {
+		if ( method_exists( $wp_roles, 'get_names' ) ) {
 			$role_names = $wp_roles->get_names();
 
 			$role_keys = array_keys( $role_names );
@@ -134,7 +143,7 @@ class WPCOM_JSON_API_List_Roles_Endpoint extends WPCOM_JSON_API_Endpoint {
 				$role_details->display_name = translate_user_role( $role_names[ $role_key ] );
 				$roles[]                    = $role_details;
 			}
-		} elseif ( is_array( $wp_roles ) ) {
+		} else {
 			// Jetpack Shadow Site side of things.
 			foreach ( $wp_roles as $role_key => $role ) {
 				$roles[] = (object) array(

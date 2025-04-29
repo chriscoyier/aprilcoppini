@@ -5,7 +5,6 @@
  * @package automattic/jetpack-device-detection
  *
  * We don't want to rename public members.
- *
  * @phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
  * @phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
  * @phpcs:disable WordPress.NamingConventions.ValidVariableName.PropertyNotSnakeCase
@@ -18,9 +17,6 @@ require_once __DIR__ . '/functions.php';
 
 /**
  * A class providing device properties detection.
- *
- * Note: str_contains() and other PHP8+ functions that have a polyfill in core are not used here,
- * as wp-includes/compat.php may not be loaded yet.
  */
 class User_Agent_Info {
 
@@ -64,30 +60,19 @@ class User_Agent_Info {
 	 *
 	 * @var null|string
 	 */
-	private $platform              = null;
-	const PLATFORM_WINDOWS         = 'windows';
-	const PLATFORM_IPHONE          = 'iphone';
-	const PLATFORM_IPOD            = 'ipod';
-	const PLATFORM_IPAD            = 'ipad';
-	const PLATFORM_BLACKBERRY      = 'blackberry';
-	const PLATFORM_BLACKBERRY_10   = 'blackberry_10';
-	const PLATFORM_SYMBIAN         = 'symbian_series60';
-	const PLATFORM_SYMBIAN_S40     = 'symbian_series40';
-	const PLATFORM_J2ME_MIDP       = 'j2me_midp';
-	const PLATFORM_ANDROID         = 'android';
-	const PLATFORM_ANDROID_TABLET  = 'android_tablet';
-	const PLATFORM_FIREFOX_OS      = 'firefoxOS';
-	const PLATFORM_DESKTOP_LINUX   = 'linux';
-	const PLATFORM_DESKTOP_MAC     = 'mac';
-	const PLATFORM_DESKTOP_WINDOWS = 'windows';
-	const PLATFORM_DESKTOP_CHROME  = 'chrome';
-	const BROWSER_CHROME           = 'chrome';
-	const BROWSER_FIREFOX          = 'firefox';
-	const BROWSER_SAFARI           = 'safari';
-	const BROWSER_EDGE             = 'edge';
-	const BROWSER_OPERA            = 'opera';
-	const BROWSER_IE               = 'ie';
-	const OTHER                    = 'other';
+	private $platform             = null;
+	const PLATFORM_WINDOWS        = 'windows';
+	const PLATFORM_IPHONE         = 'iphone';
+	const PLATFORM_IPOD           = 'ipod';
+	const PLATFORM_IPAD           = 'ipad';
+	const PLATFORM_BLACKBERRY     = 'blackberry';
+	const PLATFORM_BLACKBERRY_10  = 'blackberry_10';
+	const PLATFORM_SYMBIAN        = 'symbian_series60';
+	const PLATFORM_SYMBIAN_S40    = 'symbian_series40';
+	const PLATFORM_J2ME_MIDP      = 'j2me_midp';
+	const PLATFORM_ANDROID        = 'android';
+	const PLATFORM_ANDROID_TABLET = 'android_tablet';
+	const PLATFORM_FIREFOX_OS     = 'firefoxOS';
 
 	/**
 	 * A list of dumb-phone user agent parts.
@@ -162,63 +147,63 @@ class User_Agent_Info {
 	 * @return string The matched User Agent name, false otherwise.
 	 */
 	public function get_mobile_user_agent_name() {
-		if ( static::is_chrome_for_iOS() ) { // Keep this check before the safari rule.
+		if ( $this->is_chrome_for_iOS() ) { // Keep this check before the safari rule.
 			return 'chrome-for-ios';
-		} elseif ( static::is_iphone_or_ipod( 'iphone-safari' ) ) {
+		} elseif ( $this->is_iphone_or_ipod( 'iphone-safari' ) ) {
 			return 'iphone';
-		} elseif ( static::is_ipad( 'ipad-safari' ) ) {
+		} elseif ( $this->is_ipad( 'ipad-safari' ) ) {
 			return 'ipad';
-		} elseif ( static::is_android_tablet() ) { // Keep this check before the android rule.
+		} elseif ( $this->is_android_tablet() ) { // Keep this check before the android rule.
 			return 'android_tablet';
-		} elseif ( static::is_android() ) {
+		} elseif ( $this->is_android() ) {
 			return 'android';
-		} elseif ( static::is_blackberry_10() ) {
+		} elseif ( $this->is_blackberry_10() ) {
 			return 'blackberry_10';
-		} elseif ( static::is_blackbeberry() ) {
+		} elseif ( $this->is_blackbeberry() ) {
 			return 'blackberry';
-		} elseif ( static::is_WindowsPhone7() ) {
+		} elseif ( $this->is_WindowsPhone7() ) {
 			return 'win7';
-		} elseif ( static::is_windows_phone_8() ) {
+		} elseif ( $this->is_windows_phone_8() ) {
 			return 'winphone8';
-		} elseif ( static::is_opera_mini() ) {
+		} elseif ( $this->is_opera_mini() ) {
 			return 'opera-mini';
-		} elseif ( static::is_opera_mini_dumb() ) {
+		} elseif ( $this->is_opera_mini_dumb() ) {
 			return 'opera-mini-dumb';
-		} elseif ( static::is_opera_mobile() ) {
+		} elseif ( $this->is_opera_mobile() ) {
 			return 'opera-mobi';
-		} elseif ( static::is_blackberry_tablet() ) {
+		} elseif ( $this->is_blackberry_tablet() ) {
 			return 'blackberry_tablet';
-		} elseif ( static::is_kindle_fire() ) {
+		} elseif ( $this->is_kindle_fire() ) {
 			return 'kindle-fire';
-		} elseif ( static::is_PalmWebOS() ) {
+		} elseif ( $this->is_PalmWebOS() ) {
 			return 'webos';
-		} elseif ( static::is_S60_OSSBrowser() ) {
+		} elseif ( $this->is_S60_OSSBrowser() ) {
 			return 'series60';
-		} elseif ( static::is_firefox_os() ) {
+		} elseif ( $this->is_firefox_os() ) {
 			return 'firefoxOS';
-		} elseif ( static::is_firefox_mobile() ) {
+		} elseif ( $this->is_firefox_mobile() ) {
 			return 'firefox_mobile';
-		} elseif ( static::is_MaemoTablet() ) {
+		} elseif ( $this->is_MaemoTablet() ) {
 			return 'maemo';
-		} elseif ( static::is_MeeGo() ) {
+		} elseif ( $this->is_MeeGo() ) {
 			return 'meego';
-		} elseif ( static::is_TouchPad() ) {
+		} elseif ( $this->is_TouchPad() ) {
 			return 'hp_tablet';
-		} elseif ( static::is_facebook_for_iphone() ) {
+		} elseif ( $this->is_facebook_for_iphone() ) {
 			return 'facebook-for-iphone';
-		} elseif ( static::is_facebook_for_ipad() ) {
+		} elseif ( $this->is_facebook_for_ipad() ) {
 			return 'facebook-for-ipad';
-		} elseif ( static::is_twitter_for_iphone() ) {
+		} elseif ( $this->is_twitter_for_iphone() ) {
 			return 'twitter-for-iphone';
-		} elseif ( static::is_twitter_for_ipad() ) {
+		} elseif ( $this->is_twitter_for_ipad() ) {
 			return 'twitter-for-ipad';
-		} elseif ( static::is_wordpress_for_ios() ) {
+		} elseif ( $this->is_wordpress_for_ios() ) {
 			return 'ios-app';
-		} elseif ( static::is_iphone_or_ipod( 'iphone-not-safari' ) ) {
+		} elseif ( $this->is_iphone_or_ipod( 'iphone-not-safari' ) ) {
 			return 'iphone-unknown';
-		} elseif ( static::is_ipad( 'ipad-not-safari' ) ) {
+		} elseif ( $this->is_ipad( 'ipad-not-safari' ) ) {
 			return 'ipad-unknown';
-		} elseif ( static::is_Nintendo_3DS() ) {
+		} elseif ( $this->is_Nintendo_3DS() ) {
 			return 'nintendo-3ds';
 		} else {
 			$agent       = $this->useragent;
@@ -238,15 +223,11 @@ class User_Agent_Info {
 	 * Note that this function returns the platform name, not the UA name/type. You should use a different function
 	 * if you need to test the UA capabilites.
 	 *
-	 * @return string|bool Name of the platform, false otherwise.
+	 * @return string Name of the platform, false otherwise.
 	 */
 	public function get_platform() {
 		if ( isset( $this->platform ) ) {
 				return $this->platform;
-		}
-
-		if ( empty( $this->useragent ) ) {
-			return false;
 		}
 
 		if ( strpos( $this->useragent, 'windows phone' ) !== false ) {
@@ -260,83 +241,32 @@ class User_Agent_Info {
 		} elseif ( strpos( $this->useragent, 'iphone' ) !== false ) {
 			$this->platform = self::PLATFORM_IPHONE;
 		} elseif ( strpos( $this->useragent, 'android' ) !== false ) {
-			if ( static::is_android_tablet() ) {
+			if ( $this->is_android_tablet() ) {
 				$this->platform = self::PLATFORM_ANDROID_TABLET;
 			} else {
 				$this->platform = self::PLATFORM_ANDROID;
 			}
-		} elseif ( static::is_kindle_fire() ) {
+		} elseif ( $this->is_kindle_fire() ) {
 			$this->platform = self::PLATFORM_ANDROID_TABLET;
-		} elseif ( static::is_blackberry_10() ) {
+		} elseif ( $this->is_blackberry_10() ) {
 			$this->platform = self::PLATFORM_BLACKBERRY_10;
 		} elseif ( strpos( $this->useragent, 'blackberry' ) !== false ) {
 			$this->platform = self::PLATFORM_BLACKBERRY;
-		} elseif ( static::is_blackberry_tablet() ) {
+		} elseif ( $this->is_blackberry_tablet() ) {
 			$this->platform = self::PLATFORM_BLACKBERRY;
-		} elseif ( static::is_symbian_platform() ) {
+		} elseif ( $this->is_symbian_platform() ) {
 			$this->platform = self::PLATFORM_SYMBIAN;
-		} elseif ( static::is_symbian_s40_platform() ) {
+		} elseif ( $this->is_symbian_s40_platform() ) {
 			$this->platform = self::PLATFORM_SYMBIAN_S40;
-		} elseif ( static::is_J2ME_platform() ) {
+		} elseif ( $this->is_J2ME_platform() ) {
 			$this->platform = self::PLATFORM_J2ME_MIDP;
-		} elseif ( static::is_firefox_os() ) {
+		} elseif ( $this->is_firefox_os() ) {
 			$this->platform = self::PLATFORM_FIREFOX_OS;
 		} else {
 			$this->platform = false;
 		}
 
 		return $this->platform;
-	}
-
-	/**
-	 * Returns the platform for desktops
-	 *
-	 * @return string
-	 */
-	public function get_desktop_platform() {
-		$ua = $this->useragent;
-		if ( empty( $ua ) ) {
-			return false;
-		}
-		$platform = self::OTHER;
-
-		if ( static::is_linux_desktop() ) {
-			$platform = self::PLATFORM_DESKTOP_LINUX;
-		} elseif ( static::is_mac_desktop() ) {
-			$platform = self::PLATFORM_DESKTOP_MAC;
-		} elseif ( static::is_windows_desktop() ) {
-			$platform = self::PLATFORM_DESKTOP_WINDOWS;
-		} elseif ( static::is_chrome_desktop() ) {
-			$platform = self::PLATFORM_DESKTOP_CHROME;
-		}
-		return $platform;
-	}
-
-	/**
-	 * A simple pattern matching method for extracting the browser from the user agent.
-	 *
-	 * @return string
-	 */
-	public function get_browser() {
-		$ua = $this->useragent;
-		if ( empty( $ua ) ) {
-			return self::OTHER;
-		}
-
-		if ( static::is_opera_mini() || static::is_opera_mobile() || static::is_opera_desktop() || static::is_opera_mini_dumb() ) {
-			return self::BROWSER_OPERA;
-		} elseif ( static::is_edge_browser() ) {
-			return self::BROWSER_EDGE;
-		} elseif ( static::is_chrome_desktop() || self::is_chrome_for_iOS() ) {
-			return self::BROWSER_CHROME;
-		} elseif ( static::is_safari_browser() ) {
-			return self::BROWSER_SAFARI;
-		} elseif ( static::is_firefox_mobile() || static::is_firefox_desktop() ) {
-			return self::BROWSER_FIREFOX;
-		} elseif ( static::is_ie_browser() ) {
-			return self::BROWSER_IE;
-		}
-		return self::OTHER;
 	}
 
 	/**
@@ -352,77 +282,77 @@ class User_Agent_Info {
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_android() ) {
+		} elseif ( $this->is_android() ) {
 			$this->matched_agent       = 'android';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_windows_phone_8() ) {
+		} elseif ( $this->is_windows_phone_8() ) {
 			$this->matched_agent       = 'winphone8';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_WindowsPhone7() ) {
+		} elseif ( $this->is_WindowsPhone7() ) {
 			$this->matched_agent       = 'win7';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_blackberry_10() ) {
+		} elseif ( $this->is_blackberry_10() ) {
 			$this->matched_agent       = 'blackberry-10';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_blackbeberry() && 'blackberry-webkit' === static::detect_blackberry_browser_version() ) {
+		} elseif ( $this->is_blackbeberry() && 'blackberry-webkit' === $this->detect_blackberry_browser_version() ) {
 			$this->matched_agent       = 'blackberry-webkit';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_blackberry_tablet() ) {
+		} elseif ( $this->is_blackberry_tablet() ) {
 			$this->matched_agent       = 'blackberry_tablet';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_PalmWebOS() ) {
+		} elseif ( $this->is_PalmWebOS() ) {
 			$this->matched_agent       = 'webos';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_TouchPad() ) {
+		} elseif ( $this->is_TouchPad() ) {
 			$this->matched_agent       = 'hp_tablet';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_firefox_os() ) {
+		} elseif ( $this->is_firefox_os() ) {
 			$this->matched_agent       = 'firefoxOS';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_firefox_mobile() ) {
+		} elseif ( $this->is_firefox_mobile() ) {
 			$this->matched_agent       = 'fennec';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_opera_mobile() ) {
+		} elseif ( $this->is_opera_mobile() ) {
 			$this->matched_agent       = 'opera-mobi';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_MaemoTablet() ) {
+		} elseif ( $this->is_MaemoTablet() ) {
 			$this->matched_agent       = 'maemo';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_MeeGo() ) {
+		} elseif ( $this->is_MeeGo() ) {
 			$this->matched_agent       = 'meego';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_kindle_touch() ) {
+		} elseif ( $this->is_kindle_touch() ) {
 			$this->matched_agent       = 'kindle-touch';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_Nintendo_3DS() ) {
+		} elseif ( $this->is_Nintendo_3DS() ) {
 			$this->matched_agent       = 'nintendo-3ds';
 			$this->isTierIphone        = true;
 			$this->isTierRichCss       = false;
@@ -447,18 +377,18 @@ class User_Agent_Info {
 		}
 
 		// The following devices are explicitly ok.
-		if ( static::is_S60_OSSBrowser() ) {
+		if ( $this->is_S60_OSSBrowser() ) {
 			$this->matched_agent       = 'series60';
 			$this->isTierIphone        = false;
 			$this->isTierRichCss       = true;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_opera_mini() ) {
+		} elseif ( $this->is_opera_mini() ) {
 			$this->matched_agent       = 'opera-mini';
 			$this->isTierIphone        = false;
 			$this->isTierRichCss       = true;
 			$this->isTierGenericMobile = false;
-		} elseif ( static::is_blackbeberry() ) {
-			$detectedDevice = static::detect_blackberry_browser_version();
+		} elseif ( $this->is_blackbeberry() ) {
+			$detectedDevice = $this->detect_blackberry_browser_version();
 			if (
 				'blackberry-5' === $detectedDevice
 				|| 'blackberry-4.7' === $detectedDevice
@@ -774,46 +704,6 @@ class User_Agent_Info {
 		} else {
 			return false;
 		}
-	}
-
-	/**
-	 * Detect Safari browser
-	 */
-	public static function is_safari_browser() {
-		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
-			return false;
-		}
-		if ( false === strpos( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ), 'Safari' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is validating.
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Detect Edge browser
-	 */
-	public static function is_edge_browser() {
-		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
-			return false;
-		}
-		if ( false === strpos( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ), 'Edge' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is validating.
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Detect Edge browser
-	 */
-	public static function is_ie_browser() {
-		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
-			return false;
-		}
-		$ua = wp_unslash( $_SERVER['HTTP_USER_AGENT'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is validating.
-		if ( false === ( strpos( $ua, 'MSIE' ) || strpos( $ua, 'Trident/7' ) ) ) {
-			return false;
-		}
-		return true;
 	}
 
 	/**
@@ -1374,66 +1264,6 @@ class User_Agent_Info {
 	}
 
 	/**
-	 * Determines whether a desktop platform is Linux OS
-	 *
-	 * @return bool
-	 */
-	public static function is_linux_desktop() {
-		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
-			return false;
-		}
-		if ( ! preg_match( '/linux/i', wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is validating.
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Determines whether a desktop platform is Mac OS
-	 *
-	 * @return bool
-	 */
-	public static function is_mac_desktop() {
-		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
-			return false;
-		}
-		if ( ! preg_match( '/macintosh|mac os x/i', wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is validating.
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Determines whether a desktop platform is Windows OS
-	 *
-	 * @return bool
-	 */
-	public static function is_windows_desktop() {
-		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
-			return false;
-		}
-		if ( ! preg_match( '/windows|win32/i', wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is validating.
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Determines whether a desktop platform is Chrome OS
-	 *
-	 * @return bool
-	 */
-	public static function is_chrome_desktop() {
-		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
-			return false;
-		}
-		if ( ! preg_match( '/chrome/i', wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is validating.
-			return false;
-		}
-		return true;
-	}
-
-	/**
 	 * Retrieve the blackberry OS version.
 	 *
 	 * Return strings are from the following list:
@@ -1725,23 +1555,6 @@ class User_Agent_Info {
 			'domaintunocrawler',
 			'grapeshotcrawler',
 			'cloudflare-alwaysonline',
-			'cookieinformationscanner', // p1699315886066389-slack-C0438NHCLSY
-			'facebookexternalhit', // https://www.facebook.com/externalhit_uatext.php
-			'feedburner',
-			'yacybot', // http://yacy.net/bot.html
-			'trendictionbot',  // http://www.trendiction.de/bot;
-			'elisabot',
-			'linkfluence', // http://linkfluence.com/
-			'semrushbot', // https://www.semrush.com/bot/
-			'archive.org_bot', // http://archive.org/details/archive.org_bot
-			'ezlynxbot', // https://www.ezoic.com/bot
-			'siteauditbot', // https://www.semrush.com/bot/
-			'snapchat', // https://developers.snap.com/robots
-			'applebot', // https://support.apple.com/en-ca/HT204683
-			'bne.es_bot', // https://www.bne.es/es/colecciones/archivo-web-espanola/aviso-webmasters
-			'google-safety;', // https://www.google.com/bot.html
-			'mojeekbot', // https://www.mojeek.com/bot.html
-			'linkwalker', // https://www.linkwalker.com/
 		);
 
 		foreach ( $bot_agents as $bot_agent ) {

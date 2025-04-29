@@ -4,7 +4,7 @@ use Automattic\Jetpack\Assets;
 
 // Exit if file is accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
-	exit( 0 );
+	exit;
 }
 
 /**
@@ -34,10 +34,8 @@ class Jetpack_Related_Posts_Customize {
 	 * @since 4.4.0
 	 */
 	public function __construct() {
-		if ( ! wp_is_block_theme() ) {
-			add_action( 'customize_register', array( $this, 'customize_register' ) );
-			add_action( 'customize_controls_enqueue_scripts', array( $this, 'customize_controls_enqueue_scripts' ) );
-		}
+		add_action( 'customize_register', array( $this, 'customize_register' ) );
+		add_action( 'customize_controls_enqueue_scripts', array( $this, 'customize_controls_enqueue_scripts' ) );
 	}
 
 	/**
@@ -288,6 +286,7 @@ class Jetpack_Related_Posts_Customize {
 			false
 		);
 	}
+
 } // class end
 
 /**

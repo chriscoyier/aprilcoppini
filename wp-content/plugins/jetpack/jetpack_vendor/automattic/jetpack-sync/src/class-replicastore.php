@@ -82,8 +82,7 @@ class Replicastore implements Replicastore_Interface {
 	 */
 	public function term_count() {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->terms" );
+		return $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->terms" );
 	}
 
 	/**
@@ -95,8 +94,7 @@ class Replicastore implements Replicastore_Interface {
 	 */
 	public function term_taxonomy_count() {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->term_taxonomy" );
+		return $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->term_taxonomy" );
 	}
 
 	/**
@@ -108,8 +106,7 @@ class Replicastore implements Replicastore_Interface {
 	 */
 	public function term_relationship_count() {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->term_relationships" );
+		return $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->term_relationships" );
 	}
 
 	/**
@@ -143,8 +140,8 @@ class Replicastore implements Replicastore_Interface {
 			$where .= ' AND ID <= ' . (int) $max_id;
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->posts WHERE $where" );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->posts WHERE $where" );
 	}
 
 	/**
@@ -322,8 +319,8 @@ class Replicastore implements Replicastore_Interface {
 			$where .= ' AND comment_ID <= ' . (int) $max_id;
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->comments WHERE $where" );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->comments WHERE $where" );
 	}
 
 	/**
@@ -877,9 +874,9 @@ class Replicastore implements Replicastore_Interface {
 	 *
 	 * @access public
 	 *
-	 * @param string|false $taxonomy   Taxonomy slug.
-	 * @param int          $term_id    ID of the term.
-	 * @param string       $term_key   ID Field `term_id` or `term_taxonomy_id`.
+	 * @param string $taxonomy   Taxonomy slug.
+	 * @param int    $term_id    ID of the term.
+	 * @param string $term_key   ID Field `term_id` or `term_taxonomy_id`.
 	 *
 	 * @return \WP_Term|WP_Error Term object on success, \WP_Error object on failure.
 	 */
@@ -1089,11 +1086,10 @@ class Replicastore implements Replicastore_Interface {
 	 * @access public
 	 *
 	 * @param int $user_id User ID.
-	 * @return \WP_User|null User object, or `null` if user invalid/not found.
+	 * @return \WP_User User object.
 	 */
 	public function get_user( $user_id ) {
-		$user = get_user_by( 'id', $user_id );
-		return $user instanceof \WP_User ? $user : null;
+		return \WP_User::get_instance( $user_id );
 	}
 
 	/**
@@ -1175,6 +1171,7 @@ class Replicastore implements Replicastore_Interface {
 
 	/**
 	 * Retrieve all the checksums we are interested in.
+	 * Currently that is posts, comments, post meta and comment meta.
 	 *
 	 * @access public
 	 *
@@ -1183,25 +1180,59 @@ class Replicastore implements Replicastore_Interface {
 	 * @return array Checksums.
 	 */
 	public function checksum_all( $perform_text_conversion = false ) {
-		$all_checksum_tables = Table_Checksum::get_allowed_tables();
+		$post_checksum               = $this->checksum_histogram( 'posts', null, null, null, null, true, '', false, false, $perform_text_conversion );
+		$comments_checksum           = $this->checksum_histogram( 'comments', null, null, null, null, true, '', false, false, $perform_text_conversion );
+		$post_meta_checksum          = $this->checksum_histogram( 'postmeta', null, null, null, null, true, '', false, false, $perform_text_conversion );
+		$comment_meta_checksum       = $this->checksum_histogram( 'commentmeta', null, null, null, null, true, '', false, false, $perform_text_conversion );
+		$terms_checksum              = $this->checksum_histogram( 'terms', null, null, null, null, true, '', false, false, $perform_text_conversion );
+		$term_relationships_checksum = $this->checksum_histogram( 'term_relationships', null, null, null, null, true, '', false, false, $perform_text_conversion );
+		$term_taxonomy_checksum      = $this->checksum_histogram( 'term_taxonomy', null, null, null, null, true, '', false, false, $perform_text_conversion );
 
-		unset( $all_checksum_tables['users'] ); // Handled separately - TODO.
-		unset( $all_checksum_tables['usermeta'] ); // Handled separately - TODO.
-		unset( $all_checksum_tables['termmeta'] ); // Handled separately - TODO.
-		unset( $all_checksum_tables['links'] ); // Not supported yet.  Consider removing from default config.
-		unset( $all_checksum_tables['options'] );  // Not supported yet. Consider removing from default config.
+		$result = array(
+			'posts'              => $this->summarize_checksum_histogram( $post_checksum ),
+			'comments'           => $this->summarize_checksum_histogram( $comments_checksum ),
+			'post_meta'          => $this->summarize_checksum_histogram( $post_meta_checksum ),
+			'comment_meta'       => $this->summarize_checksum_histogram( $comment_meta_checksum ),
+			'terms'              => $this->summarize_checksum_histogram( $terms_checksum ),
+			'term_relationships' => $this->summarize_checksum_histogram( $term_relationships_checksum ),
+			'term_taxonomy'      => $this->summarize_checksum_histogram( $term_taxonomy_checksum ),
+		);
 
-		$all_checksum_tables = array_unique( array_keys( $all_checksum_tables ) );
+		/**
+		 * WooCommerce tables
+		 */
 
-		$result = array();
+		/**
+		 * On WordPress.com, we can't directly check if the site has support for WooCommerce.
+		 * Having the option to override the functionality here helps with syncing WooCommerce tables.
+		 *
+		 * @since 10.1
+		 *
+		 * @param bool If we should we force-enable WooCommerce tables support.
+		 */
+		$force_woocommerce_support = apply_filters( 'jetpack_table_checksum_force_enable_woocommerce', false );
 
-		foreach ( $all_checksum_tables as $table ) {
-			$result_key = in_array( $table, array( 'postmeta', 'commentmeta' ), true ) ? str_replace( 'meta', '_meta', $table ) : $table;
+		if ( $force_woocommerce_support || class_exists( 'WooCommerce' ) ) {
+			/**
+			 * Guard in Try/Catch as it's possible for the WooCommerce class to exist, but
+			 * the tables to not. If we don't do this, the response will be just the exception, without
+			 * returning any valid data. This will prevent us from ever performing a checksum/fix
+			 * for sites like this.
+			 * It's better to just skip the tables in the response, instead of completely failing.
+			 */
+
 			try {
-				$checksum              = $this->checksum_histogram( $table, null, null, null, null, true, '', false, false, $perform_text_conversion );
-				$result[ $result_key ] = $this->summarize_checksum_histogram( $checksum );
+				$woocommerce_order_items_checksum  = $this->checksum_histogram( 'woocommerce_order_items' );
+				$result['woocommerce_order_items'] = $this->summarize_checksum_histogram( $woocommerce_order_items_checksum );
 			} catch ( Exception $ex ) {
-				$result[ $result_key ] = null;
+				$result['woocommerce_order_items'] = null;
+			}
+
+			try {
+				$woocommerce_order_itemmeta_checksum  = $this->checksum_histogram( 'woocommerce_order_itemmeta' );
+				$result['woocommerce_order_itemmeta'] = $this->summarize_checksum_histogram( $woocommerce_order_itemmeta_checksum );
+			} catch ( Exception $ex ) {
+				$result['woocommerce_order_itemmeta'] = null;
 			}
 		}
 
@@ -1249,7 +1280,7 @@ class Replicastore implements Replicastore_Interface {
 		// With a limit present, we'll look at a dataset consisting of object_ids that meet the constructs of the $where clause.
 		// Without a limit, we can use the actual table as a dataset.
 		$from = $bucket_size ?
-			"( SELECT $distinct_sql $id_field FROM $object_table $where_sql ORDER BY $id_field ASC LIMIT " . ( (int) $bucket_size ) . ' ) as ids' :
+			"( SELECT $distinct_sql $id_field FROM $object_table $where_sql ORDER BY $id_field ASC LIMIT $bucket_size ) as ids" :
 			"$object_table $where_sql ORDER BY $id_field ASC";
 
 		return $wpdb->get_row(
@@ -1275,22 +1306,27 @@ class Replicastore implements Replicastore_Interface {
 	 * @param bool   $perform_text_conversion If text fields should be converted to latin1 during the checksum calculation.
 	 *
 	 * @return array|WP_Error The checksum histogram.
+	 * @throws Exception Throws an exception if data validation fails inside `Table_Checksum` calls.
 	 */
 	public function checksum_histogram( $table, $buckets = null, $start_id = null, $end_id = null, $columns = null, $strip_non_ascii = true, $salt = '', $only_range_edges = false, $detailed_drilldown = false, $perform_text_conversion = false ) {
 		global $wpdb;
 
 		$wpdb->queries = array();
 		try {
-			$checksum_table = $this->get_table_checksum_instance( $table, $salt, $perform_text_conversion, $columns );
+			$checksum_table = $this->get_table_checksum_instance( $table, $salt, $perform_text_conversion );
 		} catch ( Exception $ex ) {
 			return new WP_Error( 'checksum_disabled', $ex->getMessage() );
 		}
 
-		try {
-			$range_edges = $checksum_table->get_range_edges( $start_id, $end_id );
-		} catch ( Exception $ex ) {
-			return new WP_Error( 'invalid_range_edges', '[' . $start_id . '-' . $end_id . ']: ' . $ex->getMessage() );
+		// Validate / Determine Buckets.
+		if ( $buckets === null || $buckets < 1 ) {
+			$buckets = $this->calculate_buckets( $table, $start_id, $end_id );
 		}
+		if ( is_wp_error( $buckets ) ) {
+			return $buckets;
+		}
+
+		$range_edges = $checksum_table->get_range_edges( $start_id, $end_id );
 
 		if ( $only_range_edges ) {
 			return $range_edges;
@@ -1302,21 +1338,12 @@ class Replicastore implements Replicastore_Interface {
 			return array();
 		}
 
-		// Validate / Determine Buckets.
-		if ( $buckets === null || $buckets < 1 ) {
-			$buckets = $this->calculate_buckets( $table, $object_count );
-		}
-
 		$bucket_size     = (int) ceil( $object_count / $buckets );
 		$previous_max_id = max( 0, $range_edges['min_range'] );
 		$histogram       = array();
 
 		do {
-			try {
-				$ids_range = $checksum_table->get_range_edges( $previous_max_id, null, $bucket_size );
-			} catch ( Exception $ex ) {
-				return new WP_Error( 'invalid_range_edges', '[' . $previous_max_id . '- ]: ' . $ex->getMessage() );
-			}
+			$ids_range = $checksum_table->get_range_edges( $previous_max_id, null, $bucket_size );
 
 			if ( empty( $ids_range['min_range'] ) || empty( $ids_range['max_range'] ) ) {
 				// Nothing to checksum here...
@@ -1335,10 +1362,7 @@ class Replicastore implements Replicastore_Interface {
 			} else {
 				$histogram[ "{$ids_range[ 'min_range' ]}-{$ids_range[ 'max_range' ]}" ] = $batch_checksum;
 			}
-			// If ids_range['max_range'] is PHP_INT_MAX, we've reached the end of the table. Edge case causing the loop to never end.
-			if ( PHP_INT_MAX === (int) $ids_range['max_range'] ) {
-				break;
-			}
+
 			$previous_max_id = $ids_range['max_range'] + 1;
 			// If we've reached the max_range lets bail out.
 			if ( $previous_max_id > $range_edges['max_range'] ) {
@@ -1364,7 +1388,6 @@ class Replicastore implements Replicastore_Interface {
 	 * Used in methods that are not implemented and shouldn't be invoked.
 	 *
 	 * @access private
-	 * @return never
 	 * @throws Exception If this method is invoked.
 	 */
 	private function invalid_call() {
@@ -1378,10 +1401,20 @@ class Replicastore implements Replicastore_Interface {
 	 * Determine number of buckets to use in full table checksum.
 	 *
 	 * @param string $table Object Type.
-	 * @param int    $object_count Object count.
-	 * @return int Number of Buckets to use.
+	 * @param int    $start_id Min Object ID.
+	 * @param int    $end_id Max Object ID.
+	 * @return int|WP_Error Number of Buckets to use.
 	 */
-	private function calculate_buckets( $table, $object_count ) {
+	private function calculate_buckets( $table, $start_id = null, $end_id = null ) {
+		// Get # of objects.
+		try {
+			$checksum_table = $this->get_table_checksum_instance( $table );
+		} catch ( Exception $ex ) {
+			return new WP_Error( 'checksum_disabled', $ex->getMessage() );
+		}
+		$range_edges  = $checksum_table->get_range_edges( $start_id, $end_id );
+		$object_count = $range_edges['item_count'];
+
 		// Ensure no division by 0.
 		if ( 0 === (int) $object_count ) {
 			return 1;
@@ -1404,22 +1437,21 @@ class Replicastore implements Replicastore_Interface {
 	 *
 	 * Some tables require custom instances, due to different checksum logic.
 	 *
-	 * @param string $table                   The table that we want to get the instance for.
-	 * @param string $salt                    Salt to be used when generating the checksums.
-	 * @param bool   $perform_text_conversion Should we perform text encoding conversion when calculating the checksum.
-	 * @param array  $additional_columns      Additional columns to add to the checksum calculation.
+	 * @param string $table The table that we want to get the instance for.
+	 * @param null   $salt  Salt to be used when generating the checksums.
+	 * @param false  $perform_text_conversion Should we perform text encoding conversion when calculating the checksum.
 	 *
 	 * @return Table_Checksum|Table_Checksum_Usermeta
 	 * @throws Exception Might throw an exception if any of the input parameters were invalid.
 	 */
-	public function get_table_checksum_instance( $table, $salt = null, $perform_text_conversion = false, $additional_columns = null ) {
+	public function get_table_checksum_instance( $table, $salt = null, $perform_text_conversion = false ) {
 		if ( 'users' === $table ) {
-			return new Table_Checksum_Users( $table, $salt, $perform_text_conversion, $additional_columns );
+			return new Table_Checksum_Users( $table, $salt, $perform_text_conversion );
 		}
 		if ( 'usermeta' === $table ) {
-			return new Table_Checksum_Usermeta( $table, $salt, $perform_text_conversion, $additional_columns );
+			return new Table_Checksum_Usermeta( $table, $salt, $perform_text_conversion );
 		}
 
-		return new Table_Checksum( $table, $salt, $perform_text_conversion, $additional_columns );
+		return new Table_Checksum( $table, $salt, $perform_text_conversion );
 	}
 }

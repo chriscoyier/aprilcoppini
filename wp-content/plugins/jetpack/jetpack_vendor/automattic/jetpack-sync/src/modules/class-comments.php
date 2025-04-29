@@ -14,7 +14,6 @@ use Automattic\Jetpack\Sync\Settings;
  * Class to handle sync for comments.
  */
 class Comments extends Module {
-
 	/**
 	 * Sync module name.
 	 *
@@ -38,28 +37,14 @@ class Comments extends Module {
 	}
 
 	/**
-	 * The table name.
+	 * The table in the database.
 	 *
 	 * @access public
 	 *
 	 * @return string
-	 * @deprecated since 3.11.0 Use table() instead.
 	 */
 	public function table_name() {
-		_deprecated_function( __METHOD__, '3.11.0', 'Automattic\\Jetpack\\Sync\\Comments->table' );
 		return 'comments';
-	}
-
-	/**
-	 * The table in the database with the prefix.
-	 *
-	 * @access public
-	 *
-	 * @return string|bool
-	 */
-	public function table() {
-		global $wpdb;
-		return $wpdb->comments;
 	}
 
 	/**
@@ -106,7 +91,7 @@ class Comments extends Module {
 		add_filter( 'wp_update_comment_data', array( $this, 'handle_comment_contents_modification' ), 10, 3 );
 
 		// comment actions.
-		add_filter( 'jetpack_sync_before_enqueue_wp_insert_comment', array( $this, 'filter_jetpack_sync_before_enqueue_wp_insert_comment' ) );
+		add_filter( 'jetpack_sync_before_enqueue_wp_insert_comment', array( $this, 'only_allow_white_listed_comment_types' ) );
 		add_filter( 'jetpack_sync_before_enqueue_deleted_comment', array( $this, 'only_allow_white_listed_comment_types' ) );
 		add_filter( 'jetpack_sync_before_enqueue_trashed_comment', array( $this, 'only_allow_white_listed_comment_types' ) );
 		add_filter( 'jetpack_sync_before_enqueue_untrashed_comment', array( $this, 'only_allow_white_listed_comment_types' ) );
@@ -130,13 +115,6 @@ class Comments extends Module {
 			foreach ( array( 'unapproved', 'approved' ) as $comment_status ) {
 				$comment_action_name = "comment_{$comment_status}_{$comment_type}";
 				add_action( $comment_action_name, $callable, 10, 2 );
-				add_filter(
-					'jetpack_sync_before_enqueue_' . $comment_action_name,
-					array(
-						$this,
-						'expand_wp_insert_comment',
-					)
-				);
 			}
 		}
 
@@ -255,7 +233,6 @@ class Comments extends Module {
 	public function filter_blacklisted_post_types( $args ) {
 		$post_id      = $args[0];
 		$posts_module = Modules::get_module( 'posts' );
-		'@phan-var Posts $posts_module';
 
 		if ( false !== $posts_module && ! $posts_module->is_post_type_allowed( $post_id ) ) {
 			return false;
@@ -282,22 +259,6 @@ class Comments extends Module {
 	}
 
 	/**
-	 * Prevents any comment types that are not in the whitelist from being enqueued and sent to WordPress.com.
-	 * Also expands comment data before being enqueued.
-	 *
-	 * @param array $args Arguments passed to wp_insert_comment.
-	 *
-	 * @return false or array $args Arguments passed to wp_insert_comment or false if the comment type is a blacklisted one.
-	 */
-	public function filter_jetpack_sync_before_enqueue_wp_insert_comment( $args ) {
-		if ( false === $this->only_allow_white_listed_comment_types( $args ) ) {
-			return false;
-		}
-
-		return $this->expand_wp_insert_comment( $args );
-	}
-
-	/**
 	 * Whether a comment type is allowed.
 	 * A comment type is allowed if it's present in the comment type whitelist.
 	 *
@@ -319,14 +280,23 @@ class Comments extends Module {
 	 * @access public
 	 */
 	public function init_before_send() {
+		add_filter( 'jetpack_sync_before_send_wp_insert_comment', array( $this, 'expand_wp_insert_comment' ) );
+
+		foreach ( $this->get_whitelisted_comment_types() as $comment_type ) {
+			foreach ( array( 'unapproved', 'approved' ) as $comment_status ) {
+				$comment_action_name = "comment_{$comment_status}_{$comment_type}";
+				add_filter(
+					'jetpack_sync_before_send_' . $comment_action_name,
+					array(
+						$this,
+						'expand_wp_insert_comment',
+					)
+				);
+			}
+		}
 
 		// Full sync.
-		$sync_module = Modules::get_module( 'full-sync' );
-		if ( $sync_module instanceof Full_Sync_Immediately ) {
-			add_filter( 'jetpack_sync_before_send_jetpack_full_sync_comments', array( $this, 'extract_comments_and_meta' ) );
-		} else {
-			add_filter( 'jetpack_sync_before_send_jetpack_full_sync_comments', array( $this, 'expand_comment_ids' ) );
-		}
+		add_filter( 'jetpack_sync_before_send_jetpack_full_sync_comments', array( $this, 'expand_comment_ids' ) );
 	}
 
 	/**
@@ -363,8 +333,8 @@ class Comments extends Module {
 		}
 
 		// TODO: Call $wpdb->prepare on the following query.
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$count = (int) $wpdb->get_var( $query );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$count = $wpdb->get_var( $query );
 
 		return (int) ceil( $count / self::ARRAY_CHUNK_SIZE );
 	}
@@ -422,7 +392,7 @@ class Comments extends Module {
 	}
 
 	/**
-	 * Expand the comment creation before the data is added to the Sync queue.
+	 * Expand the comment creation before the data is serialized and sent to the server.
 	 *
 	 * @access public
 	 *
@@ -520,75 +490,6 @@ class Comments extends Module {
 			$comments,
 			$this->get_metadata( $comment_ids, 'comment', Settings::get_setting( 'comment_meta_whitelist' ) ),
 			$previous_interval_end,
-		);
-	}
-
-	/**
-	 * Expand the comment IDs to comment objects and meta before being serialized and sent to the server.
-	 *
-	 * @access public
-	 *
-	 * @param array $args The hook parameters.
-	 * @return array The expanded hook parameters.
-	 */
-	public function extract_comments_and_meta( $args ) {
-		list( $filtered_comments, $previous_end ) = $args;
-		return array(
-			$filtered_comments['objects'],
-			$filtered_comments['meta'],
-			$previous_end,
-		);
-	}
-
-	/**
-	 * Given the Module Configuration and Status return the next chunk of items to send.
-	 * This function also expands the posts and metadata and filters them based on the maximum size constraints.
-	 *
-	 * @param array $config This module Full Sync configuration.
-	 * @param array $status This module Full Sync status.
-	 * @param int   $chunk_size Chunk size.
-	 *
-	 * @return array
-	 */
-	public function get_next_chunk( $config, $status, $chunk_size ) {
-
-		$comment_ids = parent::get_next_chunk( $config, $status, $chunk_size );
-		// If no comment IDs were fetched, return an empty array.
-		if ( empty( $comment_ids ) ) {
-			return array();
-		}
-		$comments = get_comments(
-			array(
-				'comment__in' => $comment_ids,
-				'orderby'     => 'comment_ID',
-				'order'       => 'DESC',
-			)
-		);
-		// If no comments were fetched, make sure to return the expected structure so that status is updated correctly.
-		if ( empty( $comments ) ) {
-			return array(
-				'object_ids' => $comment_ids,
-				'objects'    => array(),
-				'meta'       => array(),
-			);
-		}
-		// Get the comment IDs from the comments that were fetched.
-		$fetched_comment_ids = wp_list_pluck( $comments, 'comment_ID' );
-		$metadata            = $this->get_metadata( $fetched_comment_ids, 'comment', Settings::get_setting( 'comment_meta_whitelist' ) );
-
-		// Filter the comments and metadata based on the maximum size constraints.
-		list( $filtered_comment_ids, $filtered_comments, $filtered_comments_metadata ) = $this->filter_objects_and_metadata_by_size(
-			'comment',
-			$comments,
-			$metadata,
-			self::MAX_META_LENGTH, // Replace with appropriate comment meta length constant.
-			self::MAX_SIZE_FULL_SYNC
-		);
-
-		return array(
-			'object_ids' => $filtered_comment_ids,
-			'objects'    => $filtered_comments,
-			'meta'       => $filtered_comments_metadata,
 		);
 	}
 }

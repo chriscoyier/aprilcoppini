@@ -135,9 +135,9 @@ class Milestone_Widget extends WP_Widget {
 		$hex = trim( $hex );
 
 		/* Strip recognized prefixes. */
-		if ( str_starts_with( $hex, '#' ) ) {
+		if ( 0 === strpos( $hex, '#' ) ) {
 			$hex = substr( $hex, 1 );
-		} elseif ( str_starts_with( $hex, '%23' ) ) {
+		} elseif ( 0 === strpos( $hex, '%23' ) ) {
 			$hex = substr( $hex, 3 );
 		}
 
@@ -232,7 +232,7 @@ class Milestone_Widget extends WP_Widget {
 
 		self::$config_js['instances'][] = $config;
 
-		printf( '<div id="%s" class="milestone-content">', esc_html( $config['content_id'] ) );
+		echo sprintf( '<div id="%s" class="milestone-content">', esc_html( $config['content_id'] ) );
 
 		echo '<div class="milestone-header">';
 		echo '<strong class="event">' . esc_html( $instance['event'] ) . '</strong>';

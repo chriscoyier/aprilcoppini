@@ -38,8 +38,6 @@ class Meta extends Module {
 	 * @return array
 	 */
 	public function get_objects_by_id( $object_type, $config ) {
-		global $wpdb;
-
 		$table = _get_meta_table( $object_type );
 
 		if ( ! $table ) {
@@ -50,42 +48,13 @@ class Meta extends Module {
 			return array();
 		}
 
-		$object_id_column = $object_type . '_id';
-		$object_key_pairs = array();
-
+		$meta_objects = array();
 		foreach ( $config as $item ) {
+			$meta = null;
 			if ( isset( $item['id'] ) && isset( $item['meta_key'] ) ) {
-				$object_key_pairs[ (int) $item['id'] ][] = (string) $item['meta_key'];
+				$meta = $this->get_object_by_id( $object_type, (int) $item['id'], (string) $item['meta_key'] );
 			}
-		}
-
-		$meta_objects         = array();
-		$where_sql            = '';
-		$current_query_length = 0;
-
-		foreach ( $object_key_pairs as $object_id => $keys ) {
-			$keys_placeholders = implode( ',', array_fill( 0, count( $keys ), '%s' ) );
-			$where_condition   = trim(
-				$wpdb->prepare(
-					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					"( `$object_id_column` = %d AND meta_key IN ( $keys_placeholders ) )",
-					array_merge( array( $object_id ), $keys )
-				)
-			);
-
-			$where_sql = empty( $where_sql ) ? $where_condition : $where_sql . ' OR ' . $where_condition;
-
-			$current_query_length += strlen( $where_sql );
-
-			if ( $current_query_length > self::MAX_DB_QUERY_LENGTH ) {
-				$meta_objects         = $this->fetch_prepared_meta_from_db( $object_type, $where_sql, $meta_objects );
-				$where_sql            = '';
-				$current_query_length = 0;
-			}
-		}
-
-		if ( ! empty( $where_sql ) ) {
-			$meta_objects = $this->fetch_prepared_meta_from_db( $object_type, $where_sql, $meta_objects );
+			$meta_objects[ $item['id'] . '-' . $item['meta_key'] ] = $meta;
 		}
 
 		return $meta_objects;
@@ -94,9 +63,9 @@ class Meta extends Module {
 	/**
 	 * Get a single Meta Result.
 	 *
-	 * @param string      $object_type  post, comment, term, user.
-	 * @param int|null    $id           Object ID.
-	 * @param string|null $meta_key     Meta Key.
+	 * @param string $object_type  post, comment, term, user.
+	 * @param null   $id           Object ID.
+	 * @param null   $meta_key     Meta Key.
 	 *
 	 * @return mixed|null
 	 */
@@ -107,86 +76,37 @@ class Meta extends Module {
 			return null;
 		}
 
-		$table = _get_meta_table( $object_type );
-
-		if ( ! $table ) {
-			return null;
-		}
-
-		$object_id_column = $object_type . '_id';
-
-		// Sanitize so that the array only has integer values.
-		$where_condition = $wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"{$object_id_column} = %d AND meta_key = %s",
-			$id,
-			$meta_key
-		);
-
-		$meta_objects = $this->fetch_prepared_meta_from_db( $object_type, $where_condition );
-
-		$key = $id . '-' . $meta_key;
-
-		return $meta_objects[ $key ] ?? null;
-	}
-
-	/**
-	 * Fetch meta from DB and return them in a standard format.
-	 *
-	 * @param  string $object_type   The meta object type, eg 'post', 'user' etc.
-	 * @param  string $where         Prepared SQL 'where' statement.
-	 * @param  array  $meta_objects  An existing array of meta to populate. Defaults to an empty array.
-	 * @return array
-	 */
-	private function fetch_prepared_meta_from_db( $object_type, $where, $meta_objects = array() ) {
-		global $wpdb;
-
 		$table            = _get_meta_table( $object_type );
 		$object_id_column = $object_type . '_id';
 
-		$meta = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// Sanitize so that the array only has integer values.
+		$meta = $wpdb->get_results(
+			$wpdb->prepare(
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"SELECT * FROM {$table} WHERE {$where}",
+				"SELECT * FROM {$table} WHERE {$object_id_column} = %d AND meta_key = %s",
+				$id,
+				$meta_key
+			),
 			ARRAY_A
 		);
 
+		$meta_objects = null;
+
 		if ( ! is_wp_error( $meta ) && ! empty( $meta ) ) {
 			foreach ( $meta as $meta_entry ) {
-				$object_id = $meta_entry[ $object_id_column ];
-				$meta_key  = $meta_entry['meta_key'];
-				$key       = $object_id . '-' . $meta_key;
-
-				if ( ! isset( $meta_objects[ $key ] ) ) {
-					$meta_objects[ $key ] = array();
+				if ( 'post' === $object_type && strlen( $meta_entry['meta_value'] ) >= Posts::MAX_POST_META_LENGTH ) {
+					$meta_entry['meta_value'] = '';
 				}
-
-				$meta_objects[ $key ][] = $this->get_prepared_meta_object( $object_type, $meta_entry );
+				$meta_objects[] = array(
+					'meta_type'  => $object_type,
+					'meta_id'    => $meta_entry['meta_id'],
+					'meta_key'   => $meta_key,
+					'meta_value' => $meta_entry['meta_value'],
+					'object_id'  => $meta_entry[ $object_id_column ],
+				);
 			}
 		}
 
 		return $meta_objects;
-	}
-
-	/**
-	 * Accepts a DB meta entry and returns it in a standard format.
-	 *
-	 * @param  string $object_type The meta object type, eg 'post', 'user' etc.
-	 * @param  array  $meta_entry  A meta array.
-	 * @return array
-	 */
-	private function get_prepared_meta_object( $object_type, $meta_entry ) {
-		$object_id_column = $object_type . '_id';
-
-		if ( 'post' === $object_type && strlen( $meta_entry['meta_value'] ) >= Posts::MAX_META_LENGTH ) {
-			$meta_entry['meta_value'] = '';
-		}
-
-		return array(
-			'meta_type'  => $object_type,
-			'meta_id'    => $meta_entry['meta_id'],
-			'meta_key'   => $meta_entry['meta_key'],
-			'meta_value' => $meta_entry['meta_value'],
-			'object_id'  => $meta_entry[ $object_id_column ],
-		);
 	}
 }

@@ -78,11 +78,6 @@ class CompatibilityManager {
      */
     private $http_helper;
 
-    /**
-     * @var Util
-     */
-    private $util;
-
     public function __construct(
 		Filesystem $filesystem,
 		Settings $settings,

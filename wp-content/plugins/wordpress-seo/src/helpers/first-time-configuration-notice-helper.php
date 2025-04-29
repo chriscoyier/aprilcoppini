@@ -55,6 +55,7 @@ class First_Time_Configuration_Notice_Helper {
 		if ( ! $this->on_wpseo_admin_page_or_dashboard() ) {
 			return false;
 		}
+
 		return $this->first_time_configuration_not_finished();
 	}
 
@@ -120,21 +121,17 @@ class First_Time_Configuration_Notice_Helper {
 			return true;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reason: We are not processing form information.
-		if ( isset( $_GET['page'] ) && \is_string( $_GET['page'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reason: We are not processing form information and only comparing the variable in a condition.
-			$page_from_get = \wp_unslash( $_GET['page'] );
+		$page_from_get = \filter_input( \INPUT_GET, 'page' );
 
-			// Show on Yoast SEO pages, with some exceptions.
-			if ( $pagenow === 'admin.php' && \strpos( $page_from_get, 'wpseo' ) === 0 ) {
-				$exceptions = [
-					'wpseo_installation_successful',
-					'wpseo_installation_successful_free',
-				];
+		// Show on Yoast SEO pages, with some exceptions.
+		if ( $pagenow === 'admin.php' && \strpos( $page_from_get, 'wpseo' ) === 0 ) {
+			$exceptions = [
+				'wpseo_installation_successful',
+				'wpseo_installation_successful_free',
+			];
 
-				if ( ! \in_array( $page_from_get, $exceptions, true ) ) {
-					return true;
-				}
+			if ( ! \in_array( $page_from_get, $exceptions, true ) ) {
+				return true;
 			}
 		}
 

@@ -7,7 +7,6 @@
 
 use Automattic\Jetpack\Assets;
 use Automattic\Jetpack\Blocks;
-use Automattic\Jetpack\Current_Plan as Jetpack_Plan;
 
 /**
  * Register a VideoPress extension to replace the default Core Video block.
@@ -103,9 +102,9 @@ class VideoPress_Gutenberg {
 	public function set_extension_availability() {
 		$availability = $this->check_videopress_availability();
 		if ( $availability['available'] ) {
-			Jetpack_Gutenberg::set_extension_available( 'videopress' );
+			Jetpack_Gutenberg::set_extension_available( 'jetpack/videopress' );
 		} else {
-			Jetpack_Gutenberg::set_extension_unavailable( 'videopress', $availability['unavailable_reason'] );
+			Jetpack_Gutenberg::set_extension_unavailable( 'jetpack/videopress', $availability['unavailable_reason'] );
 		}
 	}
 

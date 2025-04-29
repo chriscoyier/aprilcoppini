@@ -1,3 +1,4 @@
+/* globals wp */
 ( function ( $ ) {
 	/**
 	 * Ready, set, go!

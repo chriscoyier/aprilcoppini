@@ -2,16 +2,10 @@
 
 namespace Automattic\Jetpack_Boost\Lib;
 
-use Automattic\Jetpack\WP_JS_Data_Sync\Contracts\Entry_Can_Get;
-use Automattic\Jetpack\WP_JS_Data_Sync\Contracts\Entry_Can_Set;
-use Automattic\Jetpack_Boost\Modules\Modules_Setup;
-use Automattic\Jetpack_Boost\Modules\Optimizations\Cloud_CSS\Cloud_CSS;
-use Automattic\Jetpack_Boost\Modules\Optimizations\Critical_CSS\Critical_CSS;
-use Automattic\Jetpack_Boost\Modules\Optimizations\Minify\Minify;
-use Automattic\Jetpack_Boost\Modules\Optimizations\Minify\Minify_CSS;
-use Automattic\Jetpack_Boost\Modules\Optimizations\Minify\Minify_JS;
+use Automattic\Jetpack_Boost\Features\Optimizations\Cloud_CSS\Cloud_CSS;
+use Automattic\Jetpack_Boost\Features\Optimizations\Critical_CSS\Critical_CSS;
 
-class Status implements Entry_Can_Get, Entry_Can_Set {
+class Status {
 
 	/**
 	 * Slug of the optimization module which is currently being toggled
@@ -27,45 +21,51 @@ class Status implements Entry_Can_Get, Entry_Can_Set {
 	 */
 	protected $status_sync_map;
 
-	/**
-	 * @var string $option_name
-	 */
-	protected $option_name;
-
 	public function __construct( $slug ) {
-		$this->slug        = $slug;
-		$module_slug       = str_replace( '_', '-', $this->slug );
-		$this->option_name = 'jetpack_boost_status_' . $module_slug;
+		$this->slug = $slug;
 
 		$this->status_sync_map = array(
-			Cloud_CSS::get_slug()  => array(
+			Cloud_CSS::get_slug() => array(
 				Critical_CSS::get_slug(),
-			),
-			Minify_CSS::get_slug() => array(
-				Minify::get_slug(),
-			),
-			Minify_JS::get_slug()  => array(
-				Minify::get_slug(),
 			),
 		);
 	}
 
-	public function get( $_fallback = false ) {
-		return get_option( $this->option_name, false );
+	public function is_enabled() {
+		return '1' === get_option( $this->get_option_name( $this->slug ) );
 	}
 
-	public function set( $value ) {
-		return update_option( $this->option_name, $value );
+	public function update( $new_status ) {
+		/**
+		 * Fires before attempting to update the status of a module.
+		 *
+		 * @param string $slug Slug of the module.
+		 * @param bool $new_status New status of the module.
+		 */
+		do_action( 'jetpack_boost_before_module_status_update', $this->slug, (bool) $new_status );
+
+		if ( update_option( $this->get_option_name( $this->slug ), (bool) $new_status ) ) {
+			$this->update_mapped_modules( $new_status );
+
+			// Only record analytics event if the config update succeeds.
+			$this->track_module_status( (bool) $new_status );
+
+			/**
+			 * Fires when a module is enabled or disabled.
+			 *
+			 * @param string $module The module slug.
+			 * @param bool   $status The new status.
+			 * @since 1.5.2
+			 */
+			do_action( 'jetpack_boost_module_status_updated', $this->slug, (bool) $new_status );
+
+			return true;
+		}
+		return false;
 	}
 
-	/**
-	 * Called when the module is toggled.
-	 *
-	 * Called by Modules and triggered by the `jetpack_ds_set` action.
-	 */
-	public function on_update( $new_status ) {
-		$this->update_mapped_modules( $new_status );
-		$this->track_module_status( (bool) $new_status );
+	protected function get_option_name( $module_slug ) {
+		return 'jetpack_boost_status_' . $module_slug;
 	}
 
 	/**
@@ -73,7 +73,7 @@ class Status implements Entry_Can_Get, Entry_Can_Set {
 	 *
 	 * For example: critical-css module status should be synced with cloud-css module.
 	 *
-	 * @param mixed $new_status
+	 * @param $new_status
 	 * @return void
 	 */
 	protected function update_mapped_modules( $new_status ) {
@@ -81,26 +81,8 @@ class Status implements Entry_Can_Get, Entry_Can_Set {
 			return;
 		}
 
-		$modules_instance = Setup::get_instance_of( Modules_Setup::class );
-
-		// The moduleInstance will be there. But check just in case.
-		if ( $modules_instance !== null ) {
-			// Remove the action temporarily to avoid infinite loop.
-			remove_action( 'jetpack_boost_module_status_updated', array( $modules_instance, 'on_module_status_update' ) );
-		}
-
-		foreach ( $this->status_sync_map[ $this->slug ] as $mapped_module_slug ) {
-			$mapped_status = new Status( $mapped_module_slug );
-			if ( $mapped_module_slug === 'minify' ) {
-				$mapped_status->set( jetpack_boost_minify_is_enabled() );
-			} else {
-				$mapped_status->set( $new_status );
-			}
-		}
-
-		// The moduleInstance will be there. But check just in case.
-		if ( $modules_instance !== null ) {
-			add_action( 'jetpack_boost_module_status_updated', array( $modules_instance, 'on_module_status_update' ), 10, 2 );
+		foreach ( $this->status_sync_map[ $this->slug ] as $mapped_module ) {
+			update_option( $this->get_option_name( $mapped_module ), (bool) $new_status );
 		}
 	}
 
@@ -113,4 +95,5 @@ class Status implements Entry_Can_Get, Entry_Can_Set {
 			)
 		);
 	}
+
 }

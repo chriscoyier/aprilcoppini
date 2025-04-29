@@ -37,7 +37,7 @@ class Jetpack_Media {
 	 * The hash is built according to the filename trying to avoid name collisions
 	 * with other media files.
 	 *
-	 * @param  int    $media_id - media post ID.
+	 * @param  number $media_id - media post ID.
 	 * @param  string $new_filename - the new filename.
 	 * @return string A random filename.
 	 */
@@ -145,21 +145,30 @@ class Jetpack_Media {
 	}
 
 	/**
-	 * Save the given uploaded temporary file considering file type,
+	 * Try to remove the temporal file from the given file array.
+	 *
+	 * @param array $file_array Array with data about the temporal file.
+	 */
+	private static function remove_tmp_file( $file_array ) {
+		if ( file_exists( $file_array['tmp_name'] ) ) {
+			wp_delete_file( $file_array['tmp_name'] );
+		}
+	}
+
+	/**
+	 * Save the given temporal file considering file type,
 	 * correct location according to the original file path, etc.
 	 * The file type control is done through of `jetpack_supported_media_sideload_types` filter,
 	 * which allows define to the users their own file types list.
 	 *
-	 * Note this does not support sideloads, only uploads.
-	 *
-	 * @param  array $file_array Data derived from `$_FILES` for an uploaded file.
+	 * @param  array $file_array file to save.
 	 * @param  int   $media_id   Attachment ID.
 	 * @return array|WP_Error an array with information about the new file saved or a WP_Error is something went wrong.
 	 */
 	public static function save_temporary_file( $file_array, $media_id ) {
 		$tmp_filename = $file_array['tmp_name'];
 
-		if ( ! is_uploaded_file( $tmp_filename ) ) {
+		if ( ! file_exists( $tmp_filename ) ) {
 			return new WP_Error( 'invalid_input', 'No media provided in input.' );
 		}
 
@@ -174,6 +183,7 @@ class Jetpack_Media {
 			! self::is_file_supported_for_sideloading( $tmp_filename ) &&
 			! file_is_displayable_image( $tmp_filename )
 		) {
+			wp_delete_file( $tmp_filename );
 			return new WP_Error( 'invalid_input', 'Invalid file type.', 403 );
 		}
 		remove_filter( 'jetpack_supported_media_sideload_types', $mime_type_static_filter );
@@ -188,7 +198,9 @@ class Jetpack_Media {
 		$time = self::get_time_string_from_guid( $media_id );
 
 		$file_array['name'] = $tmp_new_filename;
-		$file               = wp_handle_upload( $file_array, $overrides, $time );
+		$file               = wp_handle_sideload( $file_array, $overrides, $time );
+
+		self::remove_tmp_file( $file_array );
 
 		if ( isset( $file['error'] ) ) {
 			return new WP_Error( 'upload_error', $file['error'] );
@@ -222,9 +234,9 @@ class Jetpack_Media {
 	/**
 	 * Add a new item into revision_history array.
 	 *
-	 * @param  object         $media_item - media post object.
-	 * @param  array|WP_Error $file - File data, or WP_Error on error.
-	 * @param  bool           $has_original_media - condition is the original media has been already added.
+	 * @param  object $media_item - media post object.
+	 * @param  file   $file - file recently added.
+	 * @param  bool   $has_original_media - condition is the original media has been already added.
 	 * @return bool `true` if the item has been added. Otherwise `false`.
 	 */
 	public static function register_revision( $media_item, $file, $has_original_media ) {
@@ -237,7 +249,7 @@ class Jetpack_Media {
 	/**
 	 * Return the `revision_history` of the given media.
 	 *
-	 * @param  int $media_id - media post ID.
+	 * @param  number $media_id - media post ID.
 	 * @return array `revision_history` array
 	 */
 	public static function get_revision_history( $media_id ) {
@@ -346,7 +358,7 @@ class Jetpack_Media {
 	 * When the stack is overflowing the oldest item is remove from there (FIFO).
 	 *
 	 * @param int      $media_id - media post ID.
-	 * @param null|int $limit - maximum amount of items. 20 as default.
+	 * @param null|int $limit - maximun amount of items. 20 as default.
 	 *
 	 * @return array items removed from `revision_history`
 	 */
@@ -431,11 +443,9 @@ class Jetpack_Media {
 	 * - preserve original media file
 	 * - trace revision history
 	 *
-	 * Note this does not support sideloads, only uploads.
-	 *
-	 * @param  int   $media_id - media post ID.
-	 * @param  array $file_array - Data derived from `$_FILES` for an uploaded file.
-	 * @return WP_Post|WP_Error Updated media item or a WP_Error is something went wrong.
+	 * @param  number $media_id - media post ID.
+	 * @param  array  $file_array - temporal file.
+	 * @return {Post|WP_Error} Updated media item or a WP_Error is something went wrong.
 	 */
 	public static function edit_media_file( $media_id, $file_array ) {
 		$media_item         = get_post( $media_id );
@@ -453,6 +463,7 @@ class Jetpack_Media {
 		$uploaded_file = self::save_temporary_file( $file_array, $media_id );
 
 		if ( is_wp_error( $uploaded_file ) ) {
+			self::remove_tmp_file( $file_array );
 			return $uploaded_file;
 		}
 

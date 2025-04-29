@@ -466,4 +466,5 @@ class REST_Controller {
 	protected function get_blog_id() {
 		return $this->is_wpcom ? get_current_blog_id() : Jetpack_Options::get_option( 'id' );
 	}
+
 }

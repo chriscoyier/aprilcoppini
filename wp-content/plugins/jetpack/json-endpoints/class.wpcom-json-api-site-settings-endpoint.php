@@ -5,8 +5,6 @@
  * @package automattic/jetpack
  */
 
-use Automattic\Jetpack\Waf\Brute_Force_Protection\Brute_Force_Protection_Shared_Functions;
-
 new WPCOM_JSON_API_Site_Settings_Endpoint(
 	array(
 		'description'      => 'Get detailed settings information about a site.',
@@ -45,96 +43,79 @@ new WPCOM_JSON_API_Site_Settings_Endpoint(
 		),
 
 		'request_format'      => array(
-			'migration_source_site_domain'              => '(string) The source site URL, from the migration flow',
-			'in_site_migration_flow'                    => '(string) The migration flow the site is in',
-			'blogname'                                  => '(string) Blog name',
-			'blogdescription'                           => '(string) Blog description',
-			'default_pingback_flag'                     => '(bool) Notify blogs linked from article?',
-			'default_ping_status'                       => '(bool) Allow link notifications from other blogs?',
-			'default_comment_status'                    => '(bool) Allow comments on new articles?',
-			'blog_public'                               => '(string) Site visibility; -1: private, 0: discourage search engines, 1: allow search engines',
-			'wpcom_data_sharing_opt_out'                => '(bool) Did the site opt out of sharing public content with third parties and research partners?',
-			'jetpack_sync_non_public_post_stati'        => '(bool) allow sync of post and pages with non-public posts stati',
-			'jetpack_relatedposts_enabled'              => '(bool) Enable related posts?',
-			'jetpack_relatedposts_show_context'         => '(bool) Show post\'s tags and category in related posts?',
-			'jetpack_relatedposts_show_date'            => '(bool) Show date in related posts?',
-			'jetpack_relatedposts_show_headline'        => '(bool) Show headline in related posts?',
-			'jetpack_relatedposts_show_thumbnails'      => '(bool) Show thumbnails in related posts?',
-			'jetpack_protect_whitelist'                 => '(array) List of IP addresses to always allow',
-			'instant_search_enabled'                    => '(bool) Enable the new Jetpack Instant Search interface',
-			'jetpack_search_enabled'                    => '(bool) Enable Jetpack Search',
-			'jetpack_search_supported'                  => '(bool) Jetpack Search is supported',
-			'infinite_scroll'                           => '(bool) Support infinite scroll of posts?',
-			'default_category'                          => '(int) Default post category',
-			'default_post_format'                       => '(string) Default post format',
-			'require_name_email'                        => '(bool) Require comment authors to fill out name and email?',
-			'comment_registration'                      => '(bool) Require users to be registered and logged in to comment?',
-			'close_comments_for_old_posts'              => '(bool) Automatically close comments on old posts?',
-			'close_comments_days_old'                   => '(int) Age at which to close comments',
-			'thread_comments'                           => '(bool) Enable threaded comments?',
-			'thread_comments_depth'                     => '(int) Depth to thread comments',
-			'page_comments'                             => '(bool) Break comments into pages?',
-			'comments_per_page'                         => '(int) Number of comments to display per page',
-			'default_comments_page'                     => '(string) newest|oldest Which page of comments to display first',
-			'comment_order'                             => '(string) asc|desc Order to display comments within page',
-			'comments_notify'                           => '(bool) Email me when someone comments?',
-			'moderation_notify'                         => '(bool) Email me when a comment is helf for moderation?',
-			'social_notifications_like'                 => '(bool) Email me when someone likes my post?',
-			'social_notifications_reblog'               => '(bool) Email me when someone reblogs my post?',
-			'social_notifications_subscribe'            => '(bool) Email me when someone subscribes to my blog?',
-			'comment_moderation'                        => '(bool) Moderate comments for manual approval?',
-			'comment_previously_approved'               => '(bool) Moderate comments unless author has a previously-approved comment?',
-			'comment_max_links'                         => '(int) Moderate comments that contain X or more links',
-			'moderation_keys'                           => '(string) Words or phrases that trigger comment moderation, one per line',
-			'disallowed_keys'                           => '(string) Words or phrases that mark comment spam, one per line',
-			'lang_id'                                   => '(int) ID for language blog is written in',
-			'wga'                                       => '(array) Google Analytics Settings',
-			'disabled_likes'                            => '(bool) Are likes globally disabled (they can still be turned on per post)?',
-			'disabled_reblogs'                          => '(bool) Are reblogs disabled on posts?',
-			'jetpack_comment_likes_enabled'             => '(bool) Are comment likes enabled for all comments?',
-			'sharing_button_style'                      => '(string) Style to use for sharing buttons (icon-text, icon, text, or official)',
-			'sharing_label'                             => '(string) Label to use for sharing buttons, e.g. "Share this:"',
-			'sharing_show'                              => '(string|array:string) Post type or array of types where sharing buttons are to be displayed',
-			'sharing_open_links'                        => '(string) Link target for sharing buttons (same or new)',
-			'twitter_via'                               => '(string) Twitter username to include in tweets when people share using the Twitter button',
-			'jetpack-twitter-cards-site-tag'            => '(string) The Twitter username of the owner of the site\'s domain.',
-			'eventbrite_api_token'                      => '(int) The Keyring token ID for an Eventbrite token to associate with the site',
-			'timezone_string'                           => '(string) PHP-compatible timezone string like \'UTC-5\'',
-			'gmt_offset'                                => '(int) Site offset from UTC in hours',
-			'date_format'                               => '(string) PHP Date-compatible date format',
-			'time_format'                               => '(string) PHP Date-compatible time format',
-			'start_of_week'                             => '(int) Starting day of week (0 = Sunday, 6 = Saturday)',
-			'jetpack_testimonial'                       => '(bool) Whether testimonial custom post type is enabled for the site',
-			'jetpack_testimonial_posts_per_page'        => '(int) Number of testimonials to show per page',
-			'jetpack_portfolio'                         => '(bool) Whether portfolio custom post type is enabled for the site',
-			'jetpack_portfolio_posts_per_page'          => '(int) Number of portfolio projects to show per page',
-			Jetpack_SEO_Utils::FRONT_PAGE_META_OPTION   => '(string) The seo meta description for the site.',
-			Jetpack_SEO_Titles::TITLE_FORMATS_OPTION    => '(array) SEO meta title formats. Allowed keys: front_page, posts, pages, groups, archives',
-			'verification_services_codes'               => '(array) Website verification codes. Allowed keys: google, pinterest, bing, yandex, facebook',
-			'markdown_supported'                        => '(bool) Whether markdown is supported for this site',
-			'wpcom_publish_posts_with_markdown'         => '(bool) Whether markdown is enabled for posts',
-			'wpcom_publish_comments_with_markdown'      => '(bool) Whether markdown is enabled for comments',
-			'site_icon'                                 => '(int) Media attachment ID to use as site icon. Set to zero or an otherwise empty value to clear',
-			'api_cache'                                 => '(bool) Turn on/off the Jetpack JSON API cache',
-			'posts_per_page'                            => '(int) Number of posts to show on blog pages',
-			'posts_per_rss'                             => '(int) Number of posts to show in the RSS feed',
-			'rss_use_excerpt'                           => '(bool) Whether the RSS feed will use post excerpts',
-			'launchpad_screen'                          => '(string) Whether or not launchpad is presented and what size it will be',
-			'sm_enabled'                                => '(bool) Whether the newsletter subscribe modal is enabled',
-			'jetpack_subscribe_overlay_enabled'         => '(bool) Whether the newsletter subscribe overlay is enabled',
-			'jetpack_subscribe_floating_button_enabled' => '(bool) Whether the newsletter floating subscribe button is enabled',
-			'jetpack_subscriptions_subscribe_post_end_enabled' => '(bool) Whether the Subscribe block at the end of each post placement is enabled',
-			'jetpack_subscriptions_login_navigation_enabled' => '(bool) Whether the Subscriber Login block navigation placement is enabled',
-			'jetpack_subscriptions_subscribe_navigation_enabled' => '(Bool) Whether the Subscribe block navigation placement is enabled',
-			'wpcom_ai_site_prompt'                      => '(string) User input in the AI site prompt',
-			'jetpack_waf_automatic_rules'               => '(bool) Whether the WAF should enforce automatic firewall rules',
-			'jetpack_waf_ip_allow_list'                 => '(string) List of IP addresses to always allow',
-			'jetpack_waf_ip_allow_list_enabled'         => '(bool) Whether the IP allow list is enabled',
-			'jetpack_waf_ip_block_list'                 => '(string) List of IP addresses the WAF should always block',
-			'jetpack_waf_ip_block_list_enabled'         => '(bool) Whether the IP block list is enabled',
-			'jetpack_waf_share_data'                    => '(bool) Whether the WAF should share basic data with Jetpack',
-			'jetpack_waf_share_debug_data'              => '(bool) Whether the WAF should share debug data with Jetpack',
-			'jetpack_waf_automatic_rules_last_updated_timestamp' => '(int) Timestamp of the last time the automatic rules were updated',
+			'blogname'                                => '(string) Blog name',
+			'blogdescription'                         => '(string) Blog description',
+			'default_pingback_flag'                   => '(bool) Notify blogs linked from article?',
+			'default_ping_status'                     => '(bool) Allow link notifications from other blogs?',
+			'default_comment_status'                  => '(bool) Allow comments on new articles?',
+			'blog_public'                             => '(string) Site visibility; -1: private, 0: discourage search engines, 1: allow search engines',
+			'jetpack_sync_non_public_post_stati'      => '(bool) allow sync of post and pages with non-public posts stati',
+			'jetpack_relatedposts_enabled'            => '(bool) Enable related posts?',
+			'jetpack_relatedposts_show_context'       => '(bool) Show post\'s tags and category in related posts?',
+			'jetpack_relatedposts_show_date'          => '(bool) Show date in related posts?',
+			'jetpack_relatedposts_show_headline'      => '(bool) Show headline in related posts?',
+			'jetpack_relatedposts_show_thumbnails'    => '(bool) Show thumbnails in related posts?',
+			'jetpack_protect_whitelist'               => '(array) List of IP addresses to whitelist',
+			'instant_search_enabled'                  => '(bool) Enable the new Jetpack Instant Search interface',
+			'jetpack_search_enabled'                  => '(bool) Enable Jetpack Search',
+			'jetpack_search_supported'                => '(bool) Jetpack Search is supported',
+			'infinite_scroll'                         => '(bool) Support infinite scroll of posts?',
+			'default_category'                        => '(int) Default post category',
+			'default_post_format'                     => '(string) Default post format',
+			'require_name_email'                      => '(bool) Require comment authors to fill out name and email?',
+			'comment_registration'                    => '(bool) Require users to be registered and logged in to comment?',
+			'close_comments_for_old_posts'            => '(bool) Automatically close comments on old posts?',
+			'close_comments_days_old'                 => '(int) Age at which to close comments',
+			'thread_comments'                         => '(bool) Enable threaded comments?',
+			'thread_comments_depth'                   => '(int) Depth to thread comments',
+			'page_comments'                           => '(bool) Break comments into pages?',
+			'comments_per_page'                       => '(int) Number of comments to display per page',
+			'default_comments_page'                   => '(string) newest|oldest Which page of comments to display first',
+			'comment_order'                           => '(string) asc|desc Order to display comments within page',
+			'comments_notify'                         => '(bool) Email me when someone comments?',
+			'moderation_notify'                       => '(bool) Email me when a comment is helf for moderation?',
+			'social_notifications_like'               => '(bool) Email me when someone likes my post?',
+			'social_notifications_reblog'             => '(bool) Email me when someone reblogs my post?',
+			'social_notifications_subscribe'          => '(bool) Email me when someone follows my blog?',
+			'comment_moderation'                      => '(bool) Moderate comments for manual approval?',
+			'comment_previously_approved'             => '(bool) Moderate comments unless author has a previously-approved comment?',
+			'comment_max_links'                       => '(int) Moderate comments that contain X or more links',
+			'moderation_keys'                         => '(string) Words or phrases that trigger comment moderation, one per line',
+			'disallowed_keys'                         => '(string) Words or phrases that mark comment spam, one per line',
+			'lang_id'                                 => '(int) ID for language blog is written in',
+			'wga'                                     => '(array) Google Analytics Settings',
+			'disabled_likes'                          => '(bool) Are likes globally disabled (they can still be turned on per post)?',
+			'disabled_reblogs'                        => '(bool) Are reblogs disabled on posts?',
+			'jetpack_comment_likes_enabled'           => '(bool) Are comment likes enabled for all comments?',
+			'sharing_button_style'                    => '(string) Style to use for sharing buttons (icon-text, icon, text, or official)',
+			'sharing_label'                           => '(string) Label to use for sharing buttons, e.g. "Share this:"',
+			'sharing_show'                            => '(string|array:string) Post type or array of types where sharing buttons are to be displayed',
+			'sharing_open_links'                      => '(string) Link target for sharing buttons (same or new)',
+			'twitter_via'                             => '(string) Twitter username to include in tweets when people share using the Twitter button',
+			'jetpack-twitter-cards-site-tag'          => '(string) The Twitter username of the owner of the site\'s domain.',
+			'eventbrite_api_token'                    => '(int) The Keyring token ID for an Eventbrite token to associate with the site',
+			'timezone_string'                         => '(string) PHP-compatible timezone string like \'UTC-5\'',
+			'gmt_offset'                              => '(int) Site offset from UTC in hours',
+			'date_format'                             => '(string) PHP Date-compatible date format',
+			'time_format'                             => '(string) PHP Date-compatible time format',
+			'start_of_week'                           => '(int) Starting day of week (0 = Sunday, 6 = Saturday)',
+			'jetpack_testimonial'                     => '(bool) Whether testimonial custom post type is enabled for the site',
+			'jetpack_testimonial_posts_per_page'      => '(int) Number of testimonials to show per page',
+			'jetpack_portfolio'                       => '(bool) Whether portfolio custom post type is enabled for the site',
+			'jetpack_portfolio_posts_per_page'        => '(int) Number of portfolio projects to show per page',
+			Jetpack_SEO_Utils::FRONT_PAGE_META_OPTION => '(string) The seo meta description for the site.',
+			Jetpack_SEO_Titles::TITLE_FORMATS_OPTION  => '(array) SEO meta title formats. Allowed keys: front_page, posts, pages, groups, archives',
+			'verification_services_codes'             => '(array) Website verification codes. Allowed keys: google, pinterest, bing, yandex, facebook',
+			'markdown_supported'                      => '(bool) Whether markdown is supported for this site',
+			'wpcom_publish_posts_with_markdown'       => '(bool) Whether markdown is enabled for posts',
+			'wpcom_publish_comments_with_markdown'    => '(bool) Whether markdown is enabled for comments',
+			'amp_is_enabled'                          => '(bool) Whether AMP is enabled for this site',
+			'site_icon'                               => '(int) Media attachment ID to use as site icon. Set to zero or an otherwise empty value to clear',
+			'api_cache'                               => '(bool) Turn on/off the Jetpack JSON API cache',
+			'posts_per_page'                          => '(int) Number of posts to show on blog pages',
+			'posts_per_rss'                           => '(int) Number of posts to show in the RSS feed',
+			'rss_use_excerpt'                         => '(bool) Whether the RSS feed will use post excerpts',
+			'launchpad_screen'                        => '(string) Whether or not launchpad is presented and what size it will be',
 		),
 
 		'response_format'     => array(
@@ -220,7 +201,7 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 	 *
 	 * @param array $copy_dirs Array of files to be included in theme context.
 	 */
-	public static function wpcom_restapi_copy_theme_plugin_actions( $copy_dirs ) {
+	public function wpcom_restapi_copy_theme_plugin_actions( $copy_dirs ) {
 		$theme_name        = get_stylesheet();
 		$default_file_name = WP_CONTENT_DIR . "/mu-plugins/infinity/themes/{$theme_name}.php";
 
@@ -372,14 +353,6 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						)
 					);
 
-					$newsletter_categories   = maybe_unserialize( get_option( 'wpcom_newsletter_categories', array() ) );
-					$newsletter_category_ids = array_map(
-						function ( $newsletter_category ) {
-							return $newsletter_category['term_id'];
-						},
-						$newsletter_categories
-					);
-
 					$api_cache = $site->is_jetpack() ? (bool) get_option( 'jetpack_api_cache_enabled' ) : true;
 
 					$response[ $key ] = array(
@@ -391,7 +364,6 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						// new stuff starts here.
 						'instant_search_enabled'           => (bool) get_option( 'instant_search_enabled' ),
 						'blog_public'                      => (int) get_option( 'blog_public' ),
-						'wpcom_data_sharing_opt_out'       => (bool) get_option( 'wpcom_data_sharing_opt_out' ),
 						'jetpack_sync_non_public_post_stati' => (bool) Jetpack_Options::get_option( 'sync_non_public_post_stati' ),
 						'jetpack_relatedposts_allowed'     => (bool) $this->jetpack_relatedposts_supported(),
 						'jetpack_relatedposts_enabled'     => (bool) $jetpack_relatedposts_options['enabled'],
@@ -431,6 +403,7 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						? get_lang_id_by_code( wpcom_l10n_get_blog_locale_variant( $blog_id, true ) )
 						: get_option( 'lang_id' ),
 						'site_vertical_id'                 => (string) get_option( 'site_vertical_id' ),
+						'wga'                              => $this->get_google_analytics(),
 						'jetpack_cloudflare_analytics'     => get_option( 'jetpack_cloudflare_analytics' ),
 						'disabled_likes'                   => (bool) get_option( 'disabled_likes' ),
 						'disabled_reblogs'                 => (bool) get_option( 'disabled_reblogs' ),
@@ -457,54 +430,26 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						'site_icon'                        => $this->get_cast_option_value_or_null( 'site_icon', 'intval' ),
 						Jetpack_SEO_Utils::FRONT_PAGE_META_OPTION => get_option( Jetpack_SEO_Utils::FRONT_PAGE_META_OPTION, '' ),
 						Jetpack_SEO_Titles::TITLE_FORMATS_OPTION => get_option( Jetpack_SEO_Titles::TITLE_FORMATS_OPTION, array() ),
+						'amp_is_supported'                 => (bool) function_exists( 'wpcom_is_amp_supported' ) && wpcom_is_amp_supported( $blog_id ),
+						'amp_is_enabled'                   => (bool) function_exists( 'wpcom_is_amp_enabled' ) && wpcom_is_amp_enabled( $blog_id ),
+						'amp_is_deprecated'                => (bool) function_exists( 'wpcom_is_amp_deprecated' ) && wpcom_is_amp_deprecated( $blog_id ),
 						'api_cache'                        => $api_cache,
 						'posts_per_page'                   => (int) get_option( 'posts_per_page' ),
 						'posts_per_rss'                    => (int) get_option( 'posts_per_rss' ),
 						'rss_use_excerpt'                  => (bool) get_option( 'rss_use_excerpt' ),
 						'launchpad_screen'                 => (string) get_option( 'launchpad_screen' ),
 						'wpcom_featured_image_in_email'    => (bool) get_option( 'wpcom_featured_image_in_email' ),
-						'jetpack_gravatar_in_email'        => (bool) get_option( 'jetpack_gravatar_in_email', true ),
-						'jetpack_author_in_email'          => (bool) get_option( 'jetpack_author_in_email', true ),
-						'jetpack_post_date_in_email'       => (bool) get_option( 'jetpack_post_date_in_email', true ),
-						'wpcom_newsletter_categories'      => $newsletter_category_ids,
-						'wpcom_newsletter_categories_enabled' => (bool) get_option( 'wpcom_newsletter_categories_enabled' ),
-						'sm_enabled'                       => (bool) get_option( 'sm_enabled' ),
-						'jetpack_subscribe_overlay_enabled' => (bool) get_option( 'jetpack_subscribe_overlay_enabled' ),
-						'jetpack_subscribe_floating_button_enabled' => (bool) get_option( 'jetpack_subscribe_floating_button_enabled' ),
-						'jetpack_subscriptions_subscribe_post_end_enabled' => (bool) get_option( 'jetpack_subscriptions_subscribe_post_end_enabled' ),
-						'jetpack_subscriptions_login_navigation_enabled' => (bool) get_option( 'jetpack_subscriptions_login_navigation_enabled' ),
-						'jetpack_subscriptions_subscribe_navigation_enabled' => (bool) get_option( 'jetpack_subscriptions_subscribe_navigation_enabled' ),
 						'wpcom_gifting_subscription'       => (bool) get_option( 'wpcom_gifting_subscription', $this->get_wpcom_gifting_subscription_default() ),
-						'wpcom_reader_views_enabled'       => (bool) get_option( 'wpcom_reader_views_enabled', true ),
-						'wpcom_subscription_emails_use_excerpt' => (bool) get_option( 'wpcom_subscription_emails_use_excerpt' ),
-						'jetpack_subscriptions_reply_to'   => (string) $this->get_subscriptions_reply_to_option(),
-						'jetpack_subscriptions_from_name'  => (string) get_option( 'jetpack_subscriptions_from_name' ),
+						'wpcom_subscription_emails_use_excerpt' => $this->get_wpcom_subscription_emails_use_excerpt_option(),
 						'show_on_front'                    => (string) get_option( 'show_on_front' ),
 						'page_on_front'                    => (string) get_option( 'page_on_front' ),
 						'page_for_posts'                   => (string) get_option( 'page_for_posts' ),
 						'subscription_options'             => (array) get_option( 'subscription_options' ),
-						'jetpack_verbum_subscription_modal' => (bool) get_option( 'jetpack_verbum_subscription_modal', true ),
-						'enable_verbum_commenting'         => (bool) get_option( 'enable_verbum_commenting', true ),
-						'enable_blocks_comments'           => (bool) get_option( 'enable_blocks_comments', true ),
-						'highlander_comment_form_prompt'   => $this->get_highlander_comment_form_prompt_option(),
-						'jetpack_comment_form_color_scheme' => (string) get_option( 'jetpack_comment_form_color_scheme' ),
-						'in_site_migration_flow'           => (string) get_option( 'in_site_migration_flow', '' ),
-						'migration_source_site_domain'     => (string) get_option( 'migration_source_site_domain' ),
-						'jetpack_waf_automatic_rules'      => (bool) get_option( 'jetpack_waf_automatic_rules' ),
-						'jetpack_waf_ip_allow_list'        => (string) get_option( 'jetpack_waf_ip_allow_list' ),
-						'jetpack_waf_ip_allow_list_enabled' => (bool) get_option( 'jetpack_waf_ip_allow_list_enabled' ),
-						'jetpack_waf_ip_block_list'        => (string) get_option( 'jetpack_waf_ip_block_list' ),
-						'jetpack_waf_ip_block_list_enabled' => (bool) get_option( 'jetpack_waf_ip_block_list_enabled' ),
-						'jetpack_waf_share_data'           => (bool) get_option( 'jetpack_waf_share_data' ),
-						'jetpack_waf_share_debug_data'     => (bool) get_option( 'jetpack_waf_share_debug_data' ),
-						'jetpack_waf_automatic_rules_last_updated_timestamp' => (int) get_option( 'jetpack_waf_automatic_rules_last_updated_timestamp' ),
-						'is_fully_managed_agency_site'     => (bool) get_option( 'is_fully_managed_agency_site' ),
-						'wpcom_hide_action_bar'            => (bool) get_option( 'wpcom_hide_action_bar' ),
 					);
 
 					if ( defined( 'IS_WPCOM' ) && IS_WPCOM ) {
-						$response[ $key ]['wpcom_publish_posts_with_markdown']    = (bool) WPCom_Markdown::get_instance()->is_posting_enabled();
-						$response[ $key ]['wpcom_publish_comments_with_markdown'] = (bool) WPCom_Markdown::get_instance()->is_commenting_enabled();
+						$response[ $key ]['wpcom_publish_posts_with_markdown']    = (bool) WPCom_Markdown::is_posting_enabled();
+						$response[ $key ]['wpcom_publish_comments_with_markdown'] = (bool) WPCom_Markdown::is_commenting_enabled();
 
 						// WPCOM-specific Infinite Scroll Settings.
 						if ( is_callable( array( 'The_Neverending_Home_Page', 'get_settings' ) ) ) {
@@ -534,12 +479,10 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 					 * @module json-api
 					 *
 					 * @since 3.9.3
-					 * @since 13.6 Added the API object parameter.
 					 *
 					 * @param mixed $response_item A single site setting.
-					 * @param WPCOM_JSON_API_Site_Settings_Endpoint $this The API object.
 					 */
-					$response[ $key ] = apply_filters( 'site_settings_endpoint_get', $response[ $key ], $this );
+					$response[ $key ] = apply_filters( 'site_settings_endpoint_get', $response[ $key ] );
 
 					if ( class_exists( 'Sharing_Service' ) ) {
 						$ss                                       = new Sharing_Service();
@@ -550,7 +493,9 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						$response[ $key ]['sharing_open_links']   = (string) $sharing['open_links'];
 					}
 
-					$response[ $key ]['jetpack_protect_whitelist'] = Brute_Force_Protection_Shared_Functions::format_allow_list();
+					if ( function_exists( 'jetpack_protect_format_whitelist' ) ) {
+						$response[ $key ]['jetpack_protect_whitelist'] = jetpack_protect_format_whitelist();
+					}
 
 					if ( ! current_user_can( 'edit_posts' ) ) {
 						unset( $response[ $key ] );
@@ -579,7 +524,7 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 					 * - 5 days before the monthly plan expiration.
 					 * This is to match the gifting banner logic.
 					 */
-					$days_of_warning          = str_contains( $purchase->product_slug, 'monthly' ) ? 5 : 54;
+					$days_of_warning          = false !== strpos( $purchase->product_slug, 'monthly' ) ? 5 : 54;
 					$seconds_until_expiration = strtotime( $purchase->expiry_date ) - time();
 					if ( $seconds_until_expiration >= $days_of_warning * DAY_IN_SECONDS ) {
 						return false;
@@ -615,9 +560,17 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 	}
 
 	/**
+	 * Get GA tracking code.
+	 */
+	protected function get_google_analytics() {
+		$option_name = defined( 'IS_WPCOM' ) && IS_WPCOM ? 'wga' : 'jetpack_wga';
+		return get_option( $option_name );
+	}
+
+	/**
 	 * Updates site settings for authorized users
 	 *
-	 * @return array|WP_Error
+	 * @return array
 	 */
 	public function update_settings() {
 		/*
@@ -675,12 +628,12 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 					}
 					break;
 				case 'jetpack_protect_whitelist':
-					if ( class_exists( 'Brute_Force_Protection_Shared_Functions' ) ) {
-						$result = Brute_Force_Protection_Shared_Functions::save_allow_list( $value );
+					if ( function_exists( 'jetpack_protect_save_whitelist' ) ) {
+						$result = jetpack_protect_save_whitelist( $value );
 						if ( is_wp_error( $result ) ) {
 							return $result;
 						}
-						$updated[ $key ] = Brute_Force_Protection_Shared_Functions::format_allow_list();
+						$updated[ $key ] = jetpack_protect_format_whitelist();
 					}
 					break;
 				case 'jetpack_sync_non_public_post_stati':
@@ -690,7 +643,6 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 					if ( $value ) {
 						Jetpack::activate_module( $blog_id, 'search' );
 					} else {
-						// @phan-suppress-next-line PhanParamTooMany -- Phan doesn't know about the WP.com variant of the Jetpack class.
 						Jetpack::deactivate_module( $blog_id, 'search' );
 					}
 					$updated[ $key ] = (bool) $value;
@@ -707,7 +659,6 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						if ( $value ) {
 							Jetpack::activate_module( $blog_id, 'related-posts' );
 						} else {
-							// @phan-suppress-next-line PhanParamTooMany -- Phan doesn't know about the WP.com variant of the Jetpack class.
 							Jetpack::deactivate_module( $blog_id, 'related-posts' );
 						}
 					}
@@ -724,6 +675,42 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						$updated[ $key ] = $value;
 					}
 					break;
+				case 'wga':
+				case 'jetpack_wga':
+					if ( ! isset( $value['code'] ) || ! preg_match( '/^$|^(UA-\d+-\d+)|(G-[A-Z0-9]+)$/i', $value['code'] ) ) {
+						return new WP_Error( 'invalid_code', 'Invalid UA ID' );
+					}
+
+					$is_wpcom    = defined( 'IS_WPCOM' ) && IS_WPCOM;
+					$option_name = $is_wpcom ? 'wga' : 'jetpack_wga';
+
+					$wga         = get_option( $option_name, array() );
+					$wga['code'] = $value['code']; // maintain compatibility with wp-google-analytics.
+
+					/**
+					 * Allow newer versions of this endpoint to filter in additional fields for Google Analytics
+					 *
+					 * @since 5.4.0
+					 *
+					 * @param array $wga Associative array of existing Google Analytics settings.
+					 * @param array $value Associative array of new Google Analytics settings passed to the endpoint.
+					 */
+					$wga = apply_filters( 'site_settings_update_wga', $wga, $value );
+
+					if ( update_option( $option_name, $wga ) ) {
+						$updated[ $key ] = $value;
+					}
+
+					$enabled_or_disabled = $wga['code'] ? 'enabled' : 'disabled';
+
+					/** This action is documented in modules/widgets/social-media-icons.php */
+					do_action( 'jetpack_bump_stats_extras', 'google-analytics', $enabled_or_disabled );
+
+					if ( $is_wpcom ) {
+						$business_plugins = WPCOM_Business_Plugins::instance();
+						$business_plugins->activate_plugin( 'wp-google-analytics' );
+					}
+					break;
 
 				case 'cloudflare_analytics':
 					if ( ! isset( $value['code'] ) || ! preg_match( '/^$|^[a-fA-F0-9]+$/i', $value['code'] ) ) {
@@ -738,8 +725,6 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 				case 'jetpack_testimonial':
 				case 'jetpack_portfolio':
 				case 'jetpack_comment_likes_enabled':
-				case 'wpcom_reader_views_enabled':
-				case 'jetpack_verbum_subscription_modal':
 					// settings are stored as 1|0.
 					$coerce_value = (int) $value;
 					if ( update_option( $key, $coerce_value ) ) {
@@ -814,25 +799,9 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 					break;
 
 				case 'subscription_options':
-					if ( ! is_array( $value ) ) {
-						break;
-					}
-
-					$allowed_keys   = array( 'invitation', 'comment_follow', 'welcome' );
-					$filtered_value = array_filter(
-						$value,
-						function ( $key ) use ( $allowed_keys ) {
-							return in_array( $key, $allowed_keys, true );
-						},
-						ARRAY_FILTER_USE_KEY
-					);
-
-					if ( empty( $filtered_value ) ) {
-						break;
-					}
-
+					$sanitized_value = (array) $value;
 					array_walk_recursive(
-						$filtered_value,
+						$sanitized_value,
 						function ( &$value ) {
 							$value = wp_kses(
 								$value,
@@ -845,11 +814,13 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						}
 					);
 
-					$old_subscription_options = get_option( 'subscription_options' );
-					$new_subscription_options = array_merge( $old_subscription_options, $filtered_value );
+					$has_correct_length  = count( $sanitized_value ) === 2;
+					$required_keys_exist = array_key_exists( 'invitation', $sanitized_value )
+						&& array_key_exists( 'comment_follow', $sanitized_value );
+					$is_valid            = $has_correct_length && $required_keys_exist;
 
-					if ( update_option( $key, $new_subscription_options ) ) {
-						$updated[ $key ] = $filtered_value;
+					if ( $is_valid && update_option( $key, $sanitized_value ) ) {
+						$updated[ $key ] = $sanitized_value;
 					}
 					break;
 
@@ -993,33 +964,22 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 					}
 					break;
 
+				case 'amp_is_enabled':
+					if ( function_exists( 'wpcom_update_amp_enabled' ) ) {
+						$saved = wpcom_update_amp_enabled( $blog_id, $value );
+						if ( $saved ) {
+							$updated[ $key ] = (bool) $value;
+						}
+					}
+					break;
+
 				case 'rss_use_excerpt':
-					$sanitized_value = (int) (bool) $value;
-					update_option( $key, $sanitized_value );
-					$updated[ $key ] = $sanitized_value;
+					update_option( 'rss_use_excerpt', (int) (bool) $value );
 					break;
 
 				case 'wpcom_subscription_emails_use_excerpt':
 					update_option( 'wpcom_subscription_emails_use_excerpt', (bool) $value );
 					$updated[ $key ] = (bool) $value;
-					break;
-
-				case 'jetpack_subscriptions_reply_to':
-					require_once JETPACK__PLUGIN_DIR . 'modules/subscriptions/class-settings.php';
-					$to_set_value = Automattic\Jetpack\Modules\Subscriptions\Settings::is_valid_reply_to( $value )
-						? (string) $value
-						: Automattic\Jetpack\Modules\Subscriptions\Settings::$default_reply_to;
-
-					if ( update_option( $key, $to_set_value ) ) {
-						$updated[ $key ] = $to_set_value;
-					}
-					break;
-
-				case 'jetpack_subscriptions_from_name':
-					$sanitized_value = sanitize_text_field( $value );
-					if ( update_option( $key, $sanitized_value ) ) {
-						$updated[ $key ] = $sanitized_value;
-					}
 					break;
 
 				case 'instant_search_enabled':
@@ -1041,79 +1001,6 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 
 				case 'wpcom_featured_image_in_email':
 					update_option( 'wpcom_featured_image_in_email', (int) (bool) $value );
-					$updated[ $key ] = (int) (bool) $value;
-					break;
-
-				case 'wpcom_newsletter_categories':
-					$sanitized_category_ids = (array) $value;
-
-					array_walk_recursive(
-						$sanitized_category_ids,
-						function ( &$value ) {
-							if ( is_int( $value ) && $value > 0 ) {
-								return;
-							}
-
-							$value = (int) $value;
-							if ( $value <= 0 ) {
-								$value = null;
-							}
-						}
-					);
-
-					$sanitized_category_ids = array_unique(
-						array_filter(
-							$sanitized_category_ids,
-							function ( $category_id ) {
-								return $category_id !== null;
-							}
-						)
-					);
-
-					$new_value = array_map(
-						function ( $category_id ) {
-							return array( 'term_id' => $category_id );
-						},
-						$sanitized_category_ids
-					);
-
-					if ( update_option( $key, $new_value ) ) {
-						$updated[ $key ] = $sanitized_category_ids;
-					}
-					break;
-
-				case 'wpcom_newsletter_categories_enabled':
-					update_option( 'wpcom_newsletter_categories_enabled', (int) (bool) $value );
-					$updated[ $key ] = (int) (bool) $value;
-					break;
-
-				case 'sm_enabled':
-					update_option( 'sm_enabled', (int) (bool) $value );
-					$updated[ $key ] = (int) (bool) $value;
-					break;
-
-				case 'jetpack_subscribe_overlay_enabled':
-					update_option( 'jetpack_subscribe_overlay_enabled', (int) (bool) $value );
-					$updated[ $key ] = (int) (bool) $value;
-					break;
-
-				case 'jetpack_subscribe_floating_button_enabled':
-					update_option( 'jetpack_subscribe_floating_button_enabled', (int) (bool) $value );
-					$updated[ $key ] = (int) (bool) $value;
-					break;
-
-				case 'jetpack_subscriptions_subscribe_post_end_enabled':
-					update_option( 'jetpack_subscriptions_subscribe_post_end_enabled', (int) (bool) $value );
-					$updated[ $key ] = (int) (bool) $value;
-					break;
-
-				case 'jetpack_subscriptions_login_navigation_enabled':
-					update_option( 'jetpack_subscriptions_login_navigation_enabled', (int) (bool) $value );
-					$updated[ $key ] = (int) (bool) $value;
-					break;
-
-				case 'jetpack_subscriptions_subscribe_navigation_enabled':
-					update_option( 'jetpack_subscriptions_subscribe_navigation_enabled', (int) (bool) $value );
 					$updated[ $key ] = (int) (bool) $value;
 					break;
 
@@ -1150,49 +1037,6 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 
 					break;
 
-				case 'in_site_migration_flow':
-					if ( empty( $value ) ) {
-						delete_option( 'in_site_migration_flow' );
-						break;
-					}
-
-					$migration_flow_whitelist = array(
-						'site-migration',
-						'migration-signup',
-					);
-
-					if ( ! in_array( $value, $migration_flow_whitelist, true ) ) {
-						break;
-					}
-
-					update_option( 'in_site_migration_flow', $value );
-					$updated[ $key ] = $value;
-					break;
-
-				case 'migration_source_site_domain':
-					// If we get an empty value, delete the option
-					if ( empty( $value ) ) {
-						delete_option( 'migration_source_site_domain' );
-						break;
-					}
-
-					// If we get a non-url value, don't update the option.
-					if ( wp_http_validate_url( $value ) === false ) {
-						break;
-					}
-
-					update_option( 'migration_source_site_domain', $value );
-					$updated[ $key ] = $value;
-					break;
-
-				case 'is_fully_managed_agency_site':
-				case 'wpcom_hide_action_bar':
-					$coerce_value = (int) (bool) $value;
-					if ( update_option( $key, $coerce_value ) ) {
-						$updated[ $key ] = (bool) $coerce_value;
-					}
-					break;
-
 				default:
 					// allow future versions of this endpoint to support additional settings keys.
 					if ( has_filter( 'site_settings_endpoint_update_' . $key ) ) {
@@ -1202,20 +1046,11 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 						 * @module json-api
 						 *
 						 * @since 3.9.3
-						 * @since 13.6 Added the API object parameter.
 						 *
 						 * @param mixed $response_item A single site setting value.
-						 * @param WPCOM_JSON_API_Site_Settings_Endpoint The API object parameter.
 						 */
-						$value = apply_filters( 'site_settings_endpoint_update_' . $key, $value, $this );
-
-						if ( is_wp_error( $value ) ) {
-							return $value;
-						}
-
-						if ( $value ) {
-							$updated[ $key ] = $value;
-						}
+						$value           = apply_filters( 'site_settings_endpoint_update_' . $key, $value );
+						$updated[ $key ] = $value;
 						break;
 					}
 					// no worries, we've already whitelisted and casted arguments above.
@@ -1225,7 +1060,7 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 			}
 		}
 
-		if ( $jetpack_relatedposts_options !== array() ) {
+		if ( count( $jetpack_relatedposts_options ) ) {
 			// track new jetpack_relatedposts options against old.
 			$old_relatedposts_options = Jetpack_Options::get_option( 'relatedposts' );
 
@@ -1287,18 +1122,20 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 	}
 
 	/**
-	 * Get the string value of the jetpack_subscriptions_reply_to option.
-	 * When the option is not set, it will retun 'no-reply'.
+	 * Get the value of the wpcom_subscription_emails_use_excerpt option.
+	 * When the option is not set, it will return the value of the rss_use_excerpt option.
 	 *
-	 * @return string
+	 * @return bool
 	 */
-	protected function get_subscriptions_reply_to_option() {
-		$reply_to = get_option( 'jetpack_subscriptions_reply_to', null );
-		if ( $reply_to === null ) {
-			require_once JETPACK__PLUGIN_DIR . 'modules/subscriptions/class-settings.php';
-			return Automattic\Jetpack\Modules\Subscriptions\Settings::$default_reply_to;
+	protected function get_wpcom_subscription_emails_use_excerpt_option() {
+		$wpcom_subscription_emails_use_excerpt = get_option( 'wpcom_subscription_emails_use_excerpt', null );
+
+		if ( $wpcom_subscription_emails_use_excerpt === null ) {
+			$rss_use_excerpt                       = get_option( 'rss_use_excerpt', null );
+			$wpcom_subscription_emails_use_excerpt = $rss_use_excerpt === null ? false : $rss_use_excerpt;
 		}
-		return $reply_to;
+
+		return (bool) $wpcom_subscription_emails_use_excerpt;
 	}
 
 	/**
@@ -1319,21 +1156,5 @@ class WPCOM_JSON_API_Site_Settings_Endpoint extends WPCOM_JSON_API_Endpoint {
 		}
 
 		return $valid_page_id;
-	}
-
-	/**
-	 * Get the value of the highlander_comment_form_prompt option.
-	 * When the option is not set, it will return the default value.
-	 *
-	 * @return string
-	 */
-	protected function get_highlander_comment_form_prompt_option() {
-		$highlander_comment_form_prompt_option = get_option( 'highlander_comment_form_prompt' );
-
-		if ( empty( $highlander_comment_form_prompt_option ) ) {
-			return (string) __( 'Leave a comment', 'jetpack' );
-		}
-
-		return (string) $highlander_comment_form_prompt_option;
 	}
 }

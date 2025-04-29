@@ -5,48 +5,20 @@
  * @package automattic/jetpack-backup-plugin
  */
 
-// After changing this file, consider increasing the version number ("VXXX") in all the files using this namespace, in
-// order to ensure that the specific version of this file always get loaded. Otherwise, Jetpack autoloader might decide
-// to load an older/newer version of the class (if, for example, both the standalone and bundled versions of the plugin
-// are installed, or in some other cases).
-namespace Automattic\Jetpack\Backup\V0005;
-
 if ( ! defined( 'ABSPATH' ) ) {
-	exit( 0 );
+	exit;
 }
 
 use Automattic\Jetpack\Admin_UI\Admin_Menu;
 use Automattic\Jetpack\Assets;
-use Automattic\Jetpack\Backup\V0005\Initial_State as Backup_Initial_State;
-use Automattic\Jetpack\Config;
+use Automattic\Jetpack\Backup\Initial_State as Backup_Initial_State;
+use Automattic\Jetpack\Backup\Jetpack_Backup_Upgrades;
 use Automattic\Jetpack\Connection\Client;
 use Automattic\Jetpack\Connection\Initial_State as Connection_Initial_State;
 use Automattic\Jetpack\Connection\Manager as Connection_Manager;
 use Automattic\Jetpack\Connection\Rest_Authentication as Connection_Rest_Authentication;
 use Automattic\Jetpack\My_Jetpack\Wpcom_Products;
 use Automattic\Jetpack\Status;
-use Automattic\Jetpack\Terms_Of_Service;
-use Automattic\Jetpack\Tracking;
-use Jetpack_Options;
-use WP_Error;
-use WP_REST_Server;
-// phpcs:ignore WordPress.Utils.I18nTextDomainFixer.MissingArgs
-use function __;
-// phpcs:ignore WordPress.Utils.I18nTextDomainFixer.MissingArgs
-use function _x;
-use function add_action;
-use function add_filter;
-use function did_action;
-use function do_action;
-use function esc_url_raw;
-use function get_option;
-use function is_wp_error;
-use function rest_ensure_response;
-use function update_option;
-use function wp_add_inline_script;
-use function wp_remote_get;
-use function wp_remote_retrieve_body;
-use function wp_remote_retrieve_response_code;
 
 /**
  * Class Jetpack_Backup
@@ -82,24 +54,6 @@ class Jetpack_Backup {
 	const JETPACK_BACKUP_PROMOTED_PRODUCT = 'jetpack_backup_t1_yearly';
 
 	/**
-	 * Licenses product ID.
-	 *
-	 * @var string
-	 */
-	const JETPACK_BACKUP_PRODUCT_IDS = array(
-		2014, // JETPACK_COMPLETE.
-		2015, // JETPACK_COMPLETE_MONTHLY.
-		2016, // JETPACK_SECURITY_TIER_1_YEARLY.
-		2017, // JETPACK_SECURITY_TIER_1_MONTHLY.
-		2019, // JETPACK_SECURITY_TIER_2_YEARLY.
-		2020, // JETPACK_SECURITY_TIER_2_MONTHLY.
-		2112, // JETPACK_BACKUP_TIER_1_YEARLY.
-		2113, // JETPACK_BACKUP_TIER_1_MONTHLY.
-		2114, // JETPACK_BACKUP_TIER_2_YEARLY.
-		2115, // JETPACK_BACKUP_TIER_2_MONTHLY.
-	);
-
-	/**
 	 * Jetpack Backup DB version.
 	 *
 	 * @var string
@@ -125,7 +79,7 @@ class Jetpack_Backup {
 			'manage_options',
 			'jetpack-backup',
 			array( __CLASS__, 'plugin_settings_page' ),
-			7
+			99
 		);
 		add_action( 'load-' . $page_suffix, array( __CLASS__, 'admin_init' ) );
 
@@ -133,7 +87,7 @@ class Jetpack_Backup {
 		add_action(
 			'plugins_loaded',
 			function () {
-				$config = new Config();
+				$config = new Automattic\Jetpack\Config();
 				// Connection package.
 				$config->ensure(
 					'connection',
@@ -153,8 +107,6 @@ class Jetpack_Backup {
 		);
 
 		add_action( 'plugins_loaded', array( __CLASS__, 'maybe_upgrade_db' ), 20 );
-
-		add_filter( 'jetpack_connection_user_has_license', array( __CLASS__, 'jetpack_check_user_licenses' ), 10, 3 );
 
 		/**
 		 * Runs right after the Jetpack Backup package is initialized.
@@ -183,21 +135,12 @@ class Jetpack_Backup {
 	}
 
 	/**
-	 * Returns whether we are in condition to track to use
-	 * Analytics functionality like Tracks, MC, or GA.
-	 */
-	public static function can_use_analytics() {
-		$status     = new Status();
-		$connection = new Connection_Manager( 'jetpack-backup' );
-		$tracking   = new Tracking( 'jetpack', $connection );
-
-		return $tracking->should_enable_tracking( new Terms_Of_Service(), $status );
-	}
-
-	/**
 	 * Enqueue plugin admin scripts and styles.
 	 */
 	public static function enqueue_admin_scripts() {
+		$status  = new Status();
+		$manager = new Connection_Manager( 'jetpack-backup' );
+
 		Assets::register_script(
 			'jetpack-backup',
 			'../build/index.js',
@@ -210,11 +153,11 @@ class Jetpack_Backup {
 		Assets::enqueue_script( 'jetpack-backup' );
 		// Initial JS state including JP Connection data.
 		wp_add_inline_script( 'jetpack-backup', self::get_initial_state(), 'before' );
-		Connection_Initial_State::render_script( 'jetpack-backup' );
+		wp_add_inline_script( 'jetpack-backup', Connection_Initial_State::render(), 'before' );
 
 		// Load script for analytics.
-		if ( self::can_use_analytics() ) {
-			Tracking::register_tracks_functions_scripts( true );
+		if ( ! $status->is_offline_mode() && $manager->is_connected() ) {
+			wp_enqueue_script( 'jp-tracks', '//stats.wp.com/w.js', array(), gmdate( 'YW' ), true );
 		}
 	}
 
@@ -314,7 +257,7 @@ class Jetpack_Backup {
 			'jetpack/v4',
 			'/site/dismissed-review-request',
 			array(
-				'methods'             => WP_REST_Server::EDITABLE,
+				'methods'             => \WP_REST_Server::EDITABLE,
 				'callback'            => __CLASS__ . '::manage_dismissed_backup_review_request',
 				'permission_callback' => __CLASS__ . '::backups_permissions_callback',
 				'args'                => array(
@@ -337,17 +280,6 @@ class Jetpack_Backup {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => __CLASS__ . '::get_site_backup_size',
-				'permission_callback' => __CLASS__ . '::backups_permissions_callback',
-			)
-		);
-
-		// Get backup schedule time
-		register_rest_route(
-			'jetpack/v4',
-			'/site/backup/schedule',
-			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => __CLASS__ . '::get_site_backup_schedule_time',
 				'permission_callback' => __CLASS__ . '::backups_permissions_callback',
 			)
 		);
@@ -383,17 +315,6 @@ class Jetpack_Backup {
 				),
 			)
 		);
-
-		// Enqueue a new backup
-		register_rest_route(
-			'jetpack/v4',
-			'/site/backup/enqueue',
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => __CLASS__ . '::enqueue_backup',
-				'permission_callback' => __CLASS__ . '::backups_permissions_callback',
-			)
-		);
 	}
 
 	/**
@@ -417,9 +338,9 @@ class Jetpack_Backup {
 	 * @return array An array of recent backups
 	 */
 	public static function get_recent_backups() {
-		$blog_id = Jetpack_Options::get_option( 'id' );
+		$blog_id = \Jetpack_Options::get_option( 'id' );
 
-		$response = Client::wpcom_json_api_request_as_blog(
+		$response = Automattic\Jetpack\Connection\Client::wpcom_json_api_request_as_blog(
 			'/sites/' . $blog_id . '/rewind/backups',
 			'v2',
 			array(),
@@ -483,9 +404,9 @@ class Jetpack_Backup {
 	 * @return array An array of capabilities
 	 */
 	public static function get_backup_capabilities() {
-		$blog_id = Jetpack_Options::get_option( 'id' );
+		$blog_id = \Jetpack_Options::get_option( 'id' );
 
-		$response = Client::wpcom_json_api_request_as_user(
+		$response = Automattic\Jetpack\Connection\Client::wpcom_json_api_request_as_user(
 			'/sites/' . $blog_id . '/rewind/capabilities',
 			'v2',
 			array(),
@@ -515,8 +436,8 @@ class Jetpack_Backup {
 	 * @return array An array of recent restores
 	 */
 	public static function get_recent_restores() {
-		$blog_id  = Jetpack_Options::get_option( 'id' );
-		$response = Client::wpcom_json_api_request_as_blog(
+		$blog_id  = \Jetpack_Options::get_option( 'id' );
+		$response = Automattic\Jetpack\Connection\Client::wpcom_json_api_request_as_blog(
 			'/sites/' . $blog_id . '/rewind/restores',
 			'v2',
 			array(),
@@ -559,41 +480,14 @@ class Jetpack_Backup {
 	}
 
 	/**
-	 * Check for user licenses.
-	 *
-	 * @param boolean $has_license If the user already has a license found.
-	 * @param array   $licenses List of unattached licenses belonging to the user.
-	 * @param string  $plugin_slug The plugin that initiated the flow.
-	 *
-	 * @return boolean
-	 */
-	public static function jetpack_check_user_licenses( $has_license, $licenses, $plugin_slug ) {
-		if ( $plugin_slug !== static::JETPACK_BACKUP_SLUG || $has_license ) {
-			return $has_license;
-		}
-
-		$license_found = false;
-
-		foreach ( $licenses as $license ) {
-			if ( in_array( $license->product_id, static::JETPACK_BACKUP_PRODUCT_IDS, true ) ) {
-				$license_found = true;
-				break;
-			}
-		}
-
-		// Checking for existing backup plan is costly, so only check if there's an appropriate license.
-		return $license_found && ! static::has_backup_plan();
-	}
-
-	/**
 	 * Returns the result of `/sites/%d/purchases` endpoint call.
 	 *
 	 * @return array of site purchases.
 	 */
 	public static function get_site_current_purchases() {
 
-		$request  = sprintf( '/sites/%d/purchases', Jetpack_Options::get_option( 'id' ) );
-		$response = Client::wpcom_json_api_request_as_blog( $request, '1.1' );
+		$request  = sprintf( '/sites/%d/purchases', \Jetpack_Options::get_option( 'id' ) );
+		$response = Automattic\Jetpack\Connection\Client::wpcom_json_api_request_as_blog( $request, '1.1' );
 
 		// Bail if there was an error or malformed response.
 		if ( is_wp_error( $response ) || ! is_array( $response ) || ! isset( $response['body'] ) ) {
@@ -623,11 +517,11 @@ class Jetpack_Backup {
 		if ( ! $request['should_dismiss'] ) {
 
 			return rest_ensure_response(
-				Jetpack_Options::get_option( 'dismissed_backup_review_' . $request['option_name'] )
+				\Jetpack_Options::get_option( 'dismissed_backup_review_' . $request['option_name'] )
 			);
 		}
 
-		return Jetpack_Options::update_option( 'dismissed_backup_review_' . $request['option_name'], true );
+		return \Jetpack_Options::update_option( 'dismissed_backup_review_' . $request['option_name'], true );
 	}
 
 	/**
@@ -636,9 +530,9 @@ class Jetpack_Backup {
 	 * @return string|WP_Error A JSON object with the site storage size if the request was successful, or a WP_Error otherwise.
 	 */
 	public static function get_site_backup_size() {
-		$blog_id = Jetpack_Options::get_option( 'id' );
+		$blog_id = \Jetpack_Options::get_option( 'id' );
 
-		$response = Client::wpcom_json_api_request_as_user(
+		$response = Automattic\Jetpack\Connection\Client::wpcom_json_api_request_as_user(
 			'/sites/' . $blog_id . '/rewind/size?force=wpcom',
 			'v2',
 			array(),
@@ -662,9 +556,9 @@ class Jetpack_Backup {
 	 *                         or a WP_Error otherwise.
 	 */
 	public static function get_site_backup_policies() {
-		$blog_id = Jetpack_Options::get_option( 'id' );
+		$blog_id = \Jetpack_Options::get_option( 'id' );
 
-		$response = Client::wpcom_json_api_request_as_user(
+		$response = Automattic\Jetpack\Connection\Client::wpcom_json_api_request_as_user(
 			'/sites/' . $blog_id . '/rewind/policies?force=wpcom',
 			'v2',
 			array(),
@@ -737,8 +631,7 @@ class Jetpack_Backup {
 	/**
 	 * Get the best addon offer for this site, including pricing details
 	 *
-	 * @param \WP_REST_Request $request Object including storage usage.
-	 *
+	 * @param WP_Request $request Object including storage usage.
 	 * @return string|WP_Error A JSON object with the suggested storage addon details if the request was successful,
 	 *                         or a WP_Error otherwise.
 	 */
@@ -768,60 +661,6 @@ class Jetpack_Backup {
 	}
 
 	/**
-	 * Enqueue a new backup on demand
-	 *
-	 * @return string|WP_Error A JSON object with `success` if the request was successful,
-	 * or a WP_Error otherwise.
-	 */
-	public static function enqueue_backup() {
-		$blog_id  = Jetpack_Options::get_option( 'id' );
-		$endpoint = sprintf( '/sites/%d/rewind/backups/enqueue', $blog_id );
-
-		$response = Client::wpcom_json_api_request_as_user(
-			$endpoint,
-			'v2',
-			array(
-				'method' => 'POST',
-			),
-			null,
-			'wpcom'
-		);
-
-		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			return null;
-		}
-
-		return rest_ensure_response(
-			json_decode( $response['body'], true )
-		);
-	}
-
-	/**
-	 * Get site backup schedule time
-	 *
-	 * @return string|WP_Error A JSON object with the backup schedule time if the request was successful, or a WP_Error otherwise.
-	 */
-	public static function get_site_backup_schedule_time() {
-		$blog_id = Jetpack_Options::get_option( 'id' );
-
-		$response = Client::wpcom_json_api_request_as_user(
-			'/sites/' . $blog_id . '/rewind/scheduled',
-			'v2',
-			array(),
-			null,
-			'wpcom'
-		);
-
-		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			return null;
-		}
-
-		return rest_ensure_response(
-			json_decode( $response['body'], true )
-		);
-	}
-
-	/**
 	 * Removes plugin from the connection manager
 	 * If it's the last plugin using the connection, the site will be disconnected.
 	 *
@@ -832,4 +671,5 @@ class Jetpack_Backup {
 		$manager = new Connection_Manager( 'jetpack-backup' );
 		$manager->remove_connection();
 	}
+
 }

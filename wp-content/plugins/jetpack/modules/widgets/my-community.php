@@ -4,9 +4,11 @@
 
 use Automattic\Jetpack\Redirect;
 
-// Disable direct access/execution to/of the widget code.
+/**
+ * Disable direct access/execution to/of the widget code.
+ */
 if ( ! defined( 'ABSPATH' ) ) {
-	exit( 0 );
+	exit;
 }
 
 /**
@@ -43,6 +45,10 @@ class Jetpack_My_Community_Widget extends WP_Widget {
 				'customize_selective_refresh' => true,
 			)
 		);
+
+		if ( is_active_widget( false, false, $this->id_base ) || is_active_widget( false, false, 'monster' ) || is_customize_preview() ) {
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_style' ) );
+		}
 
 		$this->default_title = esc_html__( 'Community', 'jetpack' );
 
@@ -186,9 +192,6 @@ class Jetpack_My_Community_Widget extends WP_Widget {
 		if ( false === $title ) {
 			$title = $this->default_title;
 		}
-
-		// Enqueue front end assets.
-		$this->enqueue_style();
 
 		echo $args['before_widget']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 

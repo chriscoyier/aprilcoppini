@@ -161,36 +161,32 @@ class WPCOM_JSON_API_List_Comments_Endpoint extends WPCOM_JSON_API_Comment_Endpo
 		$this->query = array_merge(
 			$this->query,
 			array(
-				'number'            => '(int=20) The number of comments to return.  Limit: 100. When using hierarchical=1, number refers to the number of top-level comments returned.',
-				'offset'            => '(int=0) 0-indexed offset. Not available if using hierarchical=1.',
-				'page'              => '(int) Return the Nth 1-indexed page of comments.  Takes precedence over the <code>offset</code> parameter. When using hierarchical=1, pagination is a bit different.  See the note on the number parameter.',
-				'order'             => array(
+				'number'       => '(int=20) The number of comments to return.  Limit: 100. When using hierarchical=1, number refers to the number of top-level comments returned.',
+				'offset'       => '(int=0) 0-indexed offset. Not available if using hierarchical=1.',
+				'page'         => '(int) Return the Nth 1-indexed page of comments.  Takes precedence over the <code>offset</code> parameter. When using hierarchical=1, pagination is a bit different.  See the note on the number parameter.',
+				'order'        => array(
 					'DESC' => 'Return comments in descending order from newest to oldest.',
 					'ASC'  => 'Return comments in ascending order from oldest to newest.',
 				),
-				'hierarchical'      => array(
+				'hierarchical' => array(
 					'false' => '',
 					'true'  => '(BETA) Order the comment list hierarchically.',
 				),
-				'after'             => '(ISO 8601 datetime) Return comments dated on or after the specified datetime. Not available if using hierarchical=1.',
-				'before'            => '(ISO 8601 datetime) Return comments dated on or before the specified datetime. Not available if using hierarchical=1.',
-				'type'              => array(
+				'after'        => '(ISO 8601 datetime) Return comments dated on or after the specified datetime. Not available if using hierarchical=1.',
+				'before'       => '(ISO 8601 datetime) Return comments dated on or before the specified datetime. Not available if using hierarchical=1.',
+				'type'         => array(
 					'any'       => 'Return all comments regardless of type.',
 					'comment'   => 'Return only regular comments.',
 					'trackback' => 'Return only trackbacks.',
 					'pingback'  => 'Return only pingbacks.',
 					'pings'     => 'Return both trackbacks and pingbacks.',
 				),
-				'status'            => array(
+				'status'       => array(
 					'approved'   => 'Return only approved comments.',
 					'unapproved' => 'Return only comments in the moderation queue.',
 					'spam'       => 'Return only comments marked as spam.',
 					'trash'      => 'Return only comments in the trash.',
 					'all'        => 'Return comments of all statuses.',
-				),
-				'author_wpcom_data' => array(
-					'false' => 'Do not add wpcom_id and wpcom_login fields to comment author responses (default)',
-					'true'  => 'Add wpcom_id and wpcom_login fields to comment author responses',
 				),
 			)
 		);
@@ -217,7 +213,7 @@ class WPCOM_JSON_API_List_Comments_Endpoint extends WPCOM_JSON_API_Comment_Endpo
 			return new WP_Error( 'invalid_number', 'The NUMBER parameter must be less than or equal to 100.', 400 );
 		}
 
-		if ( str_contains( $path, '/posts/' ) ) {
+		if ( false !== strpos( $path, '/posts/' ) ) {
 			// We're looking for comments of a particular post.
 			$post_id    = $object_id;
 			$comment_id = 0;
@@ -312,10 +308,6 @@ class WPCOM_JSON_API_List_Comments_Endpoint extends WPCOM_JSON_API_Comment_Endpo
 				}
 			}
 		}
-		if ( $args['hierarchical'] && $found > 5000 ) {
-			// Massive comment thread found; don't pre-load comment metadata to reduce memory used.
-			$query['update_comment_meta_cache'] = false;
-		}
 
 		if ( $post_id ) {
 			$post = get_post( $post_id );
@@ -335,6 +327,8 @@ class WPCOM_JSON_API_List_Comments_Endpoint extends WPCOM_JSON_API_Comment_Endpo
 		}
 
 		$comments = get_comments( $query );
+
+		update_comment_cache( $comments );
 
 		if ( $args['hierarchical'] ) {
 			$walker      = new WPCOM_JSON_API_List_Comments_Walker();

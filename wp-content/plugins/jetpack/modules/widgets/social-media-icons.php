@@ -84,6 +84,9 @@ class WPCOM_social_media_icons_widget extends WP_Widget {
 			'twitch'     => array( 'Twitch', 'https://www.twitch.tv/%s/' ),
 			'tumblr'     => array( 'Tumblr', 'https://%s.tumblr.com' ),
 		);
+		if ( is_active_widget( false, false, $this->id_base ) || is_customize_preview() ) {
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_style' ) );
+		}
 	}
 
 	/**
@@ -101,7 +104,7 @@ class WPCOM_social_media_icons_widget extends WP_Widget {
 	 * Check Genericons.
 	 *
 	 * @access private
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function check_genericons() {
 		global $wp_styles;
@@ -125,17 +128,9 @@ class WPCOM_social_media_icons_widget extends WP_Widget {
 		$instance = wp_parse_args( (array) $instance, $this->defaults );
 		/** This filter is documented in core/src/wp-includes/default-widgets.php */
 		$instance['title'] = apply_filters( 'widget_title', $instance['title'], $instance, $this->id_base );
-
-		/*
-		 * Enqueue frontend assets.
-		 */
-
 		if ( ! $this->check_genericons() ) {
 			wp_enqueue_style( 'genericons' );
 		}
-
-		$this->enqueue_style();
-
 		$index = 10;
 		$html  = array();
 		/* Translators: 1. Username. 2. Service name. */
@@ -172,11 +167,11 @@ class WPCOM_social_media_icons_widget extends WP_Widget {
 
 			if ( 'googleplus' === $service
 				&& ! is_numeric( $username )
-				&& ! str_starts_with( $username, '+' )
+				&& substr( $username, 0, 1 ) !== '+'
 			) {
 				$link_username = '+' . $username;
 			}
-			if ( 'youtube' === $service && str_starts_with( $username, 'UC' ) ) {
+			if ( 'youtube' === $service && 'UC' === substr( $username, 0, 2 ) ) {
 				$link_username = 'channel/' . $username;
 			} elseif ( 'youtube' === $service ) {
 				$link_username = 'user/' . $username;
@@ -223,7 +218,7 @@ class WPCOM_social_media_icons_widget extends WP_Widget {
 		 */
 		$html = apply_filters( 'jetpack_social_media_icons_widget_array', $html );
 		ksort( $html );
-		$html = '<ul><li>' . implode( '</li><li>', $html ) . '</li></ul>';
+		$html = '<ul><li>' . join( '</li><li>', $html ) . '</li></ul>';
 		if ( ! empty( $instance['title'] ) ) {
 			$html = $args['before_title'] . $instance['title'] . $args['after_title'] . $html;
 		}
@@ -294,9 +289,9 @@ class WPCOM_social_media_icons_widget extends WP_Widget {
 	 * Update Widget Settings.
 	 *
 	 * @access public
-	 * @param array      $new_instance New Instance.
-	 * @param array|null $old_instance Old Instance.
-	 * @return array Instance.
+	 * @param mixed $new_instance New Instance.
+	 * @param mixed $old_instance Old Instance.
+	 * @return Instance.
 	 */
 	public function update( $new_instance, $old_instance ) {
 		$instance = (array) $old_instance;
@@ -329,8 +324,8 @@ class WPCOM_social_media_icons_widget extends WP_Widget {
 	 * Remove username from value before to save stats.
 	 *
 	 * @access public
-	 * @param string $val Value.
-	 * @return string Value.
+	 * @param mixed $val Value.
+	 * @return Value.
 	 */
 	public function remove_username( $val ) {
 		return str_replace( '_username', '', $val );

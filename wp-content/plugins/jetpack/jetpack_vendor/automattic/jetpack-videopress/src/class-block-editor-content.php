@@ -7,8 +7,6 @@
 
 namespace Automattic\Jetpack\VideoPress;
 
-use WP_Post;
-
 /**
  * VideoPress block editor class for content generation
  */
@@ -76,22 +74,14 @@ class Block_Editor_Content {
 			'controls'        => true,  // Whether the video should display controls
 			'playsinline'     => false, // Whether the video should be allowed to play inline (for browsers that support this)
 			'useaveragecolor' => false, // Whether the video should use the seekbar automatic average color
-			'preloadcontent'  => 'metadata',
+			// 'defaultlangcode' => false, // Default language code. Currently ignored by the player.
 		);
 
 		// Make sure "false" will be actually false.
 		foreach ( $atts as $key => $value ) {
 			if ( is_string( $value ) && 'false' === strtolower( $value ) ) {
-				$atts[ $key ] = 0;
+				$atts[ $key ] = false;
 			}
-		}
-
-		if ( isset( $atts['preload'] ) && videopress_is_valid_preload( $atts['preload'] ) ) {
-			$atts['preloadcontent'] = $atts['preload'];
-		}
-
-		if ( isset( $atts['preloadcontent'] ) && ! videopress_is_valid_preload( $atts['preloadcontent'] ) ) {
-			unset( $atts['preloadcontent'] );
 		}
 
 		$atts = shortcode_atts( $defaults, $atts, 'videopress' );
@@ -105,7 +95,6 @@ class Block_Editor_Content {
 			'controls'        => $atts['controls'],
 			'playsinline'     => $atts['playsinline'],
 			'useAverageColor' => $atts['useaveragecolor'], // The casing is intentional, shortcode params are lowercase, but player expects useAverageColor
-			'preloadContent'  => $atts['preloadcontent'], // The casing is intentional, shortcode params are lowercase, but player expects preloadContent
 		);
 		$src          = esc_url( add_query_arg( $query_params, $base_url ) );
 
@@ -135,7 +124,6 @@ class Block_Editor_Content {
 		'</figure>';
 
 		$version = Package_Version::PACKAGE_VERSION;
-		Jwt_Token_Bridge::enqueue_jwt_token_bridge();
 		wp_enqueue_script( 'videopress-iframe', 'https://videopress.com/videopress-iframe.js', array(), $version, true );
 
 		return sprintf( $block_template, $src, $width, $height, $cover );
@@ -149,7 +137,7 @@ class Block_Editor_Content {
 	 * @return string
 	 */
 	public static function videopress_video_block_by_guid( $content, $post ) {
-		if ( isset( $_GET['videopress_guid'] ) && isset( $_GET['_wpnonce'] )
+		if ( isset( $_GET['videopress_guid'], $_GET['_wpnonce'] )
 			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'videopress-content-nonce' )
 			&& current_user_can( 'edit_post', $post->ID )
 			&& '' === $content
@@ -214,7 +202,7 @@ class Block_Editor_Content {
 					}
 
 					// Also test for old v.wordpress.com oembed URL.
-					if ( ! $videopress_guid && preg_match( '|^https?://v\.wordpress\.com/([a-zA-Z\d]{8})(.+)?$|i', $url, $matches ) ) { // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText
+					if ( ! $videopress_guid && preg_match( '|^https?://v\.wordpress\.com/([a-zA-Z\d]{8})(.+)?$|i', $url, $matches ) ) { // phpcs:ignore WordPress.WP.CapitalPDangit.Misspelled
 						$videopress_guid = $matches[1];
 					}
 

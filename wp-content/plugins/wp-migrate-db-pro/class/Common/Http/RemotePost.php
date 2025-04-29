@@ -178,7 +178,10 @@ class RemotePost extends Http
             return $this->handle_empty_response_body($response, $url, $scope);
         }
 
-        if (Util::is_json($response['body'])) {
+        $decoded_body = false;
+        if (is_serialized($response['body'])) {
+            $decoded_body = Util::unserialize($response['body']);
+        } elseif (Util::is_json($response['body'])) {
             $decoded_body = json_decode($response['body'], true);
         } else {
             $decoded_body =
@@ -223,6 +226,31 @@ class RemotePost extends Http
                 return self::RESPONSE_REMOTE_ERROR;
             }
         }
+
+        //                if ($expecting_serial && false === is_serialized($response['body'])) {
+        //                    if (0 === strpos($url, 'https://') && 'ajax_verify_connection_to_remote_site' == $scope) {
+        //                        return true;
+        //                    }
+        //                    $this->error_log->setError(__('There was a problem with the AJAX request, we were expecting a serialized response, instead we received:<br />', 'wp-migrate-db') . esc_html($response['body']));
+        //                    $this->error_log->log_error($this->error_log->getError(), $response);
+        //
+        //                    return false;
+        //
+        //                } elseif ($expecting_serial && ('ajax_verify_connection_to_remote_site' == $scope || 'ajax_copy_licence_to_remote_site' == $scope)) {
+        //
+        //                    $unserialized_response = Util::unserialize($response['body'], __METHOD__);
+        //
+        //                    if (false !== $unserialized_response && isset($unserialized_response['error']) && '1' == $unserialized_response['error'] && 0 === strpos($url, 'https://')) {
+        //
+        //                        if (stristr($unserialized_response['message'], 'Invalid content verification signature')) {
+        //
+        //                            //Check if remote address returned is the same as what was requested. Apache sometimes returns a random HTTPS site.
+        //                            if (false === strpos($unserialized_response['message'], sprintf('Remote URL: %s', $state_data['url']))) {
+        //                                return true;
+        //                            }
+        //                        }
+        //                    }
+        //                }
 
         return true;
     }
@@ -424,11 +452,15 @@ class RemotePost extends Http
             return $result;
         }
 
+        if (Util::is_json($response)) {
+            return json_decode($response, true);
+        }
+
         if (is_wp_error($response)) {
             return $this->end_ajax($response);
         }
 
-        if ( ! Util::is_json($response)) {
+        if (!is_serialized(trim($response))) {
             $return    = array('wpmdb_error' => 1, 'body' => $response);
             $error_msg = 'Failed as the response is not serialized string (#115mf)';
             $this->error_log->log_error($error_msg, $response);
@@ -437,7 +469,7 @@ class RemotePost extends Http
             return $result;
         }
 
-        $response = json_decode($response, true);
+        $response = unserialize(trim($response));
 
         if (isset($response['wpmdb_error'])) {
             $this->error_log->log_error($response['wpmdb_error'], $response);

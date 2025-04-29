@@ -80,10 +80,9 @@ class Full_Sync extends Module {
 	 * @access public
 	 *
 	 * @param array $module_configs Full sync configuration for all sync modules.
-	 * @param mixed $context        Context for the full sync.
 	 * @return bool Always returns true at success.
 	 */
-	public function start( $module_configs = null, $context = null ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
+	public function start( $module_configs = null ) {
 		$was_already_running = $this->is_started() && ! $this->is_finished();
 
 		// Remove all evidence of previous full sync items and status.
@@ -126,7 +125,6 @@ class Full_Sync extends Module {
 			}
 
 			if ( 'users' === $module_name && 'initial' === $module_config ) {
-				'@phan-var Users $module';
 				$module_config = $module->get_initial_sync_user_config();
 			}
 
@@ -214,7 +212,7 @@ class Full_Sync extends Module {
 			/**
 			 * Select configured and not finished modules.
 			 *
-			 * @param Module $module
+			 * @var $module Module
 			 * @return bool
 			 */
 			function ( $module ) use ( $configs, $enqueue_status ) {
@@ -728,4 +726,5 @@ class Full_Sync extends Module {
 	private function get_config() {
 		return \Jetpack_Options::get_raw_option( 'jetpack_sync_full_config' );
 	}
+
 }

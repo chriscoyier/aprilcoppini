@@ -28,21 +28,21 @@ class Dashboard {
 	/**
 	 * Plan instance
 	 *
-	 * @var \Automattic\Jetpack\Search\Plan
+	 * @var Automattic\Jetpack\Search\Plan
 	 */
 	protected $plan;
 
 	/**
 	 * Connection manager instance
 	 *
-	 * @var \Automattic\Jetpack\Connection\Manager
+	 * @var Automattic\Jetpack\Connection\Manager
 	 */
 	protected $connection_manager;
 
 	/**
 	 * Module_Control instance
 	 *
-	 * @var \Automattic\Jetpack\Search\Module_Control
+	 * @var Automattic\Jetpack\Search\Module_Control
 	 */
 	protected $module_control;
 
@@ -58,9 +58,9 @@ class Dashboard {
 	/**
 	 * Contructor
 	 *
-	 * @param \Automattic\Jetpack\Search\Plan           $plan - Plan instance.
-	 * @param \Automattic\Jetpack\Connection\Manager    $connection_manager - Connection Manager instance.
-	 * @param \Automattic\Jetpack\Search\Module_Control $module_control - Module_Control instance.
+	 * @param Automattic\Jetpack\Search\Plan           $plan - Plan instance.
+	 * @param Automattic\Jetpack\Connection\Manager    $connection_manager - Connection Manager instance.
+	 * @param Automattic\Jetpack\Search\Module_Control $module_control - Module_Control instance.
 	 */
 	public function __construct( $plan = null, $connection_manager = null, $module_control = null ) {
 		$this->plan               = $plan ? $plan : new Plan();
@@ -103,7 +103,7 @@ class Dashboard {
 				'manage_options',
 				'jetpack-search',
 				array( $this, 'render' ),
-				10
+				100
 			);
 		} else {
 			// always add the page, but hide it from the menu.
@@ -136,7 +136,7 @@ class Dashboard {
 	/**
 	 * Test whether we should show Search menu.
 	 *
-	 * @return boolean Show search sub menu or not.
+	 * @return {boolean} Show search sub menu or not.
 	 */
 	protected function should_add_search_submenu() {
 		/**
@@ -192,7 +192,11 @@ class Dashboard {
 		);
 
 		// Connection initial state.
-		Connection_Initial_State::render_script( 'jp-search-dashboard' );
+		wp_add_inline_script(
+			'jp-search-dashboard',
+			Connection_Initial_State::render(),
+			'before'
+		);
 	}
 
 	/**
@@ -205,7 +209,7 @@ class Dashboard {
 	/**
 	 * Deactivate search module if plan doesn't support search.
 	 *
-	 * @param \WP_Screen $current_screen Creent screen object.
+	 * @param WP_Screen $current_screen Creent screen object.
 	 */
 	public function check_plan_deactivate_search_module( $current_screen ) {
 		// Only run on Jetpack admin pages.
@@ -218,4 +222,5 @@ class Dashboard {
 			$this->module_control->deactivate();
 		}
 	}
+
 }

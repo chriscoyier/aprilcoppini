@@ -9,7 +9,7 @@ namespace VideoPressUploader;
 
 // Avoid direct calls to this file.
 if ( ! defined( 'ABSPATH' ) ) {
-	die( 0 );
+	die();
 }
 
 /**
@@ -103,7 +103,7 @@ abstract class Tus_Abstract_Cache {
 	public function build_key( $key ) {
 		$prefix = $this->get_prefix();
 
-		if ( ! str_starts_with( $key, $prefix ) ) {
+		if ( 0 !== strpos( $key, $prefix ) ) {
 			$key = $prefix . $key;
 		}
 

@@ -37,20 +37,6 @@ class Anti_Spam extends Product {
 	public static $plugin_slug = 'akismet';
 
 	/**
-	 * The category of the product
-	 *
-	 * @var string
-	 */
-	public static $category = 'security';
-
-	/**
-	 * The feature slug that identifies the paid plan
-	 *
-	 * @var string
-	 */
-	public static $feature_identifying_paid_plan = 'antispam';
-
-	/**
 	 * Whether this product requires a user connection
 	 *
 	 * @var string
@@ -58,35 +44,21 @@ class Anti_Spam extends Product {
 	public static $requires_user_connection = false;
 
 	/**
-	 * Whether this product has a free offering
-	 *
-	 * @var bool
-	 */
-	public static $has_free_offering = true;
-
-	/**
-	 * Akismet has a standalone plugin
-	 *
-	 * @var bool
-	 */
-	public static $has_standalone_plugin = true;
-
-	/**
-	 * Get the product name
+	 * Get the internationalized product name
 	 *
 	 * @return string
 	 */
 	public static function get_name() {
-		return 'Akismet Anti-spam';
+		return __( 'Akismet Anti-spam', 'jetpack-my-jetpack' );
 	}
 
 	/**
-	 * Get the product title
+	 * Get the internationalized product title
 	 *
 	 * @return string
 	 */
 	public static function get_title() {
-		return 'Jetpack Akismet Anti-spam';
+		return __( 'Jetpack Akismet Anti-spam', 'jetpack-my-jetpack' );
 	}
 
 	/**
@@ -95,7 +67,7 @@ class Anti_Spam extends Product {
 	 * @return string
 	 */
 	public static function get_description() {
-		return __( 'Keep your site free from spam and bots', 'jetpack-my-jetpack' );
+		return __( 'Stop comment and form spam', 'jetpack-my-jetpack' );
 	}
 
 	/**
@@ -115,38 +87,10 @@ class Anti_Spam extends Product {
 	public static function get_features() {
 		return array(
 			_x( 'Comment and form spam protection', 'Anti-Spam Product Feature', 'jetpack-my-jetpack' ),
+			_x( 'Powered by Akismet', 'Anti-Spam Product Feature', 'jetpack-my-jetpack' ),
 			_x( 'Block spam without CAPTCHAs', 'Anti-Spam Product Feature', 'jetpack-my-jetpack' ),
 			_x( 'Advanced stats', 'Anti-Spam Product Feature', 'jetpack-my-jetpack' ),
 		);
-	}
-
-	/**
-	 * Get the product-slugs of the paid plans for this product.
-	 * (Do not include bundle plans, unless it's a bundle plan itself).
-	 *
-	 * @return array
-	 */
-	public static function get_paid_plan_product_slugs() {
-		return array(
-			'jetpack_anti_spam',
-			'jetpack_anti_spam_monthly',
-			'jetpack_anti_spam_bi_yearly',
-		);
-	}
-
-	/**
-	 * Check if the product has a free plan
-	 * In this case we are only checking for an API key. The has_paid_plan_for_product will check to see if the specific site has a paid plan
-	 *
-	 * @return bool
-	 */
-	public static function has_free_plan_for_product() {
-		$akismet_api_key = apply_filters( 'akismet_get_api_key', defined( 'WPCOM_API_KEY' ) ? constant( 'WPCOM_API_KEY' ) : get_option( 'wordpress_api_key' ) );
-		if ( ! empty( $akismet_api_key ) ) {
-			return true;
-		}
-
-		return false;
 	}
 
 	/**
@@ -180,7 +124,7 @@ class Anti_Spam extends Product {
 	 * @return boolean|array Products bundle list.
 	 */
 	public static function is_upgradable_by_bundle() {
-		return array( 'security', 'complete' );
+		return array( 'security' );
 	}
 
 	/**

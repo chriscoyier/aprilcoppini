@@ -133,20 +133,17 @@ class TransferManager extends Common_TransferManager
         // Convert 'file data' to 'folder data', as that's how the UI/Client displays progress
         $result = $this->util->process_queue_data($sent_copy, $state_data, $total_sent);
 
-        // If we're not chunking
-        if ( empty( $chunked ) ) {
+        // If we're not chunking OR chunking is complete, remove file(s) from queue
+        if ( empty( $chunked )
+             || ( isset( $chunked['file']['percent_transferred'] ) && 1 === (int) $chunked['file']['percent_transferred'] ) ) {
             $this->queueManager->delete_data_from_queue($count);
         }
 
         if ( ! empty( $chunked ) ) {
             $chunk_option_name = 'wpmdb_file_chunk_' . $state_data['migration_state_id'];
-
-            //chunking is complete, remove file(s) from queue and clean up the file chunk option
             if ( (int) $chunked['bytes_offset'] === $file['size'] ) {
                 delete_site_option( $chunk_option_name );
                 $file['chunking_done'] = true;
-
-                $this->queueManager->delete_data_from_queue($count);
             } else {
                 // Record chunk data to DB for next iteration
                 update_site_option( $chunk_option_name, $chunk_data );
@@ -208,7 +205,7 @@ class TransferManager extends Common_TransferManager
         $key   = $stage === 'media_files' ? 'mf' : 'tp';
 
         try {
-            list($resp, $meta) = $this->request_batch(base64_encode(str_rot13(json_encode($batch))), $state_data, "wpmdb{$key}_transfers_send_file", $remote_url);
+            list($resp, $meta) = $this->request_batch(base64_encode(str_rot13(serialize($batch))), $state_data, "wpmdb{$key}_transfers_send_file", $remote_url);
         } catch (\Exception $e) {
             $this->util->catch_general_error($e->getMessage());
         }

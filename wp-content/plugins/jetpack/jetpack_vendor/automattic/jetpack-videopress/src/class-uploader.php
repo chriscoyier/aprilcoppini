@@ -57,7 +57,7 @@ class Uploader {
 		if ( ! $file_path || ! is_readable( $file_path ) ) {
 			return false;
 		}
-		if ( ! str_starts_with( get_post_mime_type( $attachment_id ), 'video/' ) ) {
+		if ( 0 !== strpos( get_post_mime_type( $attachment_id ), 'video/' ) ) {
 			return false;
 		}
 		return true;
@@ -72,13 +72,13 @@ class Uploader {
 	public function __construct( $attachment_id ) {
 		$this->attachment_id = $attachment_id;
 		if ( ! $this->get_file_path() ) {
-			throw new Upload_Exception( __( 'Invalid attachment ID', 'jetpack-videopress-pkg' ), Upload_Exception::ERROR_INVALID_ATTACHMENT_ID );
+			throw new Upload_Exception( __( 'Invalid attachment ID', 'jetpack-videopress-pkg' ) );
 		}
 		if ( ! is_readable( $this->get_file_path() ) ) {
-			throw new Upload_Exception( __( 'File not found', 'jetpack-videopress-pkg' ), Upload_Exception::ERROR_FILE_NOT_FOUND );
+			throw new Upload_Exception( __( 'File not found', 'jetpack-videopress-pkg' ) );
 		}
 		if ( ! $this->file_has_supported_mime_type() ) {
-			throw new Upload_Exception( __( 'Mime type not supported', 'jetpack-videopress-pkg' ), Upload_Exception::ERROR_MIME_TYPE_NOT_SUPPORTED );
+			throw new Upload_Exception( __( 'Mime type not supported', 'jetpack-videopress-pkg' ) );
 		}
 	}
 
@@ -124,7 +124,7 @@ class Uploader {
 	 * @return boolean
 	 */
 	public function file_has_supported_mime_type() {
-		return str_starts_with( $this->get_file_mime_type(), 'video/' );
+		return 0 === strpos( $this->get_file_mime_type(), 'video/' );
 	}
 
 	/**
@@ -297,4 +297,5 @@ class Uploader {
 			);
 		}
 	}
+
 }

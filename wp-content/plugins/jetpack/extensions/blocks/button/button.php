@@ -54,7 +54,7 @@ function render_block( $attributes, $content ) {
 	}
 
 	$element   = get_attribute( $attributes, 'element' );
-	$text      = wp_kses_post( get_attribute( $attributes, 'text' ) );
+	$text      = get_attribute( $attributes, 'text' );
 	$unique_id = get_attribute( $attributes, 'uniqueId' );
 	$url       = get_attribute( $attributes, 'url' );
 	$classes   = Blocks::classes( FEATURE_NAME, $attributes, array( 'wp-block-button' ) );
@@ -72,16 +72,12 @@ function render_block( $attributes, $content ) {
 		$button_attributes .= sprintf( ' data-id-attr="%1$s" id="%1$s"', esc_attr( $unique_id ) );
 	}
 
-	if ( ! in_array( $element, array( 'a', 'button', 'input' ), true ) ) {
-		$element = 'a';
-	}
-
 	if ( 'a' === $element ) {
 		$button_attributes .= sprintf( ' href="%s" target="_blank" role="button" rel="noopener noreferrer"', esc_url( $url ) );
 	} elseif ( 'button' === $element ) {
 		$button_attributes .= ' type="submit"';
 	} elseif ( 'input' === $element ) {
-		$button_attributes .= sprintf( ' type="submit" value="%s"', esc_attr( wp_strip_all_tags( $text, true ) ) );
+		$button_attributes .= sprintf( ' type="submit" value="%s"', wp_strip_all_tags( $text, true ) );
 	}
 
 	$button = 'input' === $element
@@ -166,6 +162,7 @@ function get_button_styles( $attributes ) {
 	$has_named_gradient          = array_key_exists( 'gradient', $attributes );
 	$has_custom_gradient         = array_key_exists( 'customGradient', $attributes );
 	$has_border_radius           = array_key_exists( 'borderRadius', $attributes );
+	$has_width                   = array_key_exists( 'width', $attributes );
 	$has_font_family             = array_key_exists( 'fontFamily', $attributes );
 	$has_typography_styles       = array_key_exists( 'style', $attributes ) && array_key_exists( 'typography', $attributes['style'] );
 	$has_custom_font_size        = $has_typography_styles && array_key_exists( 'fontSize', $attributes['style']['typography'] );
@@ -205,6 +202,11 @@ function get_button_styles( $attributes ) {
 		$styles[] = sprintf( 'border-radius: %spx;', $attributes['borderRadius'] );
 	}
 
+	if ( $has_width ) {
+		$styles[] = sprintf( 'width: %s;', $attributes['width'] );
+		$styles[] = 'max-width: 100%';
+	}
+
 	return implode( ' ', $styles );
 }
 
@@ -220,7 +222,7 @@ function get_button_wrapper_styles( $attributes ) {
 	$has_width = array_key_exists( 'width', $attributes );
 
 	if ( $has_width ) {
-		$styles[] = sprintf( 'width: %s;', $attributes['width'] );
+		$styles[] = 'max-width: 100%';
 	}
 
 	return implode( ' ', $styles );

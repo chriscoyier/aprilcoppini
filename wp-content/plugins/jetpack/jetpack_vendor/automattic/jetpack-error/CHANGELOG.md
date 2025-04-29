@@ -5,46 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.1] - 2025-02-24
-### Changed
-- Update dependencies.
-
-## [3.0.0] - 2024-11-18
-### Removed
-- General: Update minimum PHP version to 7.2. [#40147]
-
-## [2.0.4] - 2024-11-04
-### Added
-- Enable test coverage. [#39961]
-
-## [2.0.3] - 2024-08-26
-### Changed
-- Updated package dependencies. [#39004]
-
-## [2.0.2] - 2024-03-25
-### Changed
-- Internal updates.
-
-## [2.0.1] - 2024-03-18
-### Changed
-- Internal updates.
-
-## [2.0.0] - 2023-11-20
-### Changed
-- Updated required PHP version to >= 7.0. [#34192]
-
-## [1.3.21] - 2023-08-28
-### Changed
-- Updated package dependencies. [#32605]
-
-## [1.3.20] - 2023-04-10
-### Added
-- Add Jetpack Autoloader package suggestion. [#29988]
-
-## [1.3.19] - 2023-02-20
-### Changed
-- Minor internal updates.
-
 ## [1.3.18] - 2022-12-06
 ### Changed
 - Updated package dependencies. [#27688]
@@ -156,16 +116,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Packages: Introduce a jetpack-error package
 
-[3.0.1]: https://github.com/Automattic/jetpack-error/compare/v3.0.0...v3.0.1
-[3.0.0]: https://github.com/Automattic/jetpack-error/compare/v2.0.4...v3.0.0
-[2.0.4]: https://github.com/Automattic/jetpack-error/compare/v2.0.3...v2.0.4
-[2.0.3]: https://github.com/Automattic/jetpack-error/compare/v2.0.2...v2.0.3
-[2.0.2]: https://github.com/Automattic/jetpack-error/compare/v2.0.1...v2.0.2
-[2.0.1]: https://github.com/Automattic/jetpack-error/compare/v2.0.0...v2.0.1
-[2.0.0]: https://github.com/Automattic/jetpack-error/compare/v1.3.21...v2.0.0
-[1.3.21]: https://github.com/Automattic/jetpack-error/compare/v1.3.20...v1.3.21
-[1.3.20]: https://github.com/Automattic/jetpack-error/compare/v1.3.19...v1.3.20
-[1.3.19]: https://github.com/Automattic/jetpack-error/compare/v1.3.18...v1.3.19
 [1.3.18]: https://github.com/Automattic/jetpack-error/compare/v1.3.17...v1.3.18
 [1.3.17]: https://github.com/Automattic/jetpack-error/compare/v1.3.16...v1.3.17
 [1.3.16]: https://github.com/Automattic/jetpack-error/compare/v1.3.15...v1.3.16

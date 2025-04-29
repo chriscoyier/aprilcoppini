@@ -22,7 +22,7 @@ class ApacheAdapter implements AvailabilityInterface, ReaderInterface, WriterInt
      * This is intentionally not implemented, since this adapter exists only as
      * a means to overwrite existing apache environment variables.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return \PhpOption\Option<string|null>
      */
@@ -35,22 +35,21 @@ class ApacheAdapter implements AvailabilityInterface, ReaderInterface, WriterInt
      *
      * Only if an existing apache variable exists do we overwrite it.
      *
-     * @param non-empty-string $name
-     * @param string|null      $value
+     * @param string      $name
+     * @param string|null $value
      *
      * @return void
      */
     public function set($name, $value = null)
     {
-        if (\apache_getenv($name) === \false) {
-            return;
+        if (\apache_getenv($name) !== \false) {
+            \apache_setenv($name, (string) $value);
         }
-        \apache_setenv($name, (string) $value);
     }
     /**
      * Clear an environment variable.
      *
-     * @param non-empty-string $name
+     * @param string $name
      *
      * @return void
      */

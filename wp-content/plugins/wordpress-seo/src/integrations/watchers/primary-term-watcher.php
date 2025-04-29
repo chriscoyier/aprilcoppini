@@ -82,8 +82,6 @@ class Primary_Term_Watcher implements Integration_Interface {
 	 * Initializes the integration.
 	 *
 	 * This is the place to register hooks and filters.
-	 *
-	 * @return void
 	 */
 	public function register_hooks() {
 		\add_action( 'save_post', [ $this, 'save_primary_terms' ], \PHP_INT_MAX );
@@ -94,8 +92,6 @@ class Primary_Term_Watcher implements Integration_Interface {
 	 * Saves all selected primary terms.
 	 *
 	 * @param int $post_id Post ID to save primary terms for.
-	 *
-	 * @return void
 	 */
 	public function save_primary_terms( $post_id ) {
 		// Bail if this is a multisite installation and the site has been switched.
@@ -117,26 +113,14 @@ class Primary_Term_Watcher implements Integration_Interface {
 	 *
 	 * @param int     $post_id  Post ID to save primary term for.
 	 * @param WP_Term $taxonomy Taxonomy to save primary term for.
-	 *
-	 * @return void
 	 */
 	protected function save_primary_term( $post_id, $taxonomy ) {
-		if ( isset( $_POST[ WPSEO_Meta::$form_prefix . 'primary_' . $taxonomy->name . '_term' ] ) && \is_string( $_POST[ WPSEO_Meta::$form_prefix . 'primary_' . $taxonomy->name . '_term' ] ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reason: We are casting to an integer.
-			$primary_term_id = (int) \wp_unslash( $_POST[ WPSEO_Meta::$form_prefix . 'primary_' . $taxonomy->name . '_term' ] );
+		$primary_term = \filter_input( \INPUT_POST, WPSEO_Meta::$form_prefix . 'primary_' . $taxonomy->name . '_term', \FILTER_SANITIZE_NUMBER_INT );
 
-			if ( $primary_term_id <= 0 ) {
-				$primary_term = '';
-			}
-			else {
-				$primary_term = (string) $primary_term_id;
-			}
-
-			// We accept an empty string here because we need to save that if no terms are selected.
-			if ( \check_admin_referer( 'save-primary-term', WPSEO_Meta::$form_prefix . 'primary_' . $taxonomy->name . '_nonce' ) !== null ) {
-				$primary_term_object = new WPSEO_Primary_Term( $taxonomy->name, $post_id );
-				$primary_term_object->set_primary_term( $primary_term );
-			}
+		// We accept an empty string here because we need to save that if no terms are selected.
+		if ( $primary_term && \check_admin_referer( 'save-primary-term', WPSEO_Meta::$form_prefix . 'primary_' . $taxonomy->name . '_nonce' ) !== null ) {
+			$primary_term_object = new WPSEO_Primary_Term( $taxonomy->name, $post_id );
+			$primary_term_object->set_primary_term( $primary_term );
 		}
 	}
 
@@ -149,13 +133,13 @@ class Primary_Term_Watcher implements Integration_Interface {
 	 */
 	public function delete_primary_terms( $post_id ) {
 		foreach ( $this->primary_term->get_primary_term_taxonomies( $post_id ) as $taxonomy ) {
-			$primary_term_indexable = $this->repository->find_by_post_id_and_taxonomy( $post_id, $taxonomy->name, false );
+			$primary_term = $this->repository->find_by_post_id_and_taxonomy( $post_id, $taxonomy->name, false );
 
-			if ( ! $primary_term_indexable ) {
+			if ( ! $primary_term ) {
 				continue;
 			}
 
-			$primary_term_indexable->delete();
+			$primary_term->delete();
 		}
 	}
 }

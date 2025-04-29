@@ -2,13 +2,8 @@
 /**
  * Jetpack Network Settings view template.
  *
- * @html-template Jetpack::load_view
  * @package automattic/jetpack
  */
-
-// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable -- HTML template, let Phan handle it.
-
-use Automattic\Jetpack\IP\Utils as IP_Utils;
 
 if ( isset( $_GET['updated'] ) && 'true' === $_GET['updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	?>
@@ -31,35 +26,35 @@ if ( isset( $_GET['error'] ) && 'jetpack_protect_whitelist' === $_GET['error'] )
 			<tr valign="top">
 				<th scope="row"><label for="sub-site-override"><?php esc_html_e( 'Sub-site override', 'jetpack' ); ?></label></th>
 				<td>
-					<input type="checkbox" name="sub-site-connection-override" id="sub-site-override" value="1" <?php checked( $data['options']['sub-site-connection-override'] ); ?> />
+					<input type="checkbox" name="sub-site-connection-override" id="sub-site-override" value="1" <?php checked( $data['options']['sub-site-connection-override'] ); // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable ?> />
 					<label for="sub-site-override"><?php esc_html_e( 'Allow individual site administrators to manage their own connections (connect and disconnect) to WordPress.com', 'jetpack' ); ?></label>
 				</td>
 			</tr>
 
 			<tr valign="top">
-				<th scope="row"><label for="sub-site-override"><?php esc_html_e( 'Protect IP allow list', 'jetpack' ); ?></label></th>
+				<th scope="row"><label for="sub-site-override"><?php esc_html_e( 'Protect whitelist', 'jetpack' ); ?></label></th>
 				<td>
 					<p><strong>
 					<?php
-					$current_ip = IP_Utils::get_ip();
-					if ( ! empty( $current_ip ) ) {
+					$protect_ip = jetpack_protect_get_ip();
+					if ( ! empty( $protect_ip ) ) {
 						printf(
 							/* Translators: placeholder is an IP address. */
 							esc_html__( 'Your current IP: %1$s', 'jetpack' ),
-							esc_html( $current_ip )
+							esc_html( $protect_ip )
 						);
 					}
 					?>
 					</strong></p>
 					<?php
-					echo '<textarea name="global-allow-list" style="width: 100%;" rows="8">'; // echo to avoid tabs displayed in textarea. See https://github.com/Automattic/jetpack/pull/21151/files#r713922521.
+					echo '<textarea name="global-whitelist" style="width: 100%;" rows="8">'; // echo to avoid tabs displayed in textarea. See https://github.com/Automattic/jetpack/pull/21151/files#r713922521.
 
-					foreach ( $data['jetpack_protect_whitelist']['global'] as $ip ) {
+					foreach ( $data['jetpack_protect_whitelist']['global'] as $ip ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 						echo esc_html( $ip ) . "\n";
 					}
 					?>
 					</textarea> <br />
-					<label for="global-allow-list">
+					<label for="global-whitelist">
 						<?php esc_html_e( 'IPv4 and IPv6 are acceptable. Enter multiple IPs on separate lines.', 'jetpack' ); ?>
 						<br />
 						<?php esc_html_e( 'To specify a range, enter the low value and high value separated by a dash. Example: 12.12.12.1-12.12.12.100', 'jetpack' ); ?>

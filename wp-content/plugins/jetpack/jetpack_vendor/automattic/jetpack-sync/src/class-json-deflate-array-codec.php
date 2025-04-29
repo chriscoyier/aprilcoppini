@@ -41,10 +41,7 @@ class JSON_Deflate_Array_Codec implements Codec_Interface {
 	 * @return array|mixed|object
 	 */
 	public function decode( $input ) {
-		$decoded  = base64_decode( $input ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
-		$inflated = @gzinflate( $decoded ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
-
-		return is_string( $inflated ) ? $this->json_unserialize( $inflated ) : null;
+		return $this->json_unserialize( gzinflate( base64_decode( $input ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 	}
 
 	/**
@@ -52,7 +49,7 @@ class JSON_Deflate_Array_Codec implements Codec_Interface {
 	 *
 	 * @see https://gist.github.com/muhqu/820694
 	 *
-	 * @param mixed $any Value to serialize and wrap.
+	 * @param string $any Value to serialize and wrap.
 	 *
 	 * @return false|string
 	 */

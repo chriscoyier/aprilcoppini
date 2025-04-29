@@ -141,6 +141,7 @@ class MultisiteToolsAddon extends AddonAbstract
         add_filter('wpmdb_initiate_push_pull_post', array($this, 'filter_initiate_post_data'), 10, 2);
 
         add_filter('wpmdb_diagnostic_info', array($this, 'diagnostic_info'));
+        add_filter('wpmdb_exclude_table', array($this, 'filter_table_for_subsite'), 10, 2);
         add_filter('wpmdb_tables', array($this, 'filter_tables_for_subsite'), 10, 2);
         add_filter('wpmdb_table_sizes', array($this, 'filter_table_sizes_for_subsite'), 10, 2);
         add_filter('wpmdb_target_table_name', array($this, 'filter_target_table_name'), 10, 4);
@@ -489,15 +490,19 @@ class MultisiteToolsAddon extends AddonAbstract
     /**
      * Should the given table be excluded from a subsite migration.
      *
-     * @param bool   $exclude     Filtered value passed through for non MS globals.
-     * @param int    $blog_id     Subsite ID.
-     * @param string $table_name  Table name to check.
-     * @param string $base_prefix Optional, base prefix override, e.g. when checking remote's tables.
+     * @param bool   $exclude
+     * @param string $table_name
      *
      * @return bool
      */
-    public function filter_table_for_subsite($exclude, $blog_id, $table_name, $base_prefix = '')
+    public function filter_table_for_subsite($exclude, $table_name)
     {
+        if (!is_multisite()) {
+            return $exclude;
+        }
+
+        $blog_id = $this->selected_subsite();
+
         if (0 < $blog_id) {
             // wp_users and wp_usermeta are relevant to all sites, shortcut out.
             if ($this->table_helper->table_is('', $table_name, 'non_ms_global')) {
@@ -510,13 +515,12 @@ class MultisiteToolsAddon extends AddonAbstract
             }
 
             global $wpdb;
-            $prefix = empty($base_prefix) ? $wpdb->base_prefix : $base_prefix;
+            $prefix         = $wpdb->base_prefix;
+            $prefix_escaped = preg_quote($prefix);
 
             if (1 == $blog_id) {
-                $prefix_escaped = preg_quote($prefix);
-
                 // Exclude tables from non-primary subsites.
-                if (preg_match('/^' . $prefix_escaped . '([0-9]+)_/', $table_name)) {
+                if (preg_match('/^' . $prefix_escaped . '([0-9]+)_/', $table_name, $matches)) {
                     $exclude = true;
                 }
             } else {
@@ -540,7 +544,7 @@ class MultisiteToolsAddon extends AddonAbstract
      */
     public function filter_tables_for_subsite($tables, $scope = 'regular')
     {
-        if ( ! is_multisite() || empty($tables)) {
+        if (!is_multisite() || empty($tables)) {
             return $tables;
         }
 
@@ -549,35 +553,20 @@ class MultisiteToolsAddon extends AddonAbstract
             return $tables;
         }
 
-        $blog_id = $this->selected_subsite();
+        $filtered_tables = array();
+        $blog_id         = $this->selected_subsite();
 
-        return $this->filter_tables_for_subsite_id($blog_id, $tables);
-    }
-
-    /**
-     * If doing a subsite migration, reduces tables to those relevant for subsite.
-     *
-     * @param int    $blog_id     Subsite ID.
-     * @param array  $tables      Tables to be checked whether belonging to subsite being migrated.
-     * @param string $base_prefix Optional, base prefix override, e.g. when checking remote's tables.
-     *
-     * @return array
-     */
-    public function filter_tables_for_subsite_id($blog_id, $tables, $base_prefix = '')
-    {
         if (0 < $blog_id) {
-            $filtered_tables = array();
-
             foreach ($tables as $key => $value) {
-                if (false === $this->filter_table_for_subsite(false, $blog_id, $value, $base_prefix)) {
+                if (false === $this->filter_table_for_subsite(false, $value)) {
                     $filtered_tables[$key] = $value;
                 }
             }
-
-            return $filtered_tables;
+        } else {
+            $filtered_tables = $tables;
         }
 
-        return $tables;
+        return $filtered_tables;
     }
 
     /**

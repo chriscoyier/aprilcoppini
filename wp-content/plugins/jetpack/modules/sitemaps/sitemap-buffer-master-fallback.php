@@ -14,10 +14,8 @@
  * A buffer for constructing master sitemap xml files for users without libxml support.
  *
  * @since 5.3.0
- * @phan-suppress PhanRedefinedClassReference -- Don't conflict with real version.
  */
 class Jetpack_Sitemap_Buffer_Master extends Jetpack_Sitemap_Buffer_Fallback {
-	// @phan-suppress-previous-line UnusedSuppression -- It's used.
 
 	/**
 	 * Returns a DOM element that contains all master sitemap elements.
@@ -36,7 +34,7 @@ class Jetpack_Sitemap_Buffer_Master extends Jetpack_Sitemap_Buffer_Fallback {
 				'</sitemapindex>',
 			);
 
-			$this->byte_capacity -= strlen( implode( '', $this->root ) );
+			$this->byte_capacity -= strlen( join( '', $this->root ) );
 		}
 
 		return $this->root;

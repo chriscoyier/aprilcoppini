@@ -4,26 +4,10 @@
  *
  * @package automattic/jetpack
  */
-
-use Automattic\Jetpack\Image_CDN\Image_CDN_Core;
-
 /**
  * All the code shared between WP.com Highlander and Jetpack Highlander
  */
 class Highlander_Comments_Base {
-	/**
-	 * ID sources.
-	 *
-	 * @var array
-	 */
-	public $id_sources;
-
-	/**
-	 * The default comment scheme, if set.
-	 *
-	 * @var ?string
-	 */
-	public $default_color_scheme;
 
 	/**
 	 * Constructor
@@ -37,14 +21,14 @@ class Highlander_Comments_Base {
 	/**
 	 * Set any global variables or class variables
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 */
 	protected function setup_globals() {}
 
 	/**
 	 * Setup actions for methods in this class
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 */
 	protected function setup_actions() {
 		// Before a comment is posted.
@@ -57,7 +41,7 @@ class Highlander_Comments_Base {
 	/**
 	 * Setup filters for methods in this class
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 */
 	protected function setup_filters() {
 		add_filter( 'comments_array', array( $this, 'comments_array' ) );
@@ -66,7 +50,7 @@ class Highlander_Comments_Base {
 
 	/**
 	 * Is this a Highlander POST request?
-	 * Optionally restrict to one or more credentials slug (facebook, ...)
+	 * Optionally restrict to one or more credentials slug (facebook, twitter, ...)
 	 *
 	 * @param mixed ...$args Comments credentials slugs.
 	 * @return false|string false if it's not a Highlander POST request.  The matching credentials slug if it is.
@@ -167,19 +151,23 @@ class Highlander_Comments_Base {
 	/**
 	 * Comment sort comparator: comment_date_gmt
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 * @param object $a The first comment to compare dates with.
 	 * @param object $b The second comment to compare dates with.
 	 * @return int
 	 */
 	public function sort_comments_by_comment_date_gmt( $a, $b ) {
-		return $a->comment_date_gmt <=> $b->comment_date_gmt;
+		if ( $a->comment_date_gmt === $b->comment_date_gmt ) {
+			return 0;
+		}
+
+		return $a->comment_date_gmt < $b->comment_date_gmt ? -1 : 1;
 	}
 
 	/**
 	 * Get the current commenter's information from their cookie
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 * @return array Commenters information from cookie
 	 */
 	protected function get_current_commenter() {
@@ -210,14 +198,13 @@ class Highlander_Comments_Base {
 	}
 
 	/**
-	 * Allows a logged out user to leave a comment as a facebook/wp.com credentialed user.
+	 * Allows a logged out user to leave a comment as a facebook or twitter credentialed user.
 	 * Overrides WordPress' core comment_registration option to treat these commenters as "registered" (verified) users.
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 */
 	public function allow_logged_out_user_to_comment_as_external() {
-		// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText
-		if ( ! $this->is_highlander_comment_post( 'facebook', 'wordpress' ) ) {
+		if ( ! $this->is_highlander_comment_post( 'facebook', 'twitter' ) ) {
 			return;
 		}
 
@@ -226,11 +213,11 @@ class Highlander_Comments_Base {
 	}
 
 	/**
-	 * Allow a logged in user to post as a guest, or FB credentialed request.
+	 * Allow a logged in user to post as a guest, FB, or twitter credentialed request.
 	 * Bypasses WordPress' core overrides that force a logged in user to comment as that user.
 	 * Respects comment_registration option.
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 * @param array $comment_data All data for a specific comment.
 	 * @return array Modified comment data, or an error if the required fields or a valid email address are not entered.
 	 */
@@ -246,7 +233,7 @@ class Highlander_Comments_Base {
 		}
 
 		// Bail if this is not a guest or external service credentialed request.
-		if ( ! $this->is_highlander_comment_post( 'guest', 'facebook' ) ) {
+		if ( ! $this->is_highlander_comment_post( 'guest', 'facebook', 'twitter' ) ) {
 			return $comment_data;
 		}
 
@@ -297,7 +284,7 @@ class Highlander_Comments_Base {
 	/**
 	 * Set the comment cookies or bail if comment is invalid
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 * @param int $comment_id The comment ID.
 	 */
 	public function set_comment_cookies( $comment_id ) {
@@ -313,44 +300,20 @@ class Highlander_Comments_Base {
 		}
 
 		// Set comment author cookies.
-		// We don't set the cookies if they are logged in with WordPress.com because they already have a cookie set.
 		// phpcs:ignore WordPress.WP.CapitalPDangit
-		if ( 'wordpress' !== $id_source ) {
-			// phpcs:disable WordPress.Security.NonceVerification -- Nonce verification should happen in Jetpack_Comments::pre_comment_on_post().
-			$is_consenting_to_cookies = ( isset( $_POST['wp-comment-cookies-consent'] ) );
-
-			$cookie_options = array(
-				'expires'  => time() + apply_filters( 'comment_cookie_lifetime', YEAR_IN_SECONDS ),
-				'path'     => COOKIEPATH,
-				'domain'   => COOKIE_DOMAIN,
-				'secure'   => is_ssl(),
-				'httponly' => true,
-			);
-
-			// If there is no consent, remove any cookies that may have been set.
-			if ( ( 'guest' === $id_source ) && ! $is_consenting_to_cookies ) {
-				$cookie_options['expires'] = time() - YEAR_IN_SECONDS;
-			}
-
-			// Set samesite to None if the request is from Jetpack iframe.
-			// This is needed because it is considered third party.
-			if ( isset( $_REQUEST['for'] ) && 'jetpack' === $_REQUEST['for'] ) {
-				$cookie_options['samesite'] = 'None';
-			}
-			// phpcs:enable WordPress.Security.NonceVerification
-
-			// phpcs:disable Jetpack.Functions.SetCookie.MissingTrueHTTPOnly
-			isset( $comment->comment_author ) ? setcookie( 'comment_author_' . COOKIEHASH, $comment->comment_author, $cookie_options ) : null;
-			isset( $comment->comment_author_email ) ? setcookie( 'comment_author_email_' . COOKIEHASH, $comment->comment_author_email, $cookie_options ) : null;
-			isset( $comment->comment_author_url ) ? setcookie( 'comment_author_url_' . COOKIEHASH, esc_url( $comment->comment_author_url ), $cookie_options ) : null;
-			// phpcs:enable Jetpack.Functions.SetCookie.MissingTrueHTTPOnly
+		if ( ( 'wordpress' !== $id_source ) && is_user_logged_in() ) {
+			/** This filter is already documented in core/wp-includes/comment-functions.php */
+			$comment_cookie_lifetime = apply_filters( 'comment_cookie_lifetime', 30000000 );
+			setcookie( 'comment_author_' . COOKIEHASH, $comment->comment_author, time() + $comment_cookie_lifetime, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+			setcookie( 'comment_author_email_' . COOKIEHASH, $comment->comment_author_email, time() + $comment_cookie_lifetime, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+			setcookie( 'comment_author_url_' . COOKIEHASH, esc_url( $comment->comment_author_url ), time() + $comment_cookie_lifetime, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
 		}
 	}
 
 	/**
 	 * Get an avatar from Photon
 	 *
-	 * @since 1.4
+	 * @since JetpackComments (1.4)
 	 * @param string $url The avatar URL.
 	 * @param int    $size The avatar size.
 	 * @return string
@@ -358,6 +321,6 @@ class Highlander_Comments_Base {
 	protected function photon_avatar( $url, $size ) {
 		$size = (int) $size;
 
-		return Image_CDN_Core::cdn_url( $url, array( 'resize' => "$size,$size" ) );
+		return jetpack_photon_url( $url, array( 'resize' => "$size,$size" ) );
 	}
 }

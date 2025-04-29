@@ -42,8 +42,7 @@ class WPSEO_Option_Tabs {
 	public function __construct( $base, $active_tab = '' ) {
 		$this->base = sanitize_title( $base );
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reason: We are not processing form information.
-		$tab              = isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : '';
+		$tab              = filter_input( INPUT_GET, 'tab' );
 		$this->active_tab = empty( $tab ) ? $active_tab : $tab;
 	}
 
@@ -114,8 +113,6 @@ class WPSEO_Option_Tabs {
 	 * Display the tabs.
 	 *
 	 * @param Yoast_Form $yform Yoast Form needed in the views.
-	 *
-	 * @return void
 	 */
 	public function display( Yoast_Form $yform ) {
 		$formatter = new WPSEO_Option_Tabs_Formatter();

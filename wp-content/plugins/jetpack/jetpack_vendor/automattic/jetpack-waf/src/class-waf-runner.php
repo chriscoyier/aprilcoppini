@@ -9,31 +9,25 @@ namespace Automattic\Jetpack\Waf;
 
 use Automattic\Jetpack\Modules;
 use Automattic\Jetpack\Status\Host;
-use Automattic\Jetpack\Waf\Brute_Force_Protection\Brute_Force_Protection;
 
 /**
  * Executes the WAF.
  */
 class Waf_Runner {
 
-	const WAF_MODULE_NAME              = 'waf';
-	const MODE_OPTION_NAME             = 'jetpack_waf_mode';
-	const SHARE_DATA_OPTION_NAME       = 'jetpack_waf_share_data';
-	const SHARE_DEBUG_DATA_OPTION_NAME = 'jetpack_waf_share_debug_data';
+	const WAF_MODULE_NAME        = 'waf';
+	const MODE_OPTION_NAME       = 'jetpack_waf_mode';
+	const SHARE_DATA_OPTION_NAME = 'jetpack_waf_share_data';
 
 	/**
 	 * Run the WAF
-	 *
-	 * @return void
 	 */
 	public static function initialize() {
 		if ( ! self::is_enabled() ) {
 			return;
 		}
 		Waf_Constants::define_mode();
-		Waf_Constants::define_entrypoint();
 		Waf_Constants::define_share_data();
-
 		if ( ! self::is_allowed_mode( JETPACK_WAF_MODE ) ) {
 			return;
 		}
@@ -99,22 +93,13 @@ class Waf_Runner {
 			return false;
 		}
 
-		if ( defined( 'IS_ATOMIC_JN' ) && IS_ATOMIC_JN ) {
-			return true;
-		}
-
 		// Do not run in the WPCOM context
-		if ( ( new Host() )->is_wpcom_simple() ) {
+		if ( defined( 'IS_WPCOM' ) && IS_WPCOM ) {
 			return false;
 		}
 
 		// Do not run on the Atomic platform
 		if ( ( new Host() )->is_atomic_platform() ) {
-			return false;
-		}
-
-		// Do not run on the VIP platform
-		if ( ( new Host() )->is_vip_site() ) {
 			return false;
 		}
 
@@ -138,8 +123,6 @@ class Waf_Runner {
 
 	/**
 	 * Enables the WAF module on the site.
-	 *
-	 * @return bool
 	 */
 	public static function enable() {
 		return ( new Modules() )->activate( self::WAF_MODULE_NAME, false, false );
@@ -147,8 +130,6 @@ class Waf_Runner {
 
 	/**
 	 * Disabled the WAF module on the site.
-	 *
-	 * @return bool
 	 */
 	public static function disable() {
 		return ( new Modules() )->deactivate( self::WAF_MODULE_NAME );
@@ -161,26 +142,13 @@ class Waf_Runner {
 	 */
 	public static function get_config() {
 		return array(
-			Waf_Rules_Manager::AUTOMATIC_RULES_ENABLED_OPTION_NAME => Waf_Rules_Manager::automatic_rules_enabled(),
+			Waf_Rules_Manager::AUTOMATIC_RULES_ENABLED_OPTION_NAME => get_option( Waf_Rules_Manager::AUTOMATIC_RULES_ENABLED_OPTION_NAME ),
+			Waf_Rules_Manager::IP_LISTS_ENABLED_OPTION_NAME => get_option( Waf_Rules_Manager::IP_LISTS_ENABLED_OPTION_NAME ),
 			Waf_Rules_Manager::IP_ALLOW_LIST_OPTION_NAME => get_option( Waf_Rules_Manager::IP_ALLOW_LIST_OPTION_NAME ),
-			Waf_Rules_Manager::IP_ALLOW_LIST_ENABLED_OPTION_NAME => Waf_Rules_Manager::ip_allow_list_enabled(),
 			Waf_Rules_Manager::IP_BLOCK_LIST_OPTION_NAME => get_option( Waf_Rules_Manager::IP_BLOCK_LIST_OPTION_NAME ),
-			Waf_Rules_Manager::IP_BLOCK_LIST_ENABLED_OPTION_NAME => Waf_Rules_Manager::ip_block_list_enabled(),
 			self::SHARE_DATA_OPTION_NAME                 => get_option( self::SHARE_DATA_OPTION_NAME ),
-			self::SHARE_DEBUG_DATA_OPTION_NAME           => get_option( self::SHARE_DEBUG_DATA_OPTION_NAME ),
 			'bootstrap_path'                             => self::get_bootstrap_file_path(),
-			'standalone_mode'                            => self::get_standalone_mode_status(),
 			'automatic_rules_available'                  => (bool) self::automatic_rules_available(),
-			'brute_force_protection'                     => (bool) Brute_Force_Protection::is_enabled(),
-
-			/**
-			 * Provide the deprecated IP lists options for backwards compatibility with older versions of the Jetpack and Protect plugins.
-			 * i.e. If one plugin is updated and the other is not, the latest version of this package will be used by both plugins.
-			 *
-			 * @deprecated 0.17.0
-			 */
-			// @phan-suppress-next-line PhanDeprecatedClassConstant -- Needed for backwards compatibility.
-			Waf_Rules_Manager::IP_LISTS_ENABLED_OPTION_NAME => Waf_Rules_Manager::ip_allow_list_enabled() || Waf_Rules_Manager::ip_block_list_enabled(),
 		);
 	}
 
@@ -192,15 +160,6 @@ class Waf_Runner {
 	private static function get_bootstrap_file_path() {
 		$bootstrap = new Waf_Standalone_Bootstrap();
 		return $bootstrap->get_bootstrap_file_path();
-	}
-
-	/**
-	 * Get WAF standalone mode status
-	 *
-	 * @return bool|array True if WAF standalone mode is enabled, false otherwise.
-	 */
-	public static function get_standalone_mode_status() {
-		return defined( 'JETPACK_WAF_RUN' ) && JETPACK_WAF_RUN === 'preload';
 	}
 
 	/**
@@ -231,7 +190,7 @@ class Waf_Runner {
 			return;
 		}
 
-		Waf_Constants::initialize_constants();
+		Waf_Constants::initialize_bootstrap_constants();
 
 		// if ABSPATH is defined, then WordPress has already been instantiated,
 		// and we're running as a plugin (meh). Otherwise, we're running via something
@@ -246,10 +205,10 @@ class Waf_Runner {
 		// if something terrible happens during the WAF running, we don't want to interfere with the rest of the site,
 		// so we intercept errors ONLY while the WAF is running, then we remove our handler after the WAF finishes.
 		$display_errors = ini_get( 'display_errors' );
-
-		ini_set( 'display_errors', 'Off' ); // phpcs:ignore WordPress.PHP.IniSet.display_errors_Disallowed -- We only customize error reporting while the WAF is running, and remove our handler afterwards.
-
-		set_error_handler( array( self::class, 'errorHandler' ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- We only customize error reporting while the WAF is running, and remove our handler afterwards.
+		// phpcs:ignore
+		ini_set( 'display_errors', 'Off' );
+		// phpcs:ignore
+		set_error_handler( array( self::class, 'errorHandler' ) );
 
 		try {
 
@@ -257,20 +216,19 @@ class Waf_Runner {
 			$waf = new Waf_Runtime( new Waf_Transforms(), new Waf_Operators() );
 
 			// execute waf rules.
-			$rules_file_path = self::get_waf_file_path( JETPACK_WAF_ENTRYPOINT );
+			$rules_file_path = self::get_waf_file_path( Waf_Rules_Manager::RULES_ENTRYPOINT_FILE );
 			if ( file_exists( $rules_file_path ) ) {
 				// phpcs:ignore
 				include $rules_file_path;
 			}
-		} catch ( \Exception $err ) { // phpcs:ignore
+} catch ( \Exception $err ) { // phpcs:ignore
 			// Intentionally doing nothing.
 		}
 
 		// remove the custom error handler, so we don't interfere with the site.
 		restore_error_handler();
-
-		// Restore the original value.
-		ini_set( 'display_errors', $display_errors ); // phpcs:ignore WordPress.PHP.IniSet.display_errors_Disallowed -- We only customize error reporting while the WAF is running, and remove our handler afterwards.
+		// phpcs:ignore
+		ini_set( 'display_errors', $display_errors );
 	}
 
 	/**
@@ -287,11 +245,10 @@ class Waf_Runner {
 	}
 
 	/**
-	 * Initializes the WP filesystem and WAF directory structure.
-	 *
-	 * @throws File_System_Exception If filesystem is unavailable.
+	 * Initializes the WP filesystem.
 	 *
 	 * @return void
+	 * @throws \Exception If filesystem is unavailable.
 	 */
 	public static function initialize_filesystem() {
 		if ( ! function_exists( '\\WP_Filesystem' ) ) {
@@ -299,21 +256,20 @@ class Waf_Runner {
 		}
 
 		if ( ! \WP_Filesystem() ) {
-			throw new File_System_Exception( 'No filesystem available.' );
+			throw new \Exception( 'No filesystem available.' );
 		}
-
-		self::initialize_waf_directory();
 	}
 
 	/**
 	 * Activates the WAF by generating the rules script and setting the version
 	 *
-	 * @throws Waf_Exception If the firewall mode is invalid.
-	 * @throws Waf_Exception If the activation fails.
-	 *
 	 * @return void
 	 */
 	public static function activate() {
+		Waf_Constants::define_mode();
+		if ( ! self::is_allowed_mode( JETPACK_WAF_MODE ) ) {
+			return;
+		}
 		$version = get_option( Waf_Rules_Manager::VERSION_OPTION_NAME );
 		if ( ! $version ) {
 			add_option( Waf_Rules_Manager::VERSION_OPTION_NAME, Waf_Rules_Manager::RULES_VERSION );
@@ -322,72 +278,89 @@ class Waf_Runner {
 		add_option( self::SHARE_DATA_OPTION_NAME, true );
 
 		self::initialize_filesystem();
-
+		self::create_waf_directory();
 		Waf_Rules_Manager::generate_automatic_rules();
 		Waf_Rules_Manager::generate_ip_rules();
+		self::create_blocklog_table();
 		Waf_Rules_Manager::generate_rules();
-
-		Waf_Blocklog_Manager::create_blocklog_table();
 	}
 
 	/**
-	 * Ensures that the waf directory is created.
-	 *
-	 * @throws File_System_Exception If filesystem is unavailable.
-	 * @throws File_System_Exception If creating the directory fails.
+	 * Created the waf directory on activation.
 	 *
 	 * @return void
+	 * @throws \Exception In case there's a problem when creating the directory.
 	 */
-	public static function initialize_waf_directory() {
+	public static function create_waf_directory() {
 		WP_Filesystem();
 		Waf_Constants::define_waf_directory();
 
 		global $wp_filesystem;
 		if ( ! $wp_filesystem ) {
-			throw new File_System_Exception( 'Can not work without the file system being initialized.' );
+			throw new \Exception( 'Can not work without the file system being initialized.' );
 		}
 
 		if ( ! $wp_filesystem->is_dir( JETPACK_WAF_DIR ) ) {
 			if ( ! $wp_filesystem->mkdir( JETPACK_WAF_DIR ) ) {
-				throw new File_System_Exception( 'Failed creating WAF file directory: ' . JETPACK_WAF_DIR );
+				throw new \Exception( 'Failed creating WAF standalone bootstrap file directory: ' . JETPACK_WAF_DIR );
 			}
 		}
 	}
 
 	/**
-	 * Deactivates the WAF by deleting the relevant options and emptying rules file.
-	 *
-	 * @throws File_System_Exception If file writing fails.
+	 * Create the log table when plugin is activated.
 	 *
 	 * @return void
+	 */
+	public static function create_blocklog_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$sql = "
+		CREATE TABLE {$wpdb->prefix}jetpack_waf_blocklog (
+			log_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			timestamp datetime NOT NULL,
+			rule_id BIGINT NOT NULL,
+			reason longtext NOT NULL,
+			PRIMARY KEY (log_id),
+			KEY timestamp (timestamp)
+		)
+		";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Deactivates the WAF by deleting the relevant options and emptying rules file.
+	 *
+	 * @return void
+	 * @throws \Exception If file writing fails.
 	 */
 	public static function deactivate() {
 		delete_option( self::MODE_OPTION_NAME );
 		delete_option( Waf_Rules_Manager::VERSION_OPTION_NAME );
 
 		global $wp_filesystem;
+
 		self::initialize_filesystem();
-		Waf_Constants::define_entrypoint();
 
 		// If the rules file doesn't exist, there's nothing else to do.
-		if ( ! $wp_filesystem->exists( self::get_waf_file_path( JETPACK_WAF_ENTRYPOINT ) ) ) {
+		if ( ! $wp_filesystem->exists( self::get_waf_file_path( Waf_Rules_Manager::RULES_ENTRYPOINT_FILE ) ) ) {
 			return;
 		}
 
 		// Empty the rules entrypoint file.
-		if ( ! $wp_filesystem->put_contents( self::get_waf_file_path( JETPACK_WAF_ENTRYPOINT ), "<?php\n" ) ) {
-			throw new File_System_Exception( 'Failed to empty rules.php file.' );
+		if ( ! $wp_filesystem->put_contents( self::get_waf_file_path( Waf_Rules_Manager::RULES_ENTRYPOINT_FILE ), "<?php\n" ) ) {
+			throw new \Exception( 'Failed to empty rules.php file.' );
 		}
 	}
 
 	/**
 	 * Handle updates to the WAF
-	 *
-	 * @return void
 	 */
 	public static function update_waf() {
 		Waf_Rules_Manager::update_rules_if_changed();
-
 		// Re-generate the standalone bootstrap file on every update
 		// TODO: We may consider only doing this when the WAF version changes
 		( new Waf_Standalone_Bootstrap() )->generate();
@@ -408,13 +381,7 @@ class Waf_Runner {
 
 		// Validate that the automatic rules file exists and is not empty.
 		global $wp_filesystem;
-
-		try {
-			self::initialize_filesystem();
-		} catch ( Waf_Exception $e ) {
-			return false;
-		}
-
+		self::initialize_filesystem();
 		$automatic_rules_file_contents = $wp_filesystem->get_contents( self::get_waf_file_path( Waf_Rules_Manager::AUTOMATIC_RULES_FILE ) );
 
 		// If the automatic rules file was removed or is now empty, return false.
@@ -423,8 +390,10 @@ class Waf_Runner {
 			// Delete the automatic rules last updated option.
 			delete_option( Waf_Rules_Manager::AUTOMATIC_RULES_LAST_UPDATED_OPTION_NAME );
 
+			$automatic_rules_enabled = get_option( Waf_Rules_Manager::AUTOMATIC_RULES_ENABLED_OPTION_NAME );
+
 			// If automatic rules setting is enabled, disable it.
-			if ( Waf_Rules_Manager::automatic_rules_enabled() ) {
+			if ( $automatic_rules_enabled ) {
 				update_option( Waf_Rules_Manager::AUTOMATIC_RULES_ENABLED_OPTION_NAME, false );
 			}
 

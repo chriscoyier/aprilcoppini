@@ -80,7 +80,7 @@ class RecursiveScanner
      *
      * @param string $abs_path
      * @param string $stage
-     *
+     * 
      * @return array|bool|\WP_error
      */
     public function scan($abs_path, $stage = '')
@@ -421,7 +421,7 @@ class RecursiveScanner
     private function get_scandir_manifest()
     {
         $file_data = $this->filesystem->get_contents($this->get_scandir_manifest_filename());
-        return json_decode($file_data, true);
+        return unserialize($file_data);
     }
 
     /**
@@ -430,9 +430,9 @@ class RecursiveScanner
     private function save_manifest()
     {
         $manifest_filename = $this->get_scandir_manifest_filename();
-        $result            = $this->filesystem->put_contents($manifest_filename, json_encode($this->manifest));
+        $result = $this->filesystem->put_contents($manifest_filename, serialize($this->manifest));
 
-        if ( ! $result) {
+        if (!$result) {
             $this->transfer_utils->catch_general_error('Could not create scandir manifest.');
         }
     }
@@ -507,8 +507,6 @@ class RecursiveScanner
      * @return bool
      */
     private function should_exclude($path) {
-        $excludes = Excludes::shouldExcludeFile($path, $this->excludes);
-
-        return !empty($excludes['exclude']);
+        return !empty(Excludes::shouldExcludeFile($path, $this->excludes));
     }
 }

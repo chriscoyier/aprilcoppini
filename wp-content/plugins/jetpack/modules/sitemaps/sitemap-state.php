@@ -140,4 +140,5 @@ class Jetpack_Sitemap_State {
 		delete_transient( 'jetpack-sitemap-state-lock' );
 		delete_option( 'jetpack-sitemap-state' );
 	}
+
 }

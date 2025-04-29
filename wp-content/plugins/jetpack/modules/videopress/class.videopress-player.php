@@ -48,13 +48,6 @@ class VideoPress_Player {
 	public static $shown = array();
 
 	/**
-	 * Fallback video title.
-	 *
-	 * @var ?string
-	 */
-	protected $title;
-
-	/**
 	 * Initiate a player object based on shortcode values and possible blog-level option overrides
 	 *
 	 * @since 1.3
@@ -336,16 +329,10 @@ class VideoPress_Player {
 		wp_enqueue_script( 'videopress' );
 		$thumbnail = esc_url( $this->video->poster_frame_uri );
 		$html      = "<video id=\"{$this->video_id}\" width=\"{$this->video->calculated_width}\" height=\"{$this->video->calculated_height}\" poster=\"$thumbnail\" controls=\"true\"";
-
-		$preload = 'metadata';
-		if ( isset( $this->options['preloadContent'] ) && videopress_is_valid_preload( $this->options['preloadContent'] ) ) {
-			$preload = $this->options['preloadContent'];
-		}
-
 		if ( isset( $this->options['autoplay'] ) && $this->options['autoplay'] === true ) {
 			$html .= ' autoplay="true"';
 		} else {
-			$html .= ' preload="' . esc_attr( $preload ) . '"';
+			$html .= ' preload="metadata"';
 		}
 		if ( isset( $this->video->text_direction ) ) {
 			$html .= ' dir="' . esc_attr( $this->video->text_direction ) . '"';
@@ -691,10 +678,6 @@ class VideoPress_Player {
 						$videopress_options[ $option ] = $value;
 					}
 					break;
-				case 'preloadContent':
-					if ( $value ) {
-						$videopress_options['preloadContent'] = $value;
-					}
 			}
 		}
 
@@ -882,7 +865,7 @@ class VideoPress_Player {
 	 * Double-baked Flash object markup for Internet Explorer and more standards-friendly consuming agents.
 	 *
 	 * @since 1.1
-	 * @return string HTML markup. Object and children.
+	 * @return HTML markup. Object and children.
 	 */
 	private function flash_object() {
 		wp_enqueue_script( 'videopress' );

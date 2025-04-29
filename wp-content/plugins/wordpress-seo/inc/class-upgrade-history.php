@@ -33,7 +33,7 @@ class WPSEO_Upgrade_History {
 	/**
 	 * Retrieves the content of the history items currently stored.
 	 *
-	 * @return array<array<string>> The contents of the history option.
+	 * @return array The contents of the history option.
 	 */
 	public function get() {
 		$data = get_option( $this->get_option_name(), [] );
@@ -47,11 +47,9 @@ class WPSEO_Upgrade_History {
 	/**
 	 * Adds a new history entry in the storage.
 	 *
-	 * @param string        $old_version  The version we are upgrading from.
-	 * @param string        $new_version  The version we are upgrading to.
-	 * @param array<string> $option_names The options that need to be stored.
-	 *
-	 * @return void
+	 * @param string $old_version  The version we are upgrading from.
+	 * @param string $new_version  The version we are upgrading to.
+	 * @param array  $option_names The options that need to be stored.
 	 */
 	public function add( $old_version, $new_version, array $option_names ) {
 		$option_data = [];
@@ -76,23 +74,22 @@ class WPSEO_Upgrade_History {
 	/**
 	 * Retrieves the data for the specified option names from the database.
 	 *
-	 * @param array<string> $option_names The option names to retrieve.
+	 * @param array $option_names The option names to retrieve.
 	 *
-	 * @return array<int|string|bool|float,array<string|int|bool|float>> The retrieved data.
+	 * @return array
 	 */
 	protected function get_options_data( array $option_names ) {
 		$wpdb = $this->get_wpdb();
 
-		$results = $wpdb->get_results(
-			$wpdb->prepare(
-				'
-				SELECT %i, %i FROM ' . $wpdb->options . ' WHERE
-				%i IN ( ' . implode( ',', array_fill( 0, count( $option_names ), '%s' ) ) . ' )
-				',
-				array_merge( [ 'option_value', 'option_name', 'option_name' ], $option_names )
-			),
-			ARRAY_A
+		$sql = $wpdb->prepare(
+			'
+			SELECT option_value, option_name FROM ' . $wpdb->options . ' WHERE
+			option_name IN ( ' . implode( ',', array_fill( 0, count( $option_names ), '%s' ) ) . ' )
+			',
+			$option_names
 		);
+
+		$results = $wpdb->get_results( $sql, ARRAY_A );
 
 		$data = [];
 		foreach ( $results as $result ) {
@@ -105,7 +102,7 @@ class WPSEO_Upgrade_History {
 	/**
 	 * Stores the new history state.
 	 *
-	 * @param array<array<string>> $data The data to store.
+	 * @param array $data The data to store.
 	 *
 	 * @return void
 	 */

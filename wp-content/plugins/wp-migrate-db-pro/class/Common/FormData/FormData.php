@@ -101,12 +101,12 @@ class FormData
 
         $return = [
             'action'                    => $current_migration['intent'],
-            'select_tables'             => isset($current_migration['tables_selected']) ? $current_migration['tables_selected'] : [],
+            'select_tables'             => isset($current_migration['tables_selected']) ? $current_migration['tables_selected'] : '',
             'table_migrate_option'      => isset($current_migration['tables_option']) ? $current_migration['tables_option'] : '',
             'create_backup'             => isset($current_migration['backup_option']) && $current_migration['backup_option'] !== 'none' ? 1 : 0,
             'backup_option'             => isset($current_migration['backup_option']) ? $current_migration['backup_option'] : '',
-            'select_backup'             => isset($current_migration['backup_tables_selected']) ? $current_migration['backup_tables_selected'] : [],
-            'select_post_types'         => isset($current_migration['post_types_selected']) ? $current_migration['post_types_selected'] : [],
+            'select_backup'             => isset($current_migration['backup_tables_selected']) ? $current_migration['backup_tables_selected'] : '',
+            'select_post_types'         => isset($current_migration['post_types_selected']) ? $current_migration['post_types_selected'] : '',
             'exclude_post_revisions'    => in_array('exclude_post_revisions', $advanced_options) ? '1' : '0',
             'replace_guids'             => in_array('replace_guids', $advanced_options) ? '1' : '0',
             'compatibility_older_mysql' => in_array('compatibility_older_mysql', $advanced_options) ? '1' : '0',
@@ -114,7 +114,6 @@ class FormData
             'exclude_spam'              => in_array('exclude_spam', $advanced_options) ? '1' : '0',
             'keep_active_plugins'       => in_array('keep_active_plugins', $advanced_options) ? '1' : '0',
             'gzip_file'                 => in_array('gzip_file', $advanced_options) ? '1' : '0',
-            'exclude_post_types'       => '0',
         ];
 
         if (in_array($current_migration['intent'], array('push', 'pull'))) {
@@ -129,17 +128,12 @@ class FormData
             $return['exclude_post_types'] = 1;
         }
 
-        if ($return['exclude_post_revisions'] === '1' && $current_migration['post_types_option'] === 'all' ) {
+        if ($return['exclude_post_revisions'] === '1' && empty($return['select_post_types'])) {
             $table                        = WPMDBDI::getInstance()->get(Table::class);
             $return['select_post_types']  = array_diff($table->get_post_types(), ['revision']);
             $return['exclude_post_types'] = 1;
         }
 
-        //make sure revisions are included when user has selected post types to migrate but did not exclude revisions
-        if ($return['exclude_post_revisions'] === '0' && $return['exclude_post_types'] === 1 && ! in_array('revision',
-                $return['select_post_types'], true)) {
-            $return['select_post_types'][] = 'revision';
-        }
         return $return;
     }
 

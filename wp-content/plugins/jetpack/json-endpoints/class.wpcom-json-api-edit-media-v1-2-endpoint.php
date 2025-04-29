@@ -27,14 +27,14 @@ new WPCOM_JSON_API_Edit_Media_v1_2_Endpoint(
 			'alt'         => '(string) Alternative text for image files.',
 			'artist'      => '(string) Audio Only. Artist metadata for the audio track.',
 			'album'       => '(string) Audio Only. Album metadata for the audio track.',
-			'media'       => '(media) An object file to attach to the post. To upload media, ' .
+			'media'       => '(object) An object file to attach to the post. To upload media, ' .
 							'the entire request should be multipart/form-data encoded. ' .
 							'Multiple media items will be displayed in a gallery. Accepts ' .
 							'jpg, jpeg, png, gif, pdf, doc, ppt, odt, pptx, docx, pps, ppsx, xls, xlsx, key. ' .
 							'Audio and Video may also be available. See <code>allowed_file_types</code> ' .
 							'in the options response of the site endpoint. ' .
 							'<br /><br /><strong>Example</strong>:<br />' .
-							"<code>curl \<br />--form 'title=Image' \<br />--form 'media=@/path/to/file.jpg' \<br />-H 'Authorization: BEARER your-token' \<br />'https://public-api.wordpress.com/rest/v1/sites/123/media/new'</code>",
+							"<code>curl \<br />--form 'title=Image' \<br />--form 'media=@/path/to/file.jpg' \<br />-H 'Authorization: BEARER your-token' \<br />'https://public-api.wordpress.com/rest/v1/sites/123/posts/new'</code>",
 			'attrs'       => '(object) An Object of attributes (`title`, `description` and `caption`) ' .
 							'are supported to assign to the media uploaded via the `media` or `media_url`',
 			'media_url'   => '(string) An URL of the image to attach to a post.',
@@ -86,9 +86,9 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 	/**
 	 * Return an array of mime_type items allowed when the media file is uploaded.
 	 *
-	 * @param array $default_mime_types - array of default mime types.
+	 * @param Array $default_mime_types - array of default mime types.
 	 *
-	 * @return array mime_type array
+	 * @return {Array} mime_type array
 	 */
 	public static function get_allowed_mime_types( $default_mime_types ) {
 		return array_unique(
@@ -113,12 +113,11 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 	 * Update the media post grabbing the post values from
 	 * the `attrs` parameter
 	 *
-	 * @param int   $media_id - post media ID.
-	 * @param array $attrs - `attrs` parameter sent from the client in the request body.
+	 * @param  {Number} $media_id - post media ID.
+	 * @param  {Object} $attrs - `attrs` parameter sent from the client in the request body.
 	 */
 	private function update_by_attrs_parameter( $media_id, $attrs ) {
-		$post_update_action = null;
-		$insert             = array();
+		$insert = array();
 
 		// Attributes: Title, Caption, Description.
 		if ( isset( $attrs['title'] ) ) {
@@ -163,7 +162,7 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 		if ( ! empty( $id3_meta ) ) {
 			// Before updating metadata, ensure that the item is audio.
 			$item = $this->get_media_item_v1_1( $media_id );
-			if ( str_starts_with( $item->mime_type, 'audio/' ) ) {
+			if ( 0 === strpos( $item->mime_type, 'audio/' ) ) {
 				$update_action = wp_update_attachment_metadata( $media_id, $id3_meta );
 				if ( is_wp_error( $update_action ) ) {
 					return $update_action;
@@ -177,8 +176,8 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 	/**
 	 * Return an object to be used to store into the revision_history
 	 *
-	 * @param object $media_item - media post object.
-	 * @return object the snapshot object
+	 * @param  {Object} $media_item - media post object.
+	 * @return {Object} the snapshot object
 	 */
 	private function get_snapshot( $media_item ) {
 		$current_file = get_attached_file( $media_item->ID );
@@ -199,7 +198,7 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 	/**
 	 * Try to remove the temporal file from the given file array.
 	 *
-	 * @param array $file_array - Array with data about the temporal file.
+	 * @param  {Array} $file_array - Array with data about the temporal file.
 	 */
 	private function remove_tmp_file( $file_array ) {
 		if ( file_exists( $file_array['tmp_name'] ) ) {
@@ -210,16 +209,14 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 	/**
 	 * Save the given temporal file in a local folder.
 	 *
-	 * @param array $file_array - array containing file data.
-	 * @param int   $media_id - the media id.
-	 * @param bool  $is_upload - True if `$file_array` derives from an upload in `$_FILES`, false if this is a sideload.
-	 * @return array|WP_Error An array with information about the new file saved or a WP_Error is something went wrong.
+	 * @param  {Array}  $file_array - array containing file data.
+	 * @param  {Number} $media_id - the media id.
+	 * @return {Array|WP_Error} An array with information about the new file saved or a WP_Error is something went wrong.
 	 */
-	private function save_temporary_file( $file_array, $media_id, $is_upload ) {
+	private function save_temporary_file( $file_array, $media_id ) {
 		$tmp_filename = $file_array['tmp_name'];
 
-		$is_ok = $is_upload ? is_uploaded_file( $tmp_filename ) : file_exists( $tmp_filename );
-		if ( ! $is_ok ) {
+		if ( ! file_exists( $tmp_filename ) ) {
 			return new WP_Error( 'invalid_input', 'No media provided in input.' );
 		}
 
@@ -234,9 +231,7 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 			! $this->is_file_supported_for_sideloading( $tmp_filename ) &&
 			! file_is_displayable_image( $tmp_filename )
 		) {
-			if ( ! $is_upload ) {
-				wp_delete_file( $tmp_filename );
-			}
+			wp_delete_file( $tmp_filename );
 			return new WP_Error( 'invalid_input', 'Invalid file type.', 403 );
 		}
 		remove_filter( 'jetpack_supported_media_sideload_types', $mime_type_static_filter );
@@ -250,12 +245,9 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 		$time = $this->get_time_string_from_guid( $media_id );
 
 		$file_array['name'] = $tmp_new_filename;
-		if ( $is_upload ) {
-			$file = wp_handle_upload( $file_array, $overrides, $time );
-		} else {
-			$file = wp_handle_sideload( $file_array, $overrides, $time );
-			$this->remove_tmp_file( $file_array );
-		}
+		$file               = wp_handle_sideload( $file_array, $overrides, $time );
+
+		$this->remove_tmp_file( $file_array );
 
 		if ( isset( $file['error'] ) ) {
 			return new WP_Error( 'upload_error', $file['error'] );
@@ -296,9 +288,9 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 	/**
 	 * Get the image from a remote url and then save it locally.
 	 *
-	 * @param int    $media_id - media post ID.
-	 * @param string $url - image URL to save locally.
-	 * @return array|WP_Error An array with information about the new file saved or a WP_Error is something went wrong.
+	 * @param  {Number} $media_id - media post ID.
+	 * @param  {String} $url - image URL to save locally.
+	 * @return {Array|WP_Error} An array with information about the new file saved or a WP_Error is something went wrong.
 	 */
 	private function build_file_array_from_url( $media_id, $url ) {
 		if ( ! $url ) {
@@ -330,10 +322,10 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 	/**
 	 * Add a new item into revision_history array.
 	 *
-	 * @param  object         $media_item  - media post.
-	 * @param  array|WP_Error $file        - File data, or WP_Error on error.
-	 * @param  bool           $has_original_media - condition is the original media has been already added.
-	 * @return bool `true` if the item has been added. Otherwise `false`.
+	 * @param  {Object}  $media_item         - media post.
+	 * @param  {file}    $file               - file recentrly added.
+	 * @param  {Boolean} $has_original_media - condition is the original media has been already added.
+	 * @return {Boolean} `true` if the item has been added. Otherwise `false`.
 	 */
 	private function register_revision( $media_item, $file, $has_original_media ) {
 		if (
@@ -349,9 +341,9 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 	/**
 	 * Restore the original media file.
 	 *
-	 * @param int    $media_id       - media post ID.
-	 * @param object $original_media - orginal media data.
-	 * @return array                  - restore media info.
+	 * @param  {Number} $media_id       - media post ID.
+	 * @param  {Object} $original_media - orginal media data.
+	 * @return {Array}                  - restore media info.
 	 */
 	private function restore_original( $media_id, $original_media ) {
 		$revisions = (array) Jetpack_Media::get_revision_history( $media_id );
@@ -429,7 +421,6 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 			}
 
 			// save the temporal file locally.
-			$is_upload     = (bool) $media_file;
 			$temporal_file = $media_file ? $media_file : $this->build_file_array_from_url( $media_id, $media_url );
 
 			if ( is_wp_error( $temporal_file ) ) {
@@ -441,7 +432,7 @@ class WPCOM_JSON_API_Edit_Media_v1_2_Endpoint extends WPCOM_JSON_API_Update_Medi
 
 			$uploaded_file = $should_restore
 				? $this->restore_original( $media_id, $has_original_media )
-				: $this->save_temporary_file( $temporal_file, $media_id, $is_upload );
+				: $this->save_temporary_file( $temporal_file, $media_id );
 
 			if ( is_wp_error( $uploaded_file ) ) {
 				return $uploaded_file;

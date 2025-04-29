@@ -58,11 +58,6 @@ class REST_Endpoints {
 						'type'        => 'array',
 						'required'    => false,
 					),
-					'context'  => array(
-						'description' => __( 'Context for the Full Sync', 'jetpack-sync' ),
-						'type'        => 'string',
-						'required'    => false,
-					),
 				),
 			)
 		);
@@ -293,7 +288,7 @@ class REST_Endpoints {
 						'required'    => false,
 					),
 					'only_range_edges'        => array(
-						'description' => __( 'Should only range edges be returned', 'jetpack-sync' ),
+						'description' => __( 'Should only range endges be returned', 'jetpack-sync' ),
 						'type'        => 'boolean',
 						'required'    => false,
 					),
@@ -358,7 +353,7 @@ class REST_Endpoints {
 				$modules['users'] = 'initial';
 			} elseif ( is_array( $request->get_param( $module_name ) ) ) {
 				$ids = $request->get_param( $module_name );
-				if ( array() !== $ids ) {
+				if ( count( $ids ) > 0 ) {
 					$modules[ $module_name ] = $ids;
 				}
 			}
@@ -368,11 +363,9 @@ class REST_Endpoints {
 			$modules = null;
 		}
 
-		$context = $request->get_param( 'context' );
-
 		return rest_ensure_response(
 			array(
-				'scheduled' => Actions::do_full_sync( $modules, $context ),
+				'scheduled' => Actions::do_full_sync( $modules ),
 			)
 		);
 	}
@@ -626,19 +619,10 @@ class REST_Endpoints {
 		$sender = new REST_Sender();
 
 		if ( 'immediate' === $queue_name ) {
-			return rest_ensure_response( $sender->immediate_full_sync_pull() );
+			return rest_ensure_response( $sender->immediate_full_sync_pull( $number_of_items ) );
 		}
 
-		$response = $sender->queue_pull( $queue_name, $number_of_items, $args );
-		// Disable sending while pulling.
-		if ( ! is_wp_error( $response ) ) {
-			set_transient( Sender::TEMP_SYNC_DISABLE_TRANSIENT_NAME, time(), Sender::TEMP_SYNC_DISABLE_TRANSIENT_EXPIRY );
-		} elseif ( 'queue_size' === $response->get_error_code() ) {
-			// Re-enable sending if the queue is empty.
-			delete_transient( Sender::TEMP_SYNC_DISABLE_TRANSIENT_NAME );
-		}
-
-		return rest_ensure_response( $response );
+		return rest_ensure_response( $sender->queue_pull( $queue_name, $number_of_items, $args ) );
 	}
 
 	/**
@@ -695,7 +679,7 @@ class REST_Endpoints {
 		}
 
 		// Limit to A-Z,a-z,0-9,_,- .
-		$request_body['buffer_id'] = preg_replace( '/[^A-Za-z0-9\-_\.]/', '', $request_body['buffer_id'] );
+		$request_body['buffer_id'] = preg_replace( '/[^A-Za-z0-9]/', '', $request_body['buffer_id'] );
 		$request_body['item_ids']  = array_filter( array_map( array( 'Automattic\Jetpack\Sync\REST_Endpoints', 'sanitize_item_ids' ), $request_body['item_ids'] ) );
 
 		$queue = new Queue( $queue_name );
@@ -705,7 +689,6 @@ class REST_Endpoints {
 		// Update Full Sync Status if queue is "full_sync".
 		if ( 'full_sync' === $queue_name ) {
 			$full_sync_module = Modules::get_module( 'full-sync' );
-			'@phan-var Modules\Full_Sync_Immediately|Modules\Full_Sync $full_sync_module';
 			$full_sync_module->update_sent_progress_action( $items );
 		}
 
@@ -771,7 +754,7 @@ class REST_Endpoints {
 	 * @see Actions::init
 	 * @see Sender::do_dedicated_sync_and_exit
 	 *
-	 * @since 1.34.0
+	 * @since $$next_version$$
 	 *
 	 * @return \WP_REST_Response
 	 */
@@ -879,10 +862,11 @@ class REST_Endpoints {
 	 */
 	protected static function sanitize_item_ids( $item ) {
 		// lets not delete any options that don't start with jpsq_sync- .
-		if ( ! is_string( $item ) || ! str_starts_with( $item, 'jpsq_' ) ) {
+		if ( ! is_string( $item ) || substr( $item, 0, 5 ) !== 'jpsq_' ) {
 			return null;
 		}
 		// Limit to A-Z,a-z,0-9,_,-,. .
 		return preg_replace( '/[^A-Za-z0-9-_.]/', '', $item );
 	}
+
 }

@@ -7,6 +7,8 @@
  * @package automattic/jetpack
  */
 
+add_action( 'init', 'jetpack_register_genericons', 1 );
+
 /**
  * Registers Genericons if not already done so by other code.
  */

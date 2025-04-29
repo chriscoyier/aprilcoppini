@@ -134,3 +134,4 @@ require_once $json_endpoints_dir . 'class.wpcom-json-api-site-settings-v1-3-endp
 // **********
 
 require_once $json_endpoints_dir . 'class.wpcom-json-api-site-settings-v1-4-endpoint.php';
+

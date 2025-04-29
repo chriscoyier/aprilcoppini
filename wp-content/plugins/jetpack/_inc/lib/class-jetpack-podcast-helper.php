@@ -5,9 +5,6 @@
  * @package automattic/jetpack
  */
 
-// Dummy comment to make phpcs happy.
-require_once __DIR__ . '/jp-simplepie-alias.php';
-
 /**
  * Class Jetpack_Podcast_Helper
  */
@@ -64,7 +61,7 @@ class Jetpack_Podcast_Helper {
 	/**
 	 * Retrieves tracks quantity.
 	 *
-	 * @return int number of tracks
+	 * @returns int number of tracks
 	 */
 	public static function get_tracks_quantity() {
 		/**
@@ -119,10 +116,6 @@ class Jetpack_Podcast_Helper {
 				);
 			} else {
 				$tracks = $this->get_track_list();
-			}
-
-			if ( is_wp_error( $tracks ) ) {
-				return $tracks;
 			}
 
 			if ( empty( $tracks ) ) {
@@ -231,7 +224,7 @@ class Jetpack_Podcast_Helper {
 			return $rss;
 		}
 
-		$tracks_quantity = static::get_tracks_quantity();
+		$tracks_quantity = $this->get_tracks_quantity();
 
 		/**
 		 * Allow requesting a specific number of tracks from SimplePie's `get_items` call.
@@ -250,7 +243,7 @@ class Jetpack_Podcast_Helper {
 		$track_list = array_map( array( __CLASS__, 'setup_tracks_callback' ), $rss->get_items( 0, $tracks_quantity ) );
 
 		// Filter out any tracks that are empty.
-		// Reset the array indices.
+		// Reset the array indicies.
 		return array_values( array_filter( $track_list ) );
 	}
 
@@ -307,7 +300,7 @@ class Jetpack_Podcast_Helper {
 	 * Loads an RSS feed using `fetch_feed`.
 	 *
 	 * @param boolean $force_refresh Clear the feed cache.
-	 * @return Jetpack\SimplePie\SimplePie|WP_Error The RSS object or error.
+	 * @return SimplePie|WP_Error The RSS object or error.
 	 */
 	public function load_feed( $force_refresh = false ) {
 		// Add action: clear the SimplePie Cache if $force_refresh param is true.
@@ -356,7 +349,7 @@ class Jetpack_Podcast_Helper {
 		 * Note that this action runs after other hooks added by Jetpack have been removed.
 		 *
 		 * @param string             $podcast_url URL for the podcast's RSS feed.
-		 * @param SimplePie\SimplePie|SimplePie|WP_Error $rss Either the SimplePie RSS object or an error.
+		 * @param SimplePie|WP_Error $rss Either the SimplePie RSS object or an error.
 		 *
 		 * @since 11.2
 		 */
@@ -393,16 +386,14 @@ class Jetpack_Podcast_Helper {
 	/**
 	 * Action handler to set our podcast specific feed locator class on the SimplePie object.
 	 *
-	 * @param Jetpack\SimplePie\SimplePie $feed The SimplePie object, passed by reference.
+	 * @param SimplePie $feed The SimplePie object, passed by reference.
 	 */
 	public static function set_podcast_locator( &$feed ) {
 		if ( ! class_exists( 'Jetpack_Podcast_Feed_Locator' ) ) {
 			require_once JETPACK__PLUGIN_DIR . '/_inc/lib/class-jetpack-podcast-feed-locator.php';
 		}
 
-		// @todo Once we drop support for WordPress 6.6, drop the class_exists check.
-		// @phan-suppress-next-line PhanUndeclaredClassReference -- Being tested for. @phan-suppress-current-line UnusedPluginSuppression
-		$feed->get_registry()->register( class_exists( SimplePie\Locator::class ) ? SimplePie\Locator::class : 'Locator', 'Jetpack_Podcast_Feed_Locator' );
+		$feed->set_locator_class( 'Jetpack_Podcast_Feed_Locator' );
 	}
 
 	/**
@@ -411,14 +402,12 @@ class Jetpack_Podcast_Helper {
 	 * Note this only resets the cache for the specified url. If the feed locator finds the podcast feed
 	 * within the markup of the that url, that feed itself may still be cached.
 	 *
-	 * @param Jetpack\SimplePie\SimplePie $feed The SimplePie object, passed by reference.
+	 * @param SimplePie $feed The SimplePie object, passed by reference.
 	 * @return void
 	 */
 	public static function reset_simplepie_cache( &$feed ) {
 		// Retrieve the cache object for a feed url. Based on:
 		// https://github.com/WordPress/WordPress/blob/fd1c2cb4011845ceb7244a062b09b2506082b1c9/wp-includes/class-simplepie.php#L1412.
-		// @todo This method of getting the cache is deprecated, and there doesn't seem to be a real replacement. `$feed->get_cache()` is private.
-		// @phan-suppress-next-line PhanUndeclaredClassReference
 		$cache = $feed->registry->call( 'Cache', 'get_handler', array( $feed->cache_location, call_user_func( $feed->cache_name_function, $feed->feed_url ), 'spc' ) );
 
 		if ( method_exists( $cache, 'unlink' ) ) {
@@ -429,10 +418,10 @@ class Jetpack_Podcast_Helper {
 	/**
 	 * Prepares Episode data to be used by the Podcast Player block.
 	 *
-	 * @param Jetpack\SimplePie\Item $episode SimplePie Item object, representing a podcast episode.
+	 * @param SimplePie_Item $episode SimplePie_Item object, representing a podcast episode.
 	 * @return array
 	 */
-	protected function setup_tracks_callback( Jetpack\SimplePie\Item $episode ) {
+	protected function setup_tracks_callback( SimplePie_Item $episode ) {
 		$enclosure = $this->get_audio_enclosure( $episode );
 
 		// If the audio enclosure is empty then it is not playable.
@@ -476,11 +465,11 @@ class Jetpack_Podcast_Helper {
 	/**
 	 * Retrieves an episode's image URL, if it's available.
 	 *
-	 * @param Jetpack\SimplePie\Item $episode SimplePie Item object, representing a podcast episode.
-	 * @param string                 $itunes_ns The itunes namespace, defaulted to the standard 1.0 version.
+	 * @param SimplePie_Item $episode SimplePie_Item object, representing a podcast episode.
+	 * @param string         $itunes_ns The itunes namespace, defaulted to the standard 1.0 version.
 	 * @return string|null The image URL or null if not found.
 	 */
-	protected function get_episode_image_url( Jetpack\SimplePie\Item $episode, $itunes_ns = 'http://www.itunes.com/dtds/podcast-1.0.dtd' ) {
+	protected function get_episode_image_url( SimplePie_Item $episode, $itunes_ns = 'http://www.itunes.com/dtds/podcast-1.0.dtd' ) {
 		$image = $episode->get_item_tags( $itunes_ns, 'image' );
 		if ( isset( $image[0]['attribs']['']['href'] ) ) {
 			return $image[0]['attribs']['']['href'];
@@ -491,12 +480,12 @@ class Jetpack_Podcast_Helper {
 	/**
 	 * Retrieves an audio enclosure.
 	 *
-	 * @param Jetpack\SimplePie\Item $episode SimplePie Item object, representing a podcast episode.
-	 * @return Jetpack\SimplePie\Enclosure|null
+	 * @param SimplePie_Item $episode SimplePie_Item object, representing a podcast episode.
+	 * @return SimplePie_Enclosure|null
 	 */
-	protected function get_audio_enclosure( Jetpack\SimplePie\Item $episode ) {
+	protected function get_audio_enclosure( SimplePie_Item $episode ) {
 		foreach ( (array) $episode->get_enclosures() as $enclosure ) {
-			if ( str_starts_with( $enclosure->type, 'audio/' ) ) {
+			if ( 0 === strpos( $enclosure->type, 'audio/' ) ) {
 				return $enclosure;
 			}
 		}
@@ -507,7 +496,7 @@ class Jetpack_Podcast_Helper {
 	/**
 	 * Returns the track duration as a formatted string.
 	 *
-	 * @param int|float $duration of the track in seconds.
+	 * @param number $duration of the track in seconds.
 	 * @return string
 	 */
 	protected function format_track_duration( $duration ) {

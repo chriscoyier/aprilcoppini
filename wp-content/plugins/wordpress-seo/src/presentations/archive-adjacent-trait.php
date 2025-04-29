@@ -10,16 +10,13 @@ use Yoast\WP\SEO\Models\Indexable;
  *
  * Presentation object for indexables.
  *
- * @property Indexable $model The indexable.
+ * @property Indexable         $model      The indexable.
+ * @property Pagination_Helper $pagination The pagination helper. Should be defined in the parent
+ *                                         class because of trait issues in PHP 5.6.
+ *                                         For a detailed explanation of the issue, see
+ *                                         {@link https://github.com/Yoast/wordpress-seo/pull/18820}.
  */
 trait Archive_Adjacent {
-
-	/**
-	 * Holds the Pagination_Helper instance.
-	 *
-	 * @var Pagination_Helper
-	 */
-	protected $pagination;
 
 	/**
 	 * Sets the helpers for the trait.
@@ -29,8 +26,6 @@ trait Archive_Adjacent {
 	 * @codeCoverageIgnore
 	 *
 	 * @param Pagination_Helper $pagination The pagination helper.
-	 *
-	 * @return void
 	 */
 	public function set_archive_adjacent_helpers( Pagination_Helper $pagination ) {
 		$this->pagination = $pagination;

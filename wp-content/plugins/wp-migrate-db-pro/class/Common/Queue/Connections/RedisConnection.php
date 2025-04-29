@@ -42,7 +42,7 @@ class RedisConnection implements ConnectionInterface {
 	 *
 	 * @param Job $job
 	 */
-	public function release( Job $job ) {
+	public function release( $job ) {
 		//
 	}
 

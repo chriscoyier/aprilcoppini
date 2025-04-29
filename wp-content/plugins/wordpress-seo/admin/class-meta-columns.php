@@ -51,13 +51,6 @@ class WPSEO_Meta_Columns {
 	private $score_icon_helper;
 
 	/**
-	 * Holds the WPSEO_Admin_Asset_Manager instance.
-	 *
-	 * @var WPSEO_Admin_Asset_Manager
-	 */
-	private $admin_asset_manager;
-
-	/**
 	 * When page analysis is enabled, just initialize the hooks.
 	 */
 	public function __construct() {
@@ -69,13 +62,10 @@ class WPSEO_Meta_Columns {
 		$this->analysis_readability = new WPSEO_Metabox_Analysis_Readability();
 		$this->admin_columns_cache  = YoastSEO()->classes->get( Admin_Columns_Cache_Integration::class );
 		$this->score_icon_helper    = YoastSEO()->helpers->score_icon;
-		$this->admin_asset_manager  = YoastSEO()->classes->get( WPSEO_Admin_Asset_Manager::class );
 	}
 
 	/**
 	 * Sets up up the hooks.
-	 *
-	 * @return void
 	 */
 	public function setup_hooks() {
 		$this->set_post_type_hooks();
@@ -104,25 +94,14 @@ class WPSEO_Meta_Columns {
 			return $columns;
 		}
 
-		$this->admin_asset_manager->enqueue_script( 'edit-page' );
-		$this->admin_asset_manager->enqueue_style( 'edit-page' );
-
 		$added_columns = [];
 
 		if ( $this->analysis_seo->is_enabled() ) {
-			$added_columns['wpseo-score'] = '<span class="yoast-column-seo-score yoast-column-header-has-tooltip" data-tooltip-text="'
-											. esc_attr__( 'SEO score', 'wordpress-seo' )
-											. '"><span class="screen-reader-text">'
-											. __( 'SEO score', 'wordpress-seo' )
-											. '</span></span>';
+			$added_columns['wpseo-score'] = '<span class="yoast-column-seo-score yoast-column-header-has-tooltip" data-tooltip-text="' . esc_attr__( 'SEO score', 'wordpress-seo' ) . '"><span class="screen-reader-text">' . __( 'SEO score', 'wordpress-seo' ) . '</span></span></span>';
 		}
 
 		if ( $this->analysis_readability->is_enabled() ) {
-			$added_columns['wpseo-score-readability'] = '<span class="yoast-column-readability yoast-column-header-has-tooltip" data-tooltip-text="'
-														. esc_attr__( 'Readability score', 'wordpress-seo' )
-														. '"><span class="screen-reader-text">'
-														. __( 'Readability score', 'wordpress-seo' )
-														. '</span></span>';
+			$added_columns['wpseo-score-readability'] = '<span class="yoast-column-readability yoast-column-header-has-tooltip" data-tooltip-text="' . esc_attr__( 'Readability score', 'wordpress-seo' ) . '"><span class="screen-reader-text">' . __( 'Readability score', 'wordpress-seo' ) . '</span></span></span>';
 		}
 
 		$added_columns['wpseo-title']    = __( 'SEO Title', 'wordpress-seo' );
@@ -140,8 +119,6 @@ class WPSEO_Meta_Columns {
 	 *
 	 * @param string $column_name Column to display the content for.
 	 * @param int    $post_id     Post to display the column content for.
-	 *
-	 * @return void
 	 */
 	public function column_content( $column_name, $post_id ) {
 		if ( $this->display_metabox() === false ) {
@@ -162,22 +139,15 @@ class WPSEO_Meta_Columns {
 				return;
 
 			case 'wpseo-title':
-				$meta = $this->get_meta( $post_id );
-				if ( $meta ) {
-					echo esc_html( $meta->title );
-				}
+				echo esc_html( $this->get_meta( $post_id )->title );
 
 				return;
 
 			case 'wpseo-metadesc':
-				$metadesc_val = '';
-				$meta         = $this->get_meta( $post_id );
-				if ( $meta ) {
-					$metadesc_val = $meta->meta_description;
-				}
+				$metadesc_val = $this->get_meta( $post_id )->meta_description;
+
 				if ( $metadesc_val === '' ) {
 					echo '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">',
-					/* translators: Hidden accessibility text. */
 					esc_html__( 'Meta description not set.', 'wordpress-seo' ),
 					'</span>';
 
@@ -193,7 +163,6 @@ class WPSEO_Meta_Columns {
 
 				if ( $focuskw_val === '' ) {
 					echo '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">',
-					/* translators: Hidden accessibility text. */
 					esc_html__( 'Focus keyphrase not set.', 'wordpress-seo' ),
 					'</span>';
 
@@ -255,8 +224,6 @@ class WPSEO_Meta_Columns {
 
 	/**
 	 * Adds a dropdown that allows filtering on the posts SEO Quality.
-	 *
-	 * @return void
 	 */
 	public function posts_filter_dropdown() {
 		if ( ! $this->can_display_filter() ) {
@@ -265,7 +232,6 @@ class WPSEO_Meta_Columns {
 
 		$ranks = WPSEO_Rank::get_all_ranks();
 
-		/* translators: Hidden accessibility text. */
 		echo '<label class="screen-reader-text" for="wpseo-filter">' . esc_html__( 'Filter by SEO Score', 'wordpress-seo' ) . '</label>';
 		echo '<select name="seo_filter" id="wpseo-filter">';
 
@@ -294,7 +260,6 @@ class WPSEO_Meta_Columns {
 
 		$ranks = WPSEO_Rank::get_all_readability_ranks();
 
-		/* translators: Hidden accessibility text. */
 		echo '<label class="screen-reader-text" for="wpseo-readability-filter">' . esc_html__( 'Filter by Readability Score', 'wordpress-seo' ) . '</label>';
 		echo '<select name="readability_filter" id="wpseo-readability-filter">';
 
@@ -366,12 +331,6 @@ class WPSEO_Meta_Columns {
 	 * @return array The Readability score filter.
 	 */
 	protected function determine_readability_filters( $readability_filter ) {
-		if ( $readability_filter === WPSEO_Rank::NO_FOCUS ) {
-			return $this->create_no_readability_scores_filter();
-		}
-		if ( $readability_filter === WPSEO_Rank::BAD ) {
-			return $this->create_bad_readability_scores_filter();
-		}
 		$rank = new WPSEO_Rank( $readability_filter );
 
 		return $this->create_readability_score_filter( $rank->get_starting_score(), $rank->get_end_score() );
@@ -430,36 +389,13 @@ class WPSEO_Meta_Columns {
 		}
 
 		if ( $this->is_valid_filter( $current_keyword_filter ) ) {
-			/**
-			 * Adapt the meta query used to filter the post overview on keyphrase.
-			 *
-			 * @internal
-			 *
-			 * @param array $keyphrase      The keyphrase used in the filter.
-			 * @param array $keyword_filter The current keyword filter.
-			 */
-			$keyphrase_filter = apply_filters(
-				'wpseo_change_keyphrase_filter_in_request',
-				$this->get_keyword_filter( $current_keyword_filter ),
-				$current_keyword_filter
+			$active_filters = array_merge(
+				$active_filters,
+				$this->get_keyword_filter( $current_keyword_filter )
 			);
-
-			if ( is_array( $keyphrase_filter ) ) {
-				$active_filters = array_merge(
-					$active_filters,
-					[ $keyphrase_filter ]
-				);
-			}
 		}
 
-		/**
-		 * Adapt the active applicable filters on the posts overview.
-		 *
-		 * @internal
-		 *
-		 * @param array $active_filters The current applicable filters.
-		 */
-		return apply_filters( 'wpseo_change_applicable_filters', $active_filters );
+		return $active_filters;
 	}
 
 	/**
@@ -472,22 +408,8 @@ class WPSEO_Meta_Columns {
 	public function column_sort_orderby( $vars ) {
 		$collected_filters = $this->collect_filters();
 
-		$order_by_column = $vars['orderby'];
-		if ( isset( $order_by_column ) ) {
-			// Based on the selected column, create a meta query.
-			$order_by = $this->filter_order_by( $order_by_column );
-
-			/**
-			 * Adapt the order by part of the query on the posts overview.
-			 *
-			 * @internal
-			 *
-			 * @param array  $order_by        The current order by.
-			 * @param string $order_by_column The current order by column.
-			 */
-			$order_by = apply_filters( 'wpseo_change_order_by', $order_by, $order_by_column );
-
-			$vars = array_merge( $vars, $order_by );
+		if ( isset( $vars['orderby'] ) ) {
+			$vars = array_merge( $vars, $this->filter_order_by( $vars['orderby'] ) );
 		}
 
 		return $this->build_filter_query( $vars, $collected_filters );
@@ -604,7 +526,7 @@ class WPSEO_Meta_Columns {
 		$current_seo_filter = $this->get_current_seo_filter();
 
 		// This only applies for the SEO score filter because it can because the SEO score can be altered by the no-index option.
-		if ( $this->is_valid_filter( $current_seo_filter ) && ! in_array( $current_seo_filter, [ WPSEO_Rank::NO_INDEX ], true ) ) {
+		if ( $this->is_valid_filter( $current_seo_filter ) && ! in_array( $current_seo_filter, [ WPSEO_Rank::NO_INDEX, WPSEO_Rank::NO_FOCUS ], true ) ) {
 			$result['meta_query'] = array_merge( $result['meta_query'], [ $this->get_meta_robots_query_values() ] );
 		}
 
@@ -617,7 +539,7 @@ class WPSEO_Meta_Columns {
 	 * @param number $low  The lower boundary of the score.
 	 * @param number $high The higher boundary of the score.
 	 *
-	 * @return array<array<string>> The Readability Score filter.
+	 * @return array The Readability Score filter.
 	 */
 	protected function create_readability_score_filter( $low, $high ) {
 		return [
@@ -636,7 +558,7 @@ class WPSEO_Meta_Columns {
 	 * @param number $low  The lower boundary of the score.
 	 * @param number $high The higher boundary of the score.
 	 *
-	 * @return array<array<string>> The SEO score filter.
+	 * @return array The SEO score filter.
 	 */
 	protected function create_seo_score_filter( $low, $high ) {
 		return [
@@ -652,7 +574,7 @@ class WPSEO_Meta_Columns {
 	/**
 	 * Creates a filter to retrieve posts that were set to no-index.
 	 *
-	 * @return array<array<string>> Array containin the no-index filter.
+	 * @return array Array containin the no-index filter.
 	 */
 	protected function create_no_index_filter() {
 		return [
@@ -667,75 +589,19 @@ class WPSEO_Meta_Columns {
 	/**
 	 * Creates a filter to retrieve posts that have no keyword set.
 	 *
-	 * @return array<array<string>> Array containing the no focus keyword filter.
+	 * @return array Array containing the no focus keyword filter.
 	 */
 	protected function create_no_focus_keyword_filter() {
 		return [
 			[
+				'key'     => WPSEO_Meta::$meta_prefix . 'meta-robots-noindex',
+				'value'   => 'needs-a-value-anyway',
+				'compare' => 'NOT EXISTS',
+			],
+			[
 				'key'     => WPSEO_Meta::$meta_prefix . 'linkdex',
 				'value'   => 'needs-a-value-anyway',
 				'compare' => 'NOT EXISTS',
-			],
-		];
-	}
-
-	/**
-	 * Creates a filter to retrieve posts that have not been analyzed for readability yet.
-	 *
-	 * @return array<array<string>> Array containing the no readability filter.
-	 */
-	protected function create_no_readability_scores_filter() {
-		// We check the existence of the Estimated Reading Time, because readability scores of posts that haven't been manually saved while Yoast SEO is active, don't exist, which is also the case for posts with not enough content.
-		// Meanwhile, the ERT is a solid indicator of whether a post has ever been saved (aka, analyzed), so we're using that.
-		$rank = new WPSEO_Rank( WPSEO_Rank::BAD );
-		return [
-			[
-				'key'     => WPSEO_Meta::$meta_prefix . 'estimated-reading-time-minutes',
-				'value'   => 'needs-a-value-anyway',
-				'compare' => 'NOT EXISTS',
-			],
-			[
-				'relation' => 'OR',
-				[
-					'key'     => WPSEO_Meta::$meta_prefix . 'content_score',
-					'value'   => $rank->get_starting_score(),
-					'type'    => 'numeric',
-					'compare' => '<',
-				],
-				[
-					'key'     => WPSEO_Meta::$meta_prefix . 'content_score',
-					'value'   => 'needs-a-value-anyway',
-					'compare' => 'NOT EXISTS',
-				],
-			],
-		];
-	}
-
-	/**
-	 * Creates a filter to retrieve posts that have bad readability scores, including those that have not enough content to have one.
-	 *
-	 * @return array<array<string>> Array containing the bad readability filter.
-	 */
-	protected function create_bad_readability_scores_filter() {
-		$rank = new WPSEO_Rank( WPSEO_Rank::BAD );
-		return [
-			'relation' => 'OR',
-			[
-				'key'     => WPSEO_Meta::$meta_prefix . 'content_score',
-				'value'   => [ $rank->get_starting_score(), $rank->get_end_score() ],
-				'type'    => 'numeric',
-				'compare' => 'BETWEEN',
-			],
-			[
-				[
-					'key'     => WPSEO_Meta::$meta_prefix . 'content_score',
-					'value'   => 'needs-a-value-anyway',
-					'compare' => 'NOT EXISTS',
-				],
-				[
-					'key'     => WPSEO_Meta::$meta_prefix . 'estimated-reading-time-minutes',
-					'compare' => 'EXISTS',
-				],
 			],
 		];
 	}
@@ -778,7 +644,7 @@ class WPSEO_Meta_Columns {
 	 *
 	 * @param string $order_by The ID of the column by which to order the posts.
 	 *
-	 * @return array<string> Array containing the order filters.
+	 * @return array Array containing the order filters.
 	 */
 	private function filter_order_by( $order_by ) {
 		switch ( $order_by ) {
@@ -824,9 +690,7 @@ class WPSEO_Meta_Columns {
 	private function parse_column_score( $post_id ) {
 		$meta = $this->get_meta( $post_id );
 
-		if ( $meta ) {
-			return $this->score_icon_helper->for_seo( $meta->indexable, '', __( 'Post is set to noindex.', 'wordpress-seo' ) );
-		}
+		return $this->score_icon_helper->for_seo( $meta->indexable, '', __( 'Post is set to noindex.', 'wordpress-seo' ) );
 	}
 
 	/**
@@ -838,15 +702,12 @@ class WPSEO_Meta_Columns {
 	 */
 	private function parse_column_score_readability( $post_id ) {
 		$meta = $this->get_meta( $post_id );
-		if ( $meta ) {
-			return $this->score_icon_helper->for_readability( $meta->indexable->readability_score );
-		}
+
+		return $this->score_icon_helper->for_readability( $meta->indexable->readability_score );
 	}
 
 	/**
 	 * Sets up the hooks for the post_types.
-	 *
-	 * @return void
 	 */
 	private function set_post_type_hooks() {
 		$post_types = WPSEO_Post_Type::get_accessible_post_types();

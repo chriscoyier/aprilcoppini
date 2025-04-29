@@ -8,7 +8,6 @@
 namespace Automattic\Jetpack\My_Jetpack\Products;
 
 use Automattic\Jetpack\My_Jetpack\Product;
-use WP_Error;
 
 /**
  * Class responsible for handling the Extras product.
@@ -39,21 +38,21 @@ class Extras extends Product {
 	public static $requires_user_connection = false;
 
 	/**
-	 * Get the product name
+	 * Get the internationalized product name
 	 *
 	 * @return string
 	 */
 	public static function get_name() {
-		return 'Extras';
+		return __( 'Extras', 'jetpack-my-jetpack' );
 	}
 
 	/**
-	 * Get the product title
+	 * Get the internationalized product title
 	 *
 	 * @return string
 	 */
 	public static function get_title() {
-		return 'Jetpack Extras';
+		return __( 'Jetpack Extras', 'jetpack-my-jetpack' );
 	}
 
 	/**
@@ -81,6 +80,7 @@ class Extras extends Product {
 	 */
 	public static function get_features() {
 		return array(
+			__( 'Measure your impact with beautiful stats', 'jetpack-my-jetpack' ),
 			__( 'Speed up your site with optimized images', 'jetpack-my-jetpack' ),
 			__( 'Protect your site against bot attacks', 'jetpack-my-jetpack' ),
 			__( 'Get notifications if your site goes offline', 'jetpack-my-jetpack' ),

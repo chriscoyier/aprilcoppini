@@ -2,12 +2,10 @@
 /**
  * Jetpack_Flickr_Widget settings form output.
  *
- * @html-template Jetpack_Flickr_Widget::form
  * @package automattic/jetpack
  */
 
-// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable -- HTML template, let Phan handle it.
-
+//phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 ?>
 <p>
 	<label>
@@ -40,7 +38,7 @@
 <p>
 	<small>
 		<?php
-		printf(
+		echo sprintf(
 			wp_kses(
 				/* Translators: %s is the URL to an example Flickr RSS feed. */
 				__( 'Leave the Flickr RSS URL field blank to display <a target="_blank" href="%s">interesting</a> Flickr photos.', 'jetpack' ),

@@ -13,14 +13,14 @@ class SEMrush_Phrases_Action {
 	/**
 	 * The transient cache key.
 	 */
-	public const TRANSIENT_CACHE_KEY = 'wpseo_semrush_related_keyphrases_%s_%s';
+	const TRANSIENT_CACHE_KEY = 'wpseo_semrush_related_keyphrases_%s_%s';
 
 	/**
 	 * The SEMrush keyphrase URL.
 	 *
 	 * @var string
 	 */
-	public const KEYPHRASES_URL = 'https://oauth.semrush.com/api/v1/keywords/phrase_fullsearch';
+	const KEYPHRASES_URL = 'https://oauth.semrush.com/api/v1/keywords/phrase_fullsearch';
 
 	/**
 	 * The SEMrush_Client instance.
@@ -51,7 +51,7 @@ class SEMrush_Phrases_Action {
 			$transient_key = \sprintf( static::TRANSIENT_CACHE_KEY, $keyphrase, $database );
 			$transient     = \get_transient( $transient_key );
 
-			if ( $transient !== false && isset( $transient['data']['columnNames'] ) && \count( $transient['data']['columnNames'] ) === 5 ) {
+			if ( $transient !== false ) {
 				return $this->to_result_object( $transient );
 			}
 
@@ -59,7 +59,7 @@ class SEMrush_Phrases_Action {
 				'params' => [
 					'phrase'         => $keyphrase,
 					'database'       => $database,
-					'export_columns' => 'Ph,Nq,Td,In,Kd',
+					'export_columns' => 'Ph,Nq,Td',
 					'display_limit'  => 10,
 					'display_offset' => 0,
 					'display_sort'   => 'nq_desc',
@@ -94,3 +94,4 @@ class SEMrush_Phrases_Action {
 		];
 	}
 }
+

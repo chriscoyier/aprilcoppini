@@ -104,12 +104,8 @@ class Feed_Improvements implements Integration_Interface {
 			return;
 		}
 
-		$queried_object = \get_queried_object();
-		// Don't call get_class with null. This gives a warning.
-		$class = ( $queried_object !== null ) ? \get_class( $queried_object ) : null;
-
 		$url = $this->get_url_for_queried_object( $this->meta->for_home_page()->canonical );
-		if ( ( ! empty( $url ) && $url !== $this->meta->for_home_page()->canonical ) || $class === null ) {
+		if ( ! empty( $url ) ) {
 			\header( \sprintf( 'Link: <%s>; rel="canonical"', $url ), false );
 		}
 	}
@@ -149,35 +145,30 @@ class Feed_Improvements implements Integration_Interface {
 		$queried_object = \get_queried_object();
 		// Don't call get_class with null. This gives a warning.
 		$class = ( $queried_object !== null ) ? \get_class( $queried_object ) : null;
-		$meta  = false;
 
 		switch ( $class ) {
 			// Post type archive feeds.
 			case 'WP_Post_Type':
-				$meta = $this->meta->for_post_type_archive( $queried_object->name );
+				$url = $this->meta->for_post_type_archive( $queried_object->name )->canonical;
 				break;
 			// Post comment feeds.
 			case 'WP_Post':
-				$meta = $this->meta->for_post( $queried_object->ID );
+				$url = $this->meta->for_post( $queried_object->ID )->canonical;
 				break;
 			// Term feeds.
 			case 'WP_Term':
-				$meta = $this->meta->for_term( $queried_object->term_id );
+				$url = $this->meta->for_term( $queried_object->term_id )->canonical;
 				break;
 			// Author feeds.
 			case 'WP_User':
-				$meta = $this->meta->for_author( $queried_object->ID );
+				$url = $this->meta->for_author( $queried_object->ID )->canonical;
 				break;
 			// This would be NULL on the home page and on date archive feeds.
 			case null:
-				$meta = $this->meta->for_home_page();
+				$url = $this->meta->for_home_page()->canonical;
 				break;
 			default:
 				break;
-		}
-
-		if ( $meta ) {
-			return $meta->canonical;
 		}
 
 		return $url;

@@ -47,7 +47,7 @@ class Nonce implements Permission {
 	public function __construct( $action, $request_key = 'nonce' ) {
 		$this->action      = $action;
 		$this->request_key = $request_key;
-		$this->generate_nonce();
+		$this->generate_nonce( $action );
 	}
 
 	public function verify( $request ) {
@@ -82,4 +82,5 @@ class Nonce implements Permission {
 	public static function get_generated_nonces() {
 		return static::$saved_nonces;
 	}
+
 }

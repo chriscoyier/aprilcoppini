@@ -1,144 +1,112 @@
-( function () {
-	let menuSelector, nonceInput;
-	const initializedTables = new Set();
+( function ( $ ) {
+	var menuSelector, nonceInput, methods;
 
-	const methods = {
-		init: function ( table ) {
-			let tbody = table.lastElementChild;
-			while ( tbody && tbody.tagName !== 'TBODY' ) {
-				tbody = tbody.previousElementSibling;
-			}
-			const row = tbody.querySelector( 'tr:first-child' ).cloneNode( true );
+	methods = {
+		init: function (/*options*/) {
+			var $this = this,
+				tbody,
+				row;
 
-			table.dataset.form = table.closest( 'form' );
-			table.dataset.tbody = tbody;
-			table.dataset.row = row;
-			table.dataset.currentRow = row;
-
-			menuSelector = document.getElementById( 'nova-menu-tax' );
-			nonceInput = document.getElementById( '_wpnonce' );
-
-			table.addEventListener( 'keypress', function ( event ) {
-				if ( event.which !== 13 ) return;
+			this.on( 'keypress.manyItemsTable', function ( event ) {
+				if ( 13 !== event.which ) {
+					return;
+				}
 
 				event.preventDefault();
-				if ( typeof FormData === 'function' ) {
-					methods.submitRow.call( table );
+				if ( 'function' === typeof FormData ) {
+					methods.submitRow.apply( $this );
 				}
-				methods.addRow.call( table );
+				methods.addRow.apply( $this );
+			} ).on( 'focus.manyItemsTable', ':input', function (/*event*/) {
+				$this.data( 'currentRow', $( this ).parents( 'tr:first' ) );
 			} );
 
-			table.addEventListener( 'focusin', function ( event ) {
-				if ( event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' ) {
-					table.dataset.currentRow = event.target.closest( 'tr' );
-				}
-			} );
+			tbody = this.find( 'tbody:last' );
+			row = tbody.find( 'tr:first' ).clone();
 
-			initializedTables.add( table );
-			return table;
+			this.data( 'form', this.parents( 'form:first' ) );
+			this.data( 'tbody', tbody );
+			this.data( 'row', row );
+			this.data( 'currentRow', row );
+
+			menuSelector = $( '#nova-menu-tax' );
+			nonceInput = $( '#_wpnonce' );
+
+			return this;
 		},
 
-		destroy: function ( table ) {
-			if ( this.observer ) {
-				this.observer.disconnect();
-			}
-			table.removeEventListener( 'keypress', methods.keypressHandler );
-			table.removeEventListener( 'focusin', methods.focusinHandler );
-			initializedTables.delete( table );
-			return table;
+		destroy: function () {
+			this.off( '.manyItemsTable' );
+
+			return this;
 		},
 
-		submitRow: function ( table ) {
-			const submittedRow = table.dataset.currentRow;
-			const currentInputs = submittedRow.querySelectorAll( 'input, textarea, select' );
-			const form = document.querySelector( table.dataset.form );
-			const allInputs = Array.from( form.querySelectorAll( 'input, textarea, select' ) );
+		submitRow: function () {
+			var submittedRow, currentInputs, allInputs, partialFormData;
 
-			currentInputs.forEach( input => ( input.disabled = true ) );
-			allInputs
-				.filter( input => ! currentInputs.includes( input ) )
-				.forEach( input => ( input.disabled = true ) );
+			submittedRow = this.data( 'currentRow' );
+			currentInputs = submittedRow.find( ':input' );
+			allInputs = this.data( 'form' )
+				.find( ':input' )
+				.not( currentInputs )
+				.attr( 'disabled', true )
+				.end();
 
-			const partialFormData = new FormData( form );
+			partialFormData = new FormData( this.data( 'form' ).get( 0 ) );
 			partialFormData.append( 'ajax', '1' );
-			partialFormData.append( 'nova_menu_tax', menuSelector.value );
-			partialFormData.append( '_wpnonce', nonceInput.value );
+			partialFormData.append( 'nova_menu_tax', menuSelector.val() );
+			partialFormData.append( '_wpnonce', nonceInput.val() );
 
-			fetch( '', {
-				method: 'POST',
-				body: partialFormData,
-			} )
-				.then( response => response.text() )
-				.then( responseText => {
-					submittedRow.innerHTML = responseText;
-				} );
+			allInputs.attr( 'disabled', false );
 
-			allInputs.forEach( input => ( input.disabled = false ) );
-
-			return table;
-		},
-
-		addRow: function ( table ) {
-			const row = table.dataset.row.cloneNode( true );
-
-			const tbody = table.dataset.tbody;
-			tbody.appendChild( row );
-
-			const firstInput = row.querySelector( 'input, textarea, select' );
-			if ( firstInput ) firstInput.focus();
-
-			return table;
-		},
-
-		clickAddRow: function ( table ) {
-			let tbody = table.lastElementChild;
-
-			while ( tbody && tbody.tagName !== 'TBODY' ) {
-				tbody = tbody.previousElementSibling;
-			}
-			const row = tbody.querySelector( 'tr:first-child' ).cloneNode( true );
-
-			row.querySelectorAll( 'input, textarea' ).forEach( input => {
-				input.value = '';
+			$.ajax( {
+				url: '',
+				type: 'POST',
+				data: partialFormData,
+				processData: false,
+				contentType: false,
+			} ).complete( function ( xhr ) {
+				submittedRow.html( xhr.responseText );
 			} );
 
-			tbody.appendChild( row );
+			currentInputs.attr( 'disabled', true );
+
+			return this;
+		},
+
+		addRow: function () {
+			var row = this.data( 'row' ).clone();
+			row.appendTo( this.data( 'tbody' ) );
+			row.find( ':input:first' ).focus();
+
+			return this;
 		},
 	};
 
-	const observeTableRemoval = function ( list ) {
-		const observer = new MutationObserver( mutations => {
-			mutations.forEach( mutation => {
-				mutation.removedNodes.forEach( node => {
-					if ( node.matches && node.matches( '.many-items-table' ) ) {
-						methods.destroy( node );
-					}
-				} );
-			} );
-		} );
-
-		observer.observe( list, { childList: true, subtree: true } );
+	$.fn.manyItemsTable = function ( method ) {
+		// Method calling logic
+		if ( methods[ method ] ) {
+			return methods[ method ].apply( this, Array.prototype.slice.call( arguments, 1 ) );
+		} else if ( typeof method === 'object' || ! method ) {
+			return methods.init.apply( this, arguments );
+		} else {
+			$.error( 'Method ' + method + ' does not exist on jQuery.manyItemsTable' );
+			return this;
+		}
 	};
 
-	// Initialization for many-items-table
-	document.addEventListener( 'focusin', event => {
-		const table = event.target.closest( '.many-items-table' );
-		if ( table && ! initializedTables.has( table ) ) {
-			methods.init( table );
-		}
-	} );
+	$.fn.clickAddRow = function () {
+		var tbody = this.find( 'tbody:last' ),
+			row = tbody.find( 'tr:first' ).clone();
 
-	document.addEventListener( 'click', event => {
-		if ( event.target.matches( 'a.nova-new-row' ) ) {
-			const table = event.target.closest( '.many-items-table' );
-			if ( table ) {
-				event.preventDefault();
-				methods.clickAddRow( table );
-			}
-		}
-	} );
-	const list = document.querySelector( '#the-list' ); // Scope to the specific table
-	if ( list ) {
-		observeTableRemoval( list );
-	}
-} )();
+		$( row ).find( 'input, textarea' ).val( '' );
+		$( row ).appendTo( tbody );
+	};
+} )( jQuery );
+
+jQuery( '.many-items-table' ).one( 'focus', ':input', function ( event ) {
+	jQuery( event.delegateTarget ).manyItemsTable();
+} );
+jQuery( '.many-items-table' ).on( 'click', 'a.nova-new-row', function ( event ) {
+	jQuery( event.delegateTarget ).clickAddRow();
+} );

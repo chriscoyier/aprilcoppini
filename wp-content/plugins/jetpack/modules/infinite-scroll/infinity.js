@@ -2,17 +2,17 @@
 ( function () {
 	// Open closure.
 	// Local vars.
-	var Scroller, stats, type, text, totop, loading_text;
+	var Scroller, ajaxurl, stats, type, text, totop, loading_text;
 
 	// IE requires special handling
-	var isIE = -1 !== navigator.userAgent.search( 'MSIE' );
+	var isIE = -1 != navigator.userAgent.search( 'MSIE' );
 	if ( isIE ) {
 		var IEVersion = navigator.userAgent.match( /MSIE\s?(\d+)\.?\d*;/ );
 		IEVersion = parseInt( IEVersion[ 1 ] );
 	}
 
 	// HTTP ajaxurl when site is HTTPS causes Access-Control-Allow-Origin failure in Desktop and iOS Safari
-	if ( 'https:' === document.location.protocol ) {
+	if ( 'https:' == document.location.protocol ) {
 		infiniteScroll.settings.ajaxurl = infiniteScroll.settings.ajaxurl.replace(
 			'http://',
 			'https://'
@@ -63,7 +63,7 @@
 		// We have two type of infinite scroll
 		// cases 'scroll' and 'click'
 
-		if ( type === 'scroll' ) {
+		if ( type == 'scroll' ) {
 			// Bind refresh to the scroll event
 			// Throttle to check for such case every 300ms
 
@@ -90,7 +90,7 @@
 			// Ensure that enough posts are loaded to fill the initial viewport, to compensate for short posts and large displays.
 			self.ensureFilledViewport();
 			this.body.addEventListener( 'is.post-load', self.checkViewportOnLoadBound );
-		} else if ( type === 'click' ) {
+		} else if ( type == 'click' ) {
 			if ( this.click_handle ) {
 				this.element.appendChild( this.handle );
 			}
@@ -129,7 +129,7 @@
 			}
 
 			for ( var key in arguments[ i ] ) {
-				if ( Object.hasOwn( arguments[ i ], key ) ) {
+				if ( arguments[ i ].hasOwnProperty( key ) ) {
 					out[ key ] = arguments[ i ][ key ];
 				}
 			}
@@ -242,7 +242,7 @@
 				pageWrapper = document.getElementById( this.footer.wrap );
 				width = pageWrapper.getBoundingClientRect();
 				width = width.width;
-			} catch {
+			} catch ( err ) {
 				width = 0;
 			}
 
@@ -488,7 +488,7 @@
 			self.render.call( self, response );
 
 			// If 'click' type and there are still posts to fetch, add back the handle
-			if ( type === 'click' ) {
+			if ( type == 'click' ) {
 				// add focus to new posts, only in button mode as we know where page focus currently is and only if we have a wrapper
 				if ( infiniteScroll.settings.wrapper ) {
 					document
@@ -508,10 +508,12 @@
 					} else {
 						self.trigger( this.body, 'infinite-scroll-posts-end' );
 					}
-				} else if ( self.click_handle ) {
-					self.element.appendChild( self.handle );
 				} else {
-					self.trigger( this.body, 'infinite-scroll-posts-more' );
+					if ( self.click_handle ) {
+						self.element.appendChild( self.handle );
+					} else {
+						self.trigger( this.body, 'infinite-scroll-posts-more' );
+					}
 				}
 			} else if ( response.lastbatch ) {
 				self.disabled = true;
@@ -645,7 +647,7 @@
 	/**
 	 * Get element measurements relative to the viewport.
 	 *
-	 * @return {object}
+	 * @returns {object}
 	 */
 	Scroller.prototype.measure = function ( element, expandClasses ) {
 		expandClasses = expandClasses || [];
@@ -748,7 +750,6 @@
 			maxFactor = 0;
 
 		// xor - check if the state has changed
-		// eslint-disable-next-line no-bitwise
 		if ( previousFullScrenState ^ currentFullScreenState ) {
 			// If we just switched to/from fullscreen,
 			// don't do the div clearing/caching or the
@@ -804,7 +805,7 @@
 				self.history.parameters;
 		}
 
-		if ( window.location.href !== pageSlug ) {
+		if ( window.location.href != pageSlug ) {
 			history.pushState( null, null, pageSlug );
 		}
 	};
@@ -850,7 +851,7 @@
 				cancelable: true,
 				detail: opts.data || null,
 			} );
-		} catch {
+		} catch ( err ) {
 			e = document.createEvent( 'CustomEvent' );
 			e.initCustomEvent( eventName, true, true, opts.data || null );
 		}
@@ -861,17 +862,21 @@
 	 * Ready, set, go!
 	 */
 	var jetpackInfinityModule = function () {
+		var bodyClasses = infiniteScroll.settings.body_class.split( ' ' );
+
 		// Check for our variables
 		if ( 'object' !== typeof infiniteScroll ) {
 			return;
 		}
 
-		var bodyClasses = infiniteScroll.settings.body_class.split( ' ' );
 		bodyClasses.forEach( function ( className ) {
 			if ( className ) {
 				document.body.classList.add( className );
 			}
 		} );
+
+		// Set ajaxurl (for brevity)
+		ajaxurl = infiniteScroll.settings.ajaxurl;
 
 		// Set stats, used for tracking stats
 		stats = infiniteScroll.settings.stats;
@@ -890,7 +895,7 @@
 		/**
 		 * Monitor user scroll activity to update URL to correspond to archive page for current set of IS posts
 		 */
-		if ( type === 'click' ) {
+		if ( type == 'click' ) {
 			var timer = null;
 			window.addEventListener( 'scroll', function () {
 				// run the real scroll handler once every 250 ms.

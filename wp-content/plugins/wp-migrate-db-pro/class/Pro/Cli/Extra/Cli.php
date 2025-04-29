@@ -249,11 +249,12 @@ class Cli extends Export
             return $this->cli_error(__('There is more than one profile with that name, please use the profile ID instead. See wp migratedb profiles for help.', 'wp-migrate-db'));
         }
 
-        foreach($profiles as $key => $profile) {
-            if ($profile['name'] === $name) {
-                $this->profileID = $key;
-                return $profiles[$this->profileID];
-            }
+        $key = array_search($name, $names);
+
+        if (false !== $key) {
+            $this->profileID = ++$key;
+
+            return $profiles[$this->profileID];
         }
 
         return $this->cli_error(__('Profile not found.', 'wp-migrate-db'));
@@ -281,7 +282,7 @@ class Cli extends Export
 
         $verified_response = $this->verify_cli_response($response, 'ajax_verify_connection_to_remote_site()');
         if (!is_wp_error($verified_response)) {
-            $verified_response = apply_filters('wpmdbpro_cli_verify_connection_response', $verified_response, $profile);
+            $verified_response = apply_filters('wpmdbpro_cli_verify_connection_response', $verified_response);
         }
 
         return $verified_response;

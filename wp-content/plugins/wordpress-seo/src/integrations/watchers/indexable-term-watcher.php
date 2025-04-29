@@ -5,7 +5,6 @@ namespace Yoast\WP\SEO\Integrations\Watchers;
 use Yoast\WP\SEO\Builders\Indexable_Builder;
 use Yoast\WP\SEO\Builders\Indexable_Link_Builder;
 use Yoast\WP\SEO\Conditionals\Migrations_Conditional;
-use Yoast\WP\SEO\Helpers\Indexable_Helper;
 use Yoast\WP\SEO\Helpers\Site_Helper;
 use Yoast\WP\SEO\Integrations\Integration_Interface;
 use Yoast\WP\SEO\Repositories\Indexable_Repository;
@@ -37,13 +36,6 @@ class Indexable_Term_Watcher implements Integration_Interface {
 	protected $link_builder;
 
 	/**
-	 * The indexable helper.
-	 *
-	 * @var Indexable_Helper
-	 */
-	private $indexable_helper;
-
-	/**
 	 * Represents the site helper.
 	 *
 	 * @var Site_Helper
@@ -62,24 +54,21 @@ class Indexable_Term_Watcher implements Integration_Interface {
 	/**
 	 * Indexable_Term_Watcher constructor.
 	 *
-	 * @param Indexable_Repository   $repository       The repository to use.
-	 * @param Indexable_Builder      $builder          The post builder to use.
-	 * @param Indexable_Link_Builder $link_builder     The lint builder to use.
-	 * @param Indexable_Helper       $indexable_helper The indexable helper.
-	 * @param Site_Helper            $site             The site helper.
+	 * @param Indexable_Repository   $repository   The repository to use.
+	 * @param Indexable_Builder      $builder      The post builder to use.
+	 * @param Indexable_Link_Builder $link_builder The lint builder to use.
+	 * @param Site_Helper            $site         The site helper.
 	 */
 	public function __construct(
 		Indexable_Repository $repository,
 		Indexable_Builder $builder,
 		Indexable_Link_Builder $link_builder,
-		Indexable_Helper $indexable_helper,
 		Site_Helper $site
 	) {
-		$this->repository       = $repository;
-		$this->builder          = $builder;
-		$this->link_builder     = $link_builder;
-		$this->indexable_helper = $indexable_helper;
-		$this->site             = $site;
+		$this->repository   = $repository;
+		$this->builder      = $builder;
+		$this->link_builder = $link_builder;
+		$this->site         = $site;
 	}
 
 	/**
@@ -108,7 +97,6 @@ class Indexable_Term_Watcher implements Integration_Interface {
 		}
 
 		$indexable->delete();
-		\do_action( 'wpseo_indexable_deleted', $indexable );
 	}
 
 	/**
@@ -147,6 +135,6 @@ class Indexable_Term_Watcher implements Integration_Interface {
 		$this->link_builder->build( $indexable, $term->description );
 
 		$indexable->object_last_modified = \max( $indexable->object_last_modified, \current_time( 'mysql' ) );
-		$this->indexable_helper->save_indexable( $indexable );
+		$indexable->save();
 	}
 }

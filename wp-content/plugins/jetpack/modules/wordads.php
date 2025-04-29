@@ -7,7 +7,7 @@
  * Requires Connection: Yes
  * Auto Activate: No
  * Module Tags: Traffic, Appearance
- * Additional Search Queries: advertising, ad codes, ads, creator
+ * Additional Search Queries: advertising, ad codes, ads
  * Plans: premium, business, security, complete
  *
  * @package automattic/jetpack

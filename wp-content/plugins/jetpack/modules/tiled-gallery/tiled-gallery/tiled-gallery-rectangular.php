@@ -93,27 +93,6 @@ class Jetpack_Tiled_Gallery_Grouper {
 	);
 
 	/**
-	 * Shape of the last row in gallery.
-	 *
-	 * @var string
-	 */
-	public $last_shape = '';
-
-	/**
-	 * All images to be displayed.
-	 *
-	 * @var array
-	 */
-	public $images = array();
-
-	/**
-	 * Array of tiled gallery rows (groups of images).
-	 *
-	 * @var array
-	 */
-	public $grouped_images = array();
-
-	/**
 	 * Constructor function.
 	 *
 	 * @param object $attachments - the attachments.
@@ -146,7 +125,7 @@ class Jetpack_Tiled_Gallery_Grouper {
 	 * @return array
 	 */
 	public function get_current_row_size() {
-		$images_left = is_countable( $this->images ) ? count( $this->images ) : 0;
+		$images_left = count( $this->images );
 		if ( $images_left < 3 ) {
 			return array_fill( 0, $images_left, 1 );
 		}
@@ -228,8 +207,7 @@ class Jetpack_Tiled_Gallery_Grouper {
 	public function apply_content_width( $width ) {
 		foreach ( $this->grouped_images as $row ) {
 			$row->width      = $width;
-			$group_count     = is_countable( $row->groups ) ? count( $row->groups ) : 0;
-			$row->raw_height = 1 / $row->ratio * ( $width - $this->margin * ( $group_count - $row->weighted_ratio ) );
+			$row->raw_height = 1 / $row->ratio * ( $width - $this->margin * ( count( $row->groups ) - $row->weighted_ratio ) );
 			$row->height     = round( $row->raw_height );
 
 			$this->calculate_group_sizes( $row );
@@ -247,9 +225,8 @@ class Jetpack_Tiled_Gallery_Grouper {
 		$group_widths_array = array();
 		foreach ( $row->groups as $group ) {
 			$group->height = $row->height;
-			$image_count   = is_countable( $group->images ) ? count( $group->images ) : 0;
 			// Storing the raw calculations in a separate property to prevent rounding errors from cascading down and for diagnostics
-			$group->raw_width     = ( $row->raw_height - $this->margin * $image_count ) * $group->ratio + $this->margin;
+			$group->raw_width     = ( $row->raw_height - $this->margin * count( $group->images ) ) * $group->ratio + $this->margin;
 			$group_widths_array[] = $group->raw_width;
 		}
 		$rounded_group_widths_array = Jetpack_Constrained_Array_Rounding::get_rounded_constrained_array( $group_widths_array, $row->width );
@@ -289,59 +266,11 @@ class Jetpack_Tiled_Gallery_Grouper {
  * Jetpack tiled row class.
  */
 class Jetpack_Tiled_Gallery_Row {
-	/**
-	 * Groups of images
-	 *
-	 * @var object[]
-	 */
-	public $groups;
-
-	/**
-	 * Image ratio.
-	 *
-	 * @var float
-	 */
-	public $ratio;
-
-	/**
-	 * Weighted ratio based on all the images.
-	 *
-	 * @var float
-	 */
-	public $weighted_ratio;
-
-	/**
-	 * Rounded value of the raw width.
-	 *
-	 * @var int
-	 */
-	public $width;
-
-	/**
-	 * Rounded value of the raw height.
-	 *
-	 * @var int
-	 */
-	public $height;
-
-	/**
-	 * Raw width of the row.
-	 *
-	 * @var int
-	 */
-	public $raw_width;
-
-	/**
-	 * Raw height of the row.
-	 *
-	 * @var int
-	 */
-	public $raw_height;
 
 	/**
 	 * Constructor class.
 	 *
-	 * @param object[] $groups - the group of images.
+	 * @param object $groups - the group of images.
 	 */
 	public function __construct( $groups ) {
 		$this->groups         = $groups;
@@ -352,7 +281,7 @@ class Jetpack_Tiled_Gallery_Row {
 	/**
 	 * Get the ratio.
 	 *
-	 * @return float
+	 * @return int
 	 */
 	public function get_ratio() {
 		$ratio = 0;
@@ -365,13 +294,12 @@ class Jetpack_Tiled_Gallery_Row {
 	/**
 	 * Get weighted ratio.
 	 *
-	 * @return float
+	 * @return int
 	 */
 	public function get_weighted_ratio() {
 		$weighted_ratio = 0;
 		foreach ( $this->groups as $group ) {
-			$image_count     = is_countable( $group->images ) ? count( $group->images ) : 0;
-			$weighted_ratio += $group->ratio * $image_count;
+			$weighted_ratio += $group->ratio * count( $group->images );
 		}
 		return $weighted_ratio > 0 ? $weighted_ratio : 1;
 	}
@@ -382,51 +310,9 @@ class Jetpack_Tiled_Gallery_Row {
  */
 class Jetpack_Tiled_Gallery_Group {
 	/**
-	 * Images to be displayed in group.
-	 *
-	 * @var object[]
-	 */
-	public $images;
-
-	/**
-	 * Image ratio.
-	 *
-	 * @var float
-	 */
-	public $ratio;
-
-	/**
-	 * Rounded value of the raw width.
-	 *
-	 * @var int
-	 */
-	public $width;
-
-	/**
-	 * Rounded value of the raw height.
-	 *
-	 * @var int
-	 */
-	public $height;
-
-	/**
-	 * Raw width of the group.
-	 *
-	 * @var int
-	 */
-	public $raw_width;
-
-	/**
-	 * Raw height of the group.
-	 *
-	 * @var int
-	 */
-	public $raw_height;
-
-	/**
 	 * Constructor class.
 	 *
-	 * @param object[] $images - the images.
+	 * @param object $images - the images.
 	 */
 	public function __construct( $images ) {
 		$this->images = $images;
@@ -436,7 +322,7 @@ class Jetpack_Tiled_Gallery_Group {
 	/**
 	 * Get the ratio.
 	 *
-	 * @return float
+	 * @return int
 	 */
 	public function get_ratio() {
 		$ratio = 0;
@@ -469,3 +355,4 @@ class Jetpack_Tiled_Gallery_Group {
 		return $items;
 	}
 }
+

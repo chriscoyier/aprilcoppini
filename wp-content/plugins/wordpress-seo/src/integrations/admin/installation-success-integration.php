@@ -40,10 +40,7 @@ class Installation_Success_Integration implements Integration_Interface {
 	 * @param Options_Helper $options_helper The options helper.
 	 * @param Product_Helper $product_helper The product helper.
 	 */
-	public function __construct(
-		Options_Helper $options_helper,
-		Product_Helper $product_helper
-	) {
+	public function __construct( Options_Helper $options_helper, Product_Helper $product_helper ) {
 		$this->options_helper = $options_helper;
 		$this->product_helper = $product_helper;
 	}
@@ -116,8 +113,6 @@ class Installation_Success_Integration implements Integration_Interface {
 
 	/**
 	 * Enqueue assets on the Installation success page.
-	 *
-	 * @return void
 	 */
 	public function enqueue_assets() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Date is not processed or saved.
@@ -130,23 +125,18 @@ class Installation_Success_Integration implements Integration_Interface {
 		$asset_manager->enqueue_style( 'tailwind' );
 		$asset_manager->enqueue_style( 'monorepo' );
 
-		$ftc_url = \esc_url( \admin_url( 'admin.php?page=wpseo_dashboard#/first-time-configuration' ) );
-
 		$asset_manager->localize_script(
 			'installation-success',
 			'wpseoInstallationSuccess',
 			[
 				'pluginUrl'                 => \esc_url( \plugins_url( '', \WPSEO_FILE ) ),
-				'firstTimeConfigurationUrl' => $ftc_url,
-				'dashboardUrl'              => \esc_url( \admin_url( 'admin.php?page=wpseo_dashboard' ) ),
+				'firstTimeConfigurationUrl' => \esc_url( \admin_url( 'admin.php?page=wpseo_dashboard#top#first-time-configuration' ) ),
 			]
 		);
 	}
 
 	/**
 	 * Renders the installation success page.
-	 *
-	 * @return void
 	 */
 	public function render_page() {
 		echo '<div id="wpseo-installation-successful-free" class="yoast"></div>';
@@ -154,8 +144,6 @@ class Installation_Success_Integration implements Integration_Interface {
 
 	/**
 	 * Wrap the `exit` function to make unit testing easier.
-	 *
-	 * @return void
 	 */
 	public function terminate_execution() {
 		exit;

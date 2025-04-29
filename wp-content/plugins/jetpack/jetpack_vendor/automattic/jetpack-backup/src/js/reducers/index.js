@@ -6,7 +6,6 @@ import jetpackStatus from './jetpack-status';
 import siteBackupPolicies from './site-backup-policies';
 import siteBackupSize from './site-backup-size';
 import siteBackupStorage from './site-backup-storage';
-import siteBackups from './site-backups';
 import siteData from './site-data';
 
 const reducer = combineReducers( {
@@ -18,7 +17,6 @@ const reducer = combineReducers( {
 	siteBackupSize,
 	siteBackupPolicies,
 	siteBackupStorage,
-	siteBackups,
 } );
 
 export default reducer;

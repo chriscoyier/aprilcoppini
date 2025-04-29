@@ -1,18 +1,9 @@
 import { ThemeProvider } from '@automattic/jetpack-components';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createReduxStore, register } from '@wordpress/data';
-import * as WPElement from '@wordpress/element';
 import React from 'react';
+import ReactDOM from 'react-dom';
 import Admin from './components/Admin';
 import { STORE_ID, storeConfig } from './store';
-
-const queryClient = new QueryClient( {
-	defaultOptions: {
-		queries: {
-			staleTime: Infinity,
-		},
-	},
-} );
 
 const store = createReduxStore( STORE_ID, storeConfig );
 register( store );
@@ -27,14 +18,12 @@ function render() {
 		return;
 	}
 
-	const component = (
-		<QueryClientProvider client={ queryClient }>
-			<ThemeProvider>
-				<Admin />
-			</ThemeProvider>
-		</QueryClientProvider>
+	ReactDOM.render(
+		<ThemeProvider>
+			<Admin />
+		</ThemeProvider>,
+		container
 	);
-	WPElement.createRoot( container ).render( component );
 }
 
 render();

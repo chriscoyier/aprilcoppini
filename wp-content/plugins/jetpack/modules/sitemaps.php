@@ -17,7 +17,7 @@
  * Disable direct access and execution.
  */
 if ( ! defined( 'ABSPATH' ) ) {
-	exit( 0 );
+	exit;
 }
 
 if ( '1' == get_option( 'blog_public' ) ) { // phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual

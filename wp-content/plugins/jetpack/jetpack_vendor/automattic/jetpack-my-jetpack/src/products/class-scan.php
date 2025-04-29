@@ -7,9 +7,11 @@
 
 namespace Automattic\Jetpack\My_Jetpack\Products;
 
+use Automattic\Jetpack\Connection\Client;
 use Automattic\Jetpack\My_Jetpack\Module_Product;
 use Automattic\Jetpack\My_Jetpack\Wpcom_Products;
 use Automattic\Jetpack\Redirect;
+use Jetpack_Options;
 use WP_Error;
 
 /**
@@ -32,35 +34,21 @@ class Scan extends Module_Product {
 	public static $module_name = 'scan';
 
 	/**
-	 * The category of the product
-	 *
-	 * @var string
-	 */
-	public static $category = 'security';
-
-	/**
-	 * The feature slug that identifies the paid plan
-	 *
-	 * @var string
-	 */
-	public static $feature_identifying_paid_plan = 'scan';
-
-	/**
-	 * Get the product name
+	 * Get the internationalized product name
 	 *
 	 * @return string
 	 */
 	public static function get_name() {
-		return 'Scan';
+		return __( 'Scan', 'jetpack-my-jetpack' );
 	}
 
 	/**
-	 * Get the product title
+	 * Get the internationalized product title
 	 *
 	 * @return string
 	 */
 	public static function get_title() {
-		return 'Jetpack Scan';
+		return __( 'Jetpack Scan', 'jetpack-my-jetpack' );
 	}
 
 	/**
@@ -69,7 +57,7 @@ class Scan extends Module_Product {
 	 * @return string
 	 */
 	public static function get_description() {
-		return __( 'Powerful, automated site security', 'jetpack-my-jetpack' );
+		return __( 'Stay one step ahead of threats', 'jetpack-my-jetpack' );
 	}
 
 	/**
@@ -120,6 +108,46 @@ class Scan extends Module_Product {
 	}
 
 	/**
+	 * Hits the wpcom api to check scan status.
+	 *
+	 * @todo Maybe add caching.
+	 *
+	 * @return Object|WP_Error
+	 */
+	private static function get_state_from_wpcom() {
+		static $status = null;
+
+		if ( $status !== null ) {
+			return $status;
+		}
+
+		$site_id = Jetpack_Options::get_option( 'id' );
+
+		$response = Client::wpcom_json_api_request_as_blog( sprintf( '/sites/%d/scan', $site_id ) . '?force=wpcom', '2', array( 'timeout' => 2 ), null, 'wpcom' );
+
+		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			return new WP_Error( 'scan_state_fetch_failed' );
+		}
+
+		$body   = wp_remote_retrieve_body( $response );
+		$status = json_decode( $body );
+		return $status;
+	}
+
+	/**
+	 * Checks whether the current plan (or purchases) of the site already supports the product
+	 *
+	 * @return boolean
+	 */
+	public static function has_required_plan() {
+		$scan_data = static::get_state_from_wpcom();
+		if ( is_wp_error( $scan_data ) ) {
+			return false;
+		}
+		return is_object( $scan_data ) && isset( $scan_data->state ) && 'unavailable' !== $scan_data->state;
+	}
+
+	/**
 	 * Checks whether the Product is active
 	 *
 	 * Scan is not actually a module. Activation takes place on WPCOM. So lets consider it active if jetpack is active and has the plan.
@@ -127,7 +155,7 @@ class Scan extends Module_Product {
 	 * @return boolean
 	 */
 	public static function is_active() {
-		return static::is_jetpack_plugin_active();
+		return static::is_jetpack_plugin_active() && static::has_required_plan();
 	}
 
 	/**
@@ -160,27 +188,13 @@ class Scan extends Module_Product {
 	}
 
 	/**
-	 * Get the product-slugs of the paid plans for this product.
-	 * (Do not include bundle plans, unless it's a bundle plan itself).
-	 *
-	 * @return array
-	 */
-	public static function get_paid_plan_product_slugs() {
-		return array(
-			'jetpack_scan',
-			'jetpack_scan_monthly',
-			'jetpack_scan_bi_yearly',
-		);
-	}
-
-	/**
 	 * Return product bundles list
 	 * that supports the product.
 	 *
 	 * @return boolean|array Products bundle list.
 	 */
 	public static function is_upgradable_by_bundle() {
-		return array( 'security', 'complete' );
+		return array( 'security' );
 	}
 
 	/**
@@ -199,19 +213,5 @@ class Scan extends Module_Product {
 	 */
 	public static function get_manage_url() {
 		return Redirect::get_url( 'my-jetpack-manage-scan' );
-	}
-
-	/**
-	 * Get the URL where the user should be redirected after checkout
-	 */
-	public static function get_post_checkout_url() {
-		if ( static::is_jetpack_plugin_active() ) {
-			return 'admin.php?page=jetpack#/recommendations';
-		}
-
-		// If Jetpack is not active, it means that the user has another standalone plugin active
-		// and it follows the `Protect` plugin flow instead of `Scan` so for now it would be safe
-		// to return null and let the user go back to the My Jetpack page.
-		return null;
 	}
 }

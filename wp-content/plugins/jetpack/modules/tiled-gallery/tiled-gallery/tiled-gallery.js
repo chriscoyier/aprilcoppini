@@ -75,8 +75,9 @@
 			var top = attribute === 'border' ? 'borderTopWidth' : attribute + 'Top';
 			var bottom = attribute === 'border' ? 'borderBottomWidth' : attribute + 'Bottom';
 			return ( parseInt( el.style[ top ], 10 ) || 0 ) + ( parseInt( el.style[ bottom ], 10 ) || 0 );
+		} else {
+			return 0;
 		}
-		return 0;
 	};
 
 	TiledGallery.prototype.resize = function () {
@@ -169,6 +170,12 @@
 		document.body.addEventListener( 'is.post-load', function () {
 			tiledGalleries.findAndSetupNewGalleries();
 		} );
+
+		if ( typeof jQuery === 'function' ) {
+			jQuery( document ).on( 'page-rendered.wpcom-newdash', function () {
+				tiledGalleries.findAndSetupNewGalleries();
+			} );
+		}
 
 		// Chrome is a unique snow flake and will start lagging on occasion
 		// It helps if we only resize on animation frames

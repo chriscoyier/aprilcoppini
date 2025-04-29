@@ -2,14 +2,11 @@
 /**
  * Handles more photo metadata.
  *
- * @html-template Jetpack_Tiled_Gallery_Layout::partial
  * @package jetpack
  */
 
-// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable -- HTML template, let Phan handle it.
-
-$item     = $context['item'];
-$add_link = 'none' !== $this->link;
+$item     = $context['item']; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
+$add_link = 'none' !== $this->link; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 
 // We do this for accessibility.  Titles without alt's break screen readers.
 if ( empty( $item->image_alt ) && ! empty( $item->image_title ) ) {
@@ -28,13 +25,10 @@ if ( isset( $item->size ) ) {
 		<meta itemprop="width" content="<?php echo esc_attr( $item->image->width ); ?>">
 		<meta itemprop="height" content="<?php echo esc_attr( $item->image->height ); ?>">
 		<img
-			class="<?php echo empty( $this->grayscale ) ? '' : 'grayscale'; ?>"
-			<?php $this->partial( 'carousel-image-args', array( 'item' => $item ) ); ?>
+			<?php $this->partial( 'carousel-image-args', array( 'item' => $item ) ); // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable ?>
 			src="<?php echo esc_url( $item->img_src ); ?>"
-			<?php echo $item->img_srcset ? 'srcset="' . esc_attr( $item->img_srcset ) . '"' : ''; ?>
 			width="<?php echo esc_attr( $item->image->width ); ?>"
 			height="<?php echo esc_attr( $item->image->height ); ?>"
-			loading="lazy"
 			data-original-width="<?php echo esc_attr( $item->image->width ); ?>"
 			data-original-height="<?php echo esc_attr( $item->image->height ); ?>"
 			itemprop="http://schema.org/image"
@@ -44,6 +38,30 @@ if ( isset( $item->size ) ) {
 		/>
 	<?php if ( $add_link ) : ?>
 	</a>
+	<?php endif; ?>
+
+	<?php if ( ! empty( $this->grayscale ) ) : ?>
+		<?php if ( $add_link ) : ?>
+		<a href="<?php echo esc_url( $item->link ); ?>" border="0" itemprop="url">
+		<?php endif; ?>
+			<meta itemprop="width" content="<?php echo esc_attr( $item->image->width ); ?>">
+			<meta itemprop="height" content="<?php echo esc_attr( $item->image->height ); ?>">
+			<img
+				class="grayscale"
+				src="<?php echo esc_url( $item->img_src_grayscale ); ?>"
+				width="<?php echo esc_attr( $item->image->width ); ?>"
+				height="<?php echo esc_attr( $item->image->height ); ?>"
+				data-original-width="<?php echo esc_attr( $item->image->width ); ?>"
+				data-original-height="<?php echo esc_attr( $item->image->height ); ?>"
+				itemprop="http://schema.org/image"
+				title="<?php echo esc_attr( $item->image_title ); ?>"
+				align="left"
+				alt="<?php echo esc_attr( $item->image_alt ); ?>"
+				style="width: <?php echo esc_attr( $item->image->width ); ?>px; height: <?php echo esc_attr( $item->image->height ); ?>px;"
+			/>
+		<?php if ( $add_link ) : ?>
+		</a>
+		<?php endif; ?>
 	<?php endif; ?>
 
 	<?php if ( trim( $item->image->post_excerpt ) ) : ?>

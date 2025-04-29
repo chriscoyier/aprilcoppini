@@ -55,11 +55,6 @@ Genericons
 	content: "\f415";
 }
 
-/* Bluesky */
-.jetpack-social-navigation-genericons a[href*="bsky.app"]:before {
-	content: "\f10f";
-}
-
 /* CodePen */
 .jetpack-social-navigation-genericons a[href*="codepen.io"]:before {
 	content: "\f216";
@@ -120,11 +115,6 @@ Genericons
 	content: "\f208";
 }
 
-/* Nextdoor */
-.jetpack-social-navigation-genericons a[href*="nextdoor.com"]:before {
-	content: "\f10c";
-}
-
 /* Path */
 .jetpack-social-navigation-genericons a[href*="path.com"]:before {
 	content: "\f219";
@@ -160,11 +150,6 @@ Genericons
 	content: "\f220";
 }
 
-/* Skype */
-.jetpack-social-navigation-genericons a[href*="sms:"]:before {
-	content: "\f110";
-}
-
 /* Spotify */
 .jetpack-social-navigation-genericons a[href*="spotify.com"]:before {
 	content: "\f515";
@@ -173,11 +158,6 @@ Genericons
 /* StumbleUpon */
 .jetpack-social-navigation-genericons a[href*="stumbleupon.com"]:before {
 	content: "\f223";
-}
-
-/* Threads */
-.jetpack-social-navigation-genericons a[href*="threads.net"]:before {
-	content: "\f10d";
 }
 
 /* Tumblr */
@@ -209,11 +189,6 @@ Genericons
 .jetpack-social-navigation-genericons a[href*="wordpress.com"]:before,
 .jetpack-social-navigation-genericons a[href*="wordpress.org"]:before {
 	content: "\f205";
-}
-
-/* X */
-.jetpack-social-navigation-genericons a[href*="x.com"]:before {
-	content: "\f10e";
 }
 
 /* YouTube */

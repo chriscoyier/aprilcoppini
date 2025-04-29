@@ -5,58 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.4] - 2025-03-05
-### Changed
-- Internal updates.
-
-## [0.4.3] - 2025-02-24
-### Changed
-- Update dependencies.
-
-## [0.4.2] - 2025-02-03
-### Changed
-- Internal updates.
-
-## [0.4.1] - 2024-11-25
-### Changed
-- Updated dependencies. [#40286]
-
-## [0.4.0] - 2024-11-14
-### Removed
-- General: Update minimum PHP version to 7.2. [#40147]
-
-## [0.3.3] - 2024-11-04
-### Added
-- Enable test coverage. [#39961]
-
-## [0.3.2] - 2024-08-23
-### Changed
-- Updated package dependencies. [#39004]
-
-## [0.3.1] - 2024-03-14
-### Changed
-- Internal updates.
-
-## [0.3.0] - 2023-11-20
-### Changed
-- Updated required PHP version to >= 7.0. [#34192]
-
-## [0.2.14] - 2023-08-23
-### Changed
-- Updated package dependencies. [#32605]
-
-## [0.2.13] - 2023-04-10
-### Added
-- Add Jetpack Autoloader package suggestion. [#29988]
-
-## [0.2.12] - 2023-03-20
-### Changed
-- Updated package dependencies. [#29480]
-
-## [0.2.11] - 2023-02-20
-### Changed
-- Minor internal updates.
-
 ## [0.2.10] - 2023-01-11
 ### Changed
 - Updated package dependencies.
@@ -144,19 +92,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Use `composer update` rather than `install` in scripts, as composer.lock isn't checked in.
 
-[0.4.4]: https://github.com/Automattic/jetpack-password-checker/compare/v0.4.3...v0.4.4
-[0.4.3]: https://github.com/Automattic/jetpack-password-checker/compare/v0.4.2...v0.4.3
-[0.4.2]: https://github.com/Automattic/jetpack-password-checker/compare/v0.4.1...v0.4.2
-[0.4.1]: https://github.com/Automattic/jetpack-password-checker/compare/v0.4.0...v0.4.1
-[0.4.0]: https://github.com/Automattic/jetpack-password-checker/compare/v0.3.3...v0.4.0
-[0.3.3]: https://github.com/Automattic/jetpack-password-checker/compare/v0.3.2...v0.3.3
-[0.3.2]: https://github.com/Automattic/jetpack-password-checker/compare/v0.3.1...v0.3.2
-[0.3.1]: https://github.com/Automattic/jetpack-password-checker/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/Automattic/jetpack-password-checker/compare/v0.2.14...v0.3.0
-[0.2.14]: https://github.com/Automattic/jetpack-password-checker/compare/v0.2.13...v0.2.14
-[0.2.13]: https://github.com/Automattic/jetpack-password-checker/compare/v0.2.12...v0.2.13
-[0.2.12]: https://github.com/Automattic/jetpack-password-checker/compare/v0.2.11...v0.2.12
-[0.2.11]: https://github.com/Automattic/jetpack-password-checker/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/Automattic/jetpack-password-checker/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/Automattic/jetpack-password-checker/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/Automattic/jetpack-password-checker/compare/v0.2.7...v0.2.8

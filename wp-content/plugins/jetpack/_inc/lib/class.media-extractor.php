@@ -32,12 +32,10 @@ class Jetpack_Media_Meta_Extractor {
 	 * @var string[]
 	 */
 	private static $keeper_shortcodes = array(
-		'audio',
 		'youtube',
 		'vimeo',
 		'hulu',
 		'ted',
-		'video',
 		'wpvideo',
 		'videopress',
 	);
@@ -199,11 +197,6 @@ class Jetpack_Media_Meta_Extractor {
 							$id = call_user_func( $shortcode_get_id_func, $attr );
 						} elseif ( method_exists( $shortcode_class_name, $shortcode_get_id_method ) ) {
 							$id = call_user_func( array( $shortcode_class_name, $shortcode_get_id_method ), $attr );
-						} elseif ( 'video' === $shortcode ) {
-							$id = $attr['src'] ?? $attr['url'] ?? $attr['mp4'] ?? $attr['m4v'] ?? $attr['webm'] ?? $attr['ogv'] ?? $attr['wmv'] ?? $attr['flv'] ?? null;
-						} elseif ( 'audio' === $shortcode ) {
-							preg_match( '#(https?://(?:[^\s"|\']+)\.(?:mp3|ogg|flac|m4a|wav))([ "\'|]|$)#', implode( ' ', $attr ), $audio_matches );
-							$id = $audio_matches[1] ?? null;
 						}
 						if ( ! empty( $id )
 							&& ( ! isset( $shortcode_details[ $shortcode_name ] ) || ! in_array( $id, $shortcode_details[ $shortcode_name ], true ) ) ) {
@@ -301,14 +294,12 @@ class Jetpack_Media_Meta_Extractor {
 						}
 					}
 
-					$link = array(
+					// @todo Check unique before adding
+					$links[] = array(
 						'url'           => $link_all_but_proto,
 						'host_reversed' => $host_reversed,
 						'host'          => $url['host'],
 					);
-					if ( ! in_array( $link, $links, true ) ) {
-						$links[] = $link;
-					}
 				}
 			}
 
@@ -446,7 +437,7 @@ class Jetpack_Media_Meta_Extractor {
 	}
 
 	/**
-	 * Given an extracted image array reduce to src,  alt_text, src_width, and src_height.
+	 * Given an extracted image array reduce to src and alt_text.
 	 *
 	 * @param array $images extracted image array.
 	 *
@@ -459,19 +450,14 @@ class Jetpack_Media_Meta_Extractor {
 			if ( empty( $image['src'] ) ) {
 				continue;
 			}
-			$ret_image = array(
-				'url' => $image['src'],
-			);
-			if ( ! empty( $image['src_height'] ) || ! empty( $image['src_width'] ) ) {
-				$ret_image['src_width']  = $image['src_width'] ?? '';
-				$ret_image['src_height'] = $image['src_height'] ?? '';
-			}
 			if ( ! empty( $image['alt_text'] ) ) {
-				$ret_image['alt_text'] = $image['alt_text'];
+				$ret_images[] = array(
+					'url'      => $image['src'],
+					'alt_text' => $image['alt_text'],
+				);
 			} else {
-				$ret_image = $image['src'];
+				$ret_images[] = $image['src'];
 			}
-			$ret_images[] = $ret_image;
 		}
 		return $ret_images;
 	}
@@ -481,12 +467,11 @@ class Jetpack_Media_Meta_Extractor {
 	 *
 	 * @param string $content HTML content.
 	 * @param array  $image_list Array of already found images.
-	 * @param string $extract_alt_text Whether or not to extract the alt text.
 	 *
 	 * @return array|array[] Array of images.
 	 */
-	public static function extract_images_from_content( $content, $image_list, $extract_alt_text = false ) {
-		$image_list = self::get_images_from_html( $content, $image_list, $extract_alt_text );
+	public static function extract_images_from_content( $content, $image_list ) {
+		$image_list = self::get_images_from_html( $content, $image_list );
 		return self::build_image_struct( $image_list, array() );
 	}
 
@@ -541,7 +526,7 @@ class Jetpack_Media_Meta_Extractor {
 			$length    = strpos( $image_url, '?' );
 			$src       = wp_parse_url( $image_url );
 
-			if ( $src && isset( $src['scheme'] ) && isset( $src['host'] ) && isset( $src['path'] ) ) {
+			if ( $src && isset( $src['scheme'], $src['host'], $src['path'] ) ) {
 				// Rebuild the URL without the query string.
 				$queryless = $src['scheme'] . '://' . $src['host'] . $src['path'];
 			} elseif ( $length ) {
@@ -558,21 +543,14 @@ class Jetpack_Media_Meta_Extractor {
 			}
 
 			if ( ! in_array( $queryless, $image_list, true ) ) {
-				$image_to_add = array(
-					'url' => $queryless,
-				);
-				if ( $extract_alt_text ) {
-					if ( ! empty( $extracted_image['alt_text'] ) ) {
-						$image_to_add['alt_text'] = $extracted_image['alt_text'];
-					}
-					if ( ! empty( $extracted_image['src_width'] ) || ! empty( $extracted_image['src_height'] ) ) {
-							$image_to_add['src_width']  = $extracted_image['src_width'];
-							$image_to_add['src_height'] = $extracted_image['src_height'];
-					}
+				if ( $extract_alt_text && ! empty( $extracted_image['alt_text'] ) ) {
+					$image_list[] = array(
+						'url'      => $queryless,
+						'alt_text' => $extracted_image['alt_text'],
+					);
 				} else {
-					$image_to_add = $queryless;
+					$image_list[] = $queryless;
 				}
-				$image_list[] = $image_to_add;
 			}
 		}
 		return $image_list;

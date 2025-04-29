@@ -87,7 +87,7 @@ class Payload
         $meta_data['file'] = $file + $meta_data['file'];
 
         $content = Sender::$start_meta . $file_name . "\n";
-        $content .= json_encode($meta_data) . "\n";
+        $content .= serialize($meta_data) . "\n";
         $content .= Sender::$end_meta . $file_name . "\n";
         $content .= Sender::$start_payload . $file_name . "\n";
 
@@ -238,7 +238,7 @@ class Payload
             }
 
             if ($is_meta) {
-                $meta    = json_decode($line, true);
+                $meta    = unserialize($line);
                 $is_meta = false;
                 continue;
             }
@@ -319,7 +319,7 @@ class Payload
             }
 
             if ($is_bucket_meta) {
-                $bucket_meta    = json_decode($line, true);
+                $bucket_meta    = unserialize($line);
                 $is_bucket_meta = false;
                 continue;
             }
@@ -458,7 +458,7 @@ class Payload
     public function assemble_payload_metadata($count, $sent, $handle)
     {
         // Information about what's in the payload, number of files and an array of file data about the files included
-        $bucket_meta = json_encode(compact('count', 'sent'));
+        $bucket_meta = serialize(compact('count', 'sent'));
 
         $bucket_meta_content = Sender::$start_bucket_meta . "\n";
         $bucket_meta_content .= $bucket_meta . "\n";

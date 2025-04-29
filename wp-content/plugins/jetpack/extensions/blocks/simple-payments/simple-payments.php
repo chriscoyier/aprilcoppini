@@ -11,7 +11,6 @@ namespace Automattic\Jetpack\Extensions\SimplePayments;
 
 use Automattic\Jetpack\Blocks;
 use Jetpack_Simple_Payments;
-use WP_Post;
 
 const FEATURE_NAME = 'simple-payments';
 const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
@@ -23,7 +22,7 @@ const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
  */
 function register_block() {
 	Blocks::jetpack_register_block(
-		__DIR__,
+		BLOCK_NAME,
 		array(
 			'render_callback' => __NAMESPACE__ . '\render_block',
 			'plan_check'      => true,

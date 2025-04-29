@@ -491,13 +491,13 @@ class Jetpack_Recipes {
 
 		// Check to see if the user is trying to use shortened formatting.
 		if (
-			str_contains( $content, '&#8211;' ) ||
-			str_contains( $content, '&#8212;' ) ||
-			str_contains( $content, '-' ) ||
-			str_contains( $content, '*' ) ||
-			str_contains( $content, '#' ) ||
-			str_contains( $content, '–' ) || // ndash.
-			str_contains( $content, '—' ) || // mdash.
+			strpos( $content, '&#8211;' ) !== false ||
+			strpos( $content, '&#8212;' ) !== false ||
+			strpos( $content, '-' ) !== false ||
+			strpos( $content, '*' ) !== false ||
+			strpos( $content, '#' ) !== false ||
+			strpos( $content, '–' ) !== false || // ndash.
+			strpos( $content, '—' ) !== false || // mdash.
 			preg_match( '/\d+\.\s/', $content )
 		) {
 			// Remove breaks and extra whitespace.
@@ -510,9 +510,9 @@ class Jetpack_Recipes {
 			preg_match_all( $ul_pattern, $content, $ul_matches );
 			preg_match_all( $ol_pattern, $content, $ol_matches );
 
-			if ( ( is_countable( $ul_matches[0] ) && count( $ul_matches[0] ) > 0 ) || ( is_countable( $ol_matches[0] ) && count( $ol_matches[0] ) > 0 ) ) {
+			if ( 0 !== count( $ul_matches[0] ) || 0 !== count( $ol_matches[0] ) ) {
 
-				if ( is_countable( $ol_matches[0] ) && count( $ol_matches[0] ) > 0 ) {
+				if ( 0 !== count( $ol_matches[0] ) ) {
 					$listtype          = 'ol';
 					$list_item_pattern = $ol_pattern;
 				} else {
@@ -635,7 +635,10 @@ class Jetpack_Recipes {
 			'itemprop' => 'image',
 		);
 
-		if ( wp_lazy_loading_enabled( 'img', 'wp_get_attachment_image' ) ) {
+		if (
+			function_exists( 'wp_lazy_loading_enabled' )
+			&& wp_lazy_loading_enabled( 'img', 'wp_get_attachment_image' )
+		) {
 			$image_attrs['loading'] = 'lazy';
 		}
 
@@ -651,7 +654,7 @@ class Jetpack_Recipes {
 
 		// Check if it's an absolute or relative URL, and return if not.
 		if (
-			! str_starts_with( $src, '/' )
+			0 !== strpos( $src, '/' )
 			&& false === filter_var( $src, FILTER_VALIDATE_URL )
 		) {
 			return '';
@@ -690,6 +693,7 @@ class Jetpack_Recipes {
 
 		return $style;
 	}
+
 }
 
 new Jetpack_Recipes();

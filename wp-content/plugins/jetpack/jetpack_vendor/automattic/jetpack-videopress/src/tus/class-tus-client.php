@@ -43,7 +43,7 @@ class Tus_Client {
 	/** @const string Base API Uri */
 	const BASE_API_URL = 'https://public-api.wordpress.com/rest/v1.1/video-uploads/%d';
 
-	/** @var Tus_Abstract_Cache */
+	/** @var Cacheable */
 	protected $cache;
 
 	/** @var string */
@@ -121,7 +121,7 @@ class Tus_Client {
 	/**
 	 * Get cache.
 	 *
-	 * @return Tus_Abstract_Cache
+	 * @return Cacheable
 	 */
 	public function get_cache() {
 		return $this->cache;
@@ -602,7 +602,7 @@ class Tus_Client {
 
 		$key = $this->get_key();
 
-		if ( str_contains( $key, self::PARTIAL_UPLOAD_NAME_SEPARATOR ) ) {
+		if ( false !== strpos( $key, self::PARTIAL_UPLOAD_NAME_SEPARATOR ) ) {
 			list($key, /* $partialKey */) = explode( self::PARTIAL_UPLOAD_NAME_SEPARATOR, $key );
 		}
 

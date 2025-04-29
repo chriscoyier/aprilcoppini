@@ -13,7 +13,7 @@
  * Disable direct access.
  */
 if ( ! defined( 'ABSPATH' ) ) {
-	exit( 0 );
+	exit;
 }
 
 /**
@@ -42,7 +42,8 @@ function wpcom_rest_api_v2_load_plugin( $class_name ) {
 	global $wpcom_rest_api_v2_plugins;
 
 	if ( ! isset( $wpcom_rest_api_v2_plugins ) ) {
-		$wpcom_rest_api_v2_plugins = array();
+		$wpcom_rest_api_v2_plugins             = array();
+		$_GLOBALS['wpcom_rest_api_v2_plugins'] = array(); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase,VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
 	}
 
 	if ( ! isset( $wpcom_rest_api_v2_plugins[ $class_name ] ) ) {

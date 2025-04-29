@@ -5,7 +5,8 @@
  * @package automattic/jetpack
  */
 
-use Automattic\Jetpack\Current_Plan as Jetpack_Plan;
+use Automattic\Jetpack\Connection\Client;
+use Automattic\Jetpack\Connection\Manager as Connection_Manager;
 use Automattic\Jetpack\Plugins_Installer;
 use Automattic\Jetpack\Status;
 use Automattic\Jetpack\Status\Host;
@@ -67,13 +68,53 @@ class Jetpack_Recommendations {
 	 *
 	 * @since 9.3.0
 	 *
-	 * @deprecated 13.2
-	 *
 	 * @return bool
 	 */
 	public static function is_banner_enabled() {
-		_deprecated_function( __METHOD__, 'jetpack-13.2' );
-		return false;
+		// Shortcircuit early if the recommendations are not enabled at all.
+		if ( ! self::is_enabled() ) {
+			return false;
+		}
+
+		$recommendations_banner_enabled = Jetpack_Options::get_option( 'recommendations_banner_enabled', null );
+
+		// If the option is already set, just return the cached value.
+		// Otherwise calculate it and store it before returning it.
+		if ( null !== $recommendations_banner_enabled ) {
+			return $recommendations_banner_enabled;
+		}
+
+		if ( ! Jetpack::connection()->is_connected() ) {
+			return new WP_Error( 'site_not_connected', esc_html__( 'Site not connected.', 'jetpack' ) );
+		}
+
+		$blog_id = Jetpack_Options::get_option( 'id' );
+
+		$request_path = sprintf( '/sites/%s/jetpack-recommendations/site-registered-date', $blog_id );
+		$result       = Client::wpcom_json_api_request_as_blog(
+			$request_path,
+			2,
+			array(
+				'headers' => array( 'content-type' => 'application/json' ),
+			),
+			null,
+			'wpcom'
+		);
+
+		$body = json_decode( wp_remote_retrieve_body( $result ) );
+		if ( 200 === wp_remote_retrieve_response_code( $result ) ) {
+			$site_registered_date = $body->site_registered_date;
+		} else {
+			$connection           = new Connection_Manager( 'jetpack' );
+			$site_registered_date = $connection->get_assumed_site_creation_date();
+		}
+
+		$recommendations_start_date     = gmdate( 'Y-m-d H:i:s', strtotime( '2020-12-01 00:00:00' ) );
+		$recommendations_banner_enabled = $site_registered_date > $recommendations_start_date;
+
+		Jetpack_Options::update_option( 'recommendations_banner_enabled', $recommendations_banner_enabled );
+
+		return $recommendations_banner_enabled;
 	}
 
 	/**
@@ -88,21 +129,21 @@ class Jetpack_Recommendations {
 		}
 
 		// Monitor for the publishing of a new post.
-		add_action( 'transition_post_status', array( static::class, 'post_transition' ), 10, 3 );
-		add_action( 'jetpack_activate_module', array( static::class, 'jetpack_module_activated' ), 10, 2 );
+		add_action( 'transition_post_status', array( get_called_class(), 'post_transition' ), 10, 3 );
+		add_action( 'jetpack_activate_module', array( get_called_class(), 'jetpack_module_activated' ), 10, 2 );
 
 		// Monitor for activating a new plugin.
-		add_action( 'activated_plugin', array( static::class, 'plugin_activated' ), 10 );
+		add_action( 'activated_plugin', array( get_called_class(), 'plugin_activated' ), 10 );
 
 		// Monitor for the addition of a new comment.
-		add_action( 'comment_post', array( static::class, 'comment_added' ), 10, 3 );
+		add_action( 'comment_post', array( get_called_class(), 'comment_added' ), 10, 3 );
 
 		// Monitor for Jetpack connection success.
-		add_action( 'jetpack_authorize_ending_authorized', array( static::class, 'jetpack_connected' ) );
-		add_action( self::VIDEOPRESS_TIMED_ACTION, array( static::class, 'recommend_videopress' ) );
+		add_action( 'jetpack_authorize_ending_authorized', array( get_called_class(), 'jetpack_connected' ) );
+		add_action( self::VIDEOPRESS_TIMED_ACTION, array( get_called_class(), 'recommend_videopress' ) );
 
 		// Monitor for changes in plugins that have auto-updates enabled
-		add_action( 'update_site_option_auto_update_plugins', array( static::class, 'plugin_auto_update_settings_changed' ), 10, 3 );
+		add_action( 'update_site_option_auto_update_plugins', array( get_called_class(), 'plugin_auto_update_settings_changed' ), 10, 3 );
 	}
 
 	/**
@@ -239,7 +280,7 @@ class Jetpack_Recommendations {
 		$site_products         = array_column( Jetpack_Plan::get_products(), 'product_slug' );
 		$has_anti_spam_product = count( array_intersect( array( 'jetpack_anti_spam', 'jetpack_anti_spam_monthly' ), $site_products ) ) > 0;
 
-		if ( Jetpack_Plan::supports( 'akismet' ) || Jetpack_Plan::supports( 'antispam' ) || $has_anti_spam_product ) {
+		if ( Jetpack_Plan::supports( 'antispam' ) || $has_anti_spam_product ) {
 			return;
 		}
 
@@ -398,6 +439,7 @@ class Jetpack_Recommendations {
 
 		$setup_wizard_status = Jetpack_Options::get_option( 'setup_wizard_status' );
 		if ( 'completed' === $setup_wizard_status ) {
+			Jetpack_Options::update_option( 'recommendations_banner_enabled', false );
 			Jetpack_Options::update_option( 'recommendations_step', 'setup-wizard-completed' );
 		}
 	}

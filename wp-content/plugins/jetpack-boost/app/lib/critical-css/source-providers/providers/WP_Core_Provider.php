@@ -27,32 +27,18 @@ class WP_Core_Provider extends Provider {
 	public static function get_critical_source_urls( $context_posts = array() ) {
 		$urls = array();
 
-		$front_page = (int) get_option( 'page_on_front' );
-		$posts_page = (int) get_option( 'page_for_posts' );
+		// TODO: Limit to provided context posts.
 
-		if ( ! empty( $front_page ) && empty( $context_posts ) ) {
-			$permalink = get_permalink( $front_page );
-			if ( ! empty( $permalink ) ) {
-				$urls['front_page'] = array( $permalink );
-			}
+		$front_page = get_option( 'page_on_front' );
+		if ( ! empty( $front_page ) ) {
+			$urls['front_page'] = (array) get_permalink( $front_page );
 		}
 
-		$context_post_types = wp_list_pluck( $context_posts, 'post_type' );
-		$context_post_ids   = wp_list_pluck( $context_posts, 'ID' );
-
-		// The blog page is only in context if the context posts include a 'post' post_type.
-		// Or, if the blog page itself is in context.
-		if ( empty( $context_post_types ) || in_array( 'post', $context_post_types, true ) || in_array( $posts_page, $context_post_ids, true ) ) {
-			if ( ! empty( $posts_page ) ) {
-				$permalink = get_permalink( $posts_page );
-				if ( ! empty( $permalink ) ) {
-					$urls['posts_page'] = array( $permalink );
-				}
-			}
-		}
-
-		if ( ! $front_page && ! isset( $urls['posts_page'] ) ) {
-			$urls['posts_page'] = array( home_url( '/' ) );
+		$posts_page = get_option( 'page_for_posts' );
+		if ( ! empty( $posts_page ) ) {
+			$urls['posts_page'] = (array) get_permalink( $posts_page );
+		} else {
+			$urls['posts_page'] = (array) home_url( '/' );
 		}
 
 		return $urls;
@@ -85,19 +71,6 @@ class WP_Core_Provider extends Provider {
 
 		// For example: "core_posts_page".
 		return array( self::$name . '_' . $key );
-	}
-
-	// phpcs:ignore Generic.Commenting.DocComment.MissingShort
-	/** @inheritdoc */
-	public static function get_edit_url( $provider_key ) { // phpcs:ignore Generic.Commenting.DocComment.MissingShort
-		if ( $provider_key === 'core_front_page' ) {
-			$front_page_id = get_option( 'page_on_front' );
-			if ( ! empty( $front_page_id ) ) {
-				return get_edit_post_link( $front_page_id, 'link' );
-			}
-		}
-
-		return null;
 	}
 
 	// phpcs:ignore

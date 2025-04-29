@@ -8,11 +8,9 @@ const initialState = {
 	isFetching: false,
 	loaded: false,
 	size: null,
-	lastBackupSize: null,
 	minDaysOfBackupsAllowed: null,
 	daysOfBackupsAllowed: null,
 	daysOfBackupsSaved: null,
-	retentionDays: null,
 };
 
 const siteBackupSize = ( state = initialState, action ) => {
@@ -31,12 +29,9 @@ const siteBackupSize = ( state = initialState, action ) => {
 				isFetching: false,
 				loaded: true,
 				size: action.payload?.size,
-				lastBackupSize: action.payload?.lastBackupSize,
 				minDaysOfBackupsAllowed: action.payload?.minDaysOfBackupsAllowed,
 				daysOfBackupsAllowed: action.payload?.daysOfBackupsAllowed,
 				daysOfBackupsSaved: action.payload?.daysOfBackupsSaved,
-				retentionDays: action.payload?.retentionDays,
-				backupsStopped: action.payload?.backupsStopped,
 			};
 		}
 		case SITE_BACKUP_SIZE_GET_FAILED: {

@@ -22,10 +22,6 @@ class ThemePluginFilesCli extends ThemePluginFilesAddon
      * @var Cli
      */
     private $cli;
-    /**
-     * @var ThemePluginFilesLocal|mixed
-     */
-    private $tpf_local;
 
     public function __construct(
         Addon $addon,

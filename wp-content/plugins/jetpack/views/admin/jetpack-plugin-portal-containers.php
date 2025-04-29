@@ -2,7 +2,6 @@
 /**
  * Containers for Jetpack to portal React components in the WP Admin.
  *
- * @html-template Jetpack::load_view
  * @package automattic/jetpack
  */
 

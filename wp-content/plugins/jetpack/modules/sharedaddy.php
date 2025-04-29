@@ -1,7 +1,7 @@
 <?php
 /**
  * Module Name: Sharing
- * Module Description: Add sharing buttons at the bottom of each post, making it easy for visitors to share your content.
+ * Module Description: Add Twitter and Facebook buttons at the bottom of each post, making it easy for visitors to share your content.
  * Sort Order: 7
  * Recommendation Order: 6
  * First Introduced: 1.1
@@ -40,7 +40,7 @@ function sharedaddy_loaded() {
  */
 function jetpack_sharedaddy_configuration_url() {
 	$status = new Status();
-	if ( $status->is_offline_mode() || $status->in_safe_mode() || ! ( new Connection_Manager( 'jetpack' ) )->is_user_connected() ) {
+	if ( $status->is_offline_mode() || $status->is_staging_site() || ! ( new Connection_Manager( 'jetpack' ) )->is_user_connected() ) {
 		return admin_url( 'options-general.php?page=sharing' );
 	}
 

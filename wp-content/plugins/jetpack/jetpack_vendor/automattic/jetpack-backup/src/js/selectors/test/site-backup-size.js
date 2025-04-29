@@ -11,11 +11,9 @@ describe( 'siteBackupSizeSelectors', () => {
 				isFetching: false,
 				loaded: false,
 				size: null,
-				lastBackupSize: null,
 				minDaysOfBackupsAllowed: null,
 				daysOfBackupsAllowed: null,
 				daysOfBackupsSaved: null,
-				retentionDays: null,
 			},
 		},
 		fetchingState: {
@@ -23,11 +21,9 @@ describe( 'siteBackupSizeSelectors', () => {
 				isFetching: true,
 				loaded: false,
 				size: null,
-				lastBackupSize: null,
 				minDaysOfBackupsAllowed: null,
 				daysOfBackupsAllowed: null,
 				daysOfBackupsSaved: null,
-				retentionDays: null,
 			},
 		},
 		failedState: {
@@ -35,11 +31,9 @@ describe( 'siteBackupSizeSelectors', () => {
 				isFetching: false,
 				loaded: false,
 				size: null,
-				lastBackupSize: null,
 				minDaysOfBackupsAllowed: null,
 				daysOfBackupsAllowed: null,
 				daysOfBackupsSaved: null,
-				retentionDays: null,
 			},
 		},
 		successState: {
@@ -47,11 +41,9 @@ describe( 'siteBackupSizeSelectors', () => {
 				isFetching: false,
 				loaded: true,
 				size: 10737418240,
-				lastBackupSize: 5368709120,
 				minDaysOfBackupsAllowed: 7,
 				daysOfBackupsAllowed: 30,
 				daysOfBackupsSaved: 24,
-				retentionDays: 7,
 			},
 		},
 	};
@@ -206,64 +198,5 @@ describe( 'siteBackupSizeSelectors', () => {
 				expect( output ).toBe( expected );
 			}
 		);
-	} );
-
-	describe( 'getBackupRetentionDays()', () => {
-		it.each( [
-			{
-				state: fixtures.emptyObject,
-				expected: null,
-			},
-			{
-				state: fixtures.initialState,
-				expected: null,
-			},
-			{
-				state: fixtures.fetchingState,
-				expected: null,
-			},
-			{
-				state: fixtures.failedState,
-				expected: null,
-			},
-			{
-				state: fixtures.successState,
-				expected: 7,
-			},
-		] )(
-			'should return getBackupRetentionDays value if passed, null otherwise',
-			( { state, expected } ) => {
-				const output = selectors.getBackupRetentionDays( state );
-				expect( output ).toBe( expected );
-			}
-		);
-	} );
-
-	describe( 'getLastBackupSize()', () => {
-		it.each( [
-			{
-				state: fixtures.emptyObject,
-				expected: null,
-			},
-			{
-				state: fixtures.initialState,
-				expected: null,
-			},
-			{
-				state: fixtures.fetchingState,
-				expected: null,
-			},
-			{
-				state: fixtures.failedState,
-				expected: null,
-			},
-			{
-				state: fixtures.successState,
-				expected: 5368709120,
-			},
-		] )( 'should return size value if passed, null otherwise', ( { state, expected } ) => {
-			const output = selectors.getLastBackupSize( state );
-			expect( output ).toBe( expected );
-		} );
 	} );
 } );

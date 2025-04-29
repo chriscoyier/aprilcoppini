@@ -39,10 +39,12 @@ class Jetpack_SEO_Utils {
 			return false;
 		}
 
-		if ( defined( 'IS_WPCOM' ) && IS_WPCOM ) {
-			return wpcom_site_has_feature( 'advanced-seo', get_current_blog_id() );
+		// For WPcom simple sites.
+		if ( defined( 'IS_WPCOM' ) && IS_WPCOM && method_exists( 'Jetpack_Plan', 'supports' ) ) {
+			return Jetpack_Plan::supports( 'advanced-seo' );
 		}
 
+		// For all Jetpack sites.
 		return true;
 	}
 

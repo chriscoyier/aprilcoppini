@@ -1,19 +1,18 @@
 ( function () {
-	var overlay = document.getElementById( 'eu-cookie-law' ),
-		widget = document.querySelector( '.widget_eu_cookie_law_widget' );
-
-	if ( null === widget || null === overlay ) {
-		return;
-	}
-
 	var cookieValue = document.cookie.replace(
-			/(?:(?:^|.*;\s*)eucookielaw\s*=\s*([^;]*).*$)|^.*$/,
+			/(?:(?:^|.*;\s*)eucookielaw\s*\=\s*([^;]*).*$)|^.*$/,
 			'$1'
 		),
+		overlay = document.getElementById( 'eu-cookie-law' ),
+		widget = document.querySelector( '.widget_eu_cookie_law_widget' ),
 		inCustomizer = widget && widget.hasAttribute( 'data-customize-widget-id' ),
 		getScrollTop,
 		initialScrollPosition,
 		scrollFunction;
+
+	if ( null === widget || null === overlay ) {
+		return;
+	}
 
 	/**
 	 * Gets the amount that the window is scrolled.
@@ -30,7 +29,7 @@
 
 	if ( overlay.classList.contains( 'ads-active' ) ) {
 		var adsCookieValue = document.cookie.replace(
-			/(?:(?:^|.*;\s*)personalized-ads-consent\s*=\s*([^;]*).*$)|^.*$/,
+			/(?:(?:^|.*;\s*)personalized-ads-consent\s*\=\s*([^;]*).*$)|^.*$/,
 			'$1'
 		);
 		if ( '' !== cookieValue && '' !== adsCookieValue && ! inCustomizer ) {
@@ -91,7 +90,8 @@
 		overlay.classList.add( 'hide' );
 		setTimeout( function () {
 			overlay.parentNode.removeChild( overlay );
-			widget.parentNode.removeChild( widget );
+			var widgetSection = document.querySelector( '.widget.widget_eu_cookie_law_widget' );
+			widgetSection.parentNode.removeChild( widgetSection );
 		}, 400 );
 	}
 } )();
