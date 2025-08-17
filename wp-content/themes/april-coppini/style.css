@@ -11,20 +11,25 @@ Version: 1.0.0
 body {
   margin: 0;
   font: 110%/1.5 system-ui;
-  padding: 5vw;
+  padding: 40px;
+  border: 20px solid black;
+  min-height: 100dvh;
 }
 
-h1, h2, h3 {
-  font-family: 'Alumni Sans', sans-serif;
+h1,
+h2,
+h3 {
+  font-family: "Alumni Sans", sans-serif;
   font-weight: 500;
   text-transform: uppercase;
   margin: 0 0 1rem 0;
 }
 h1 {
-  font-size: clamp(16px, 1rem + 5vw, 72px)
+  font-size: clamp(16px, 1rem + 5vw, 72px);
+  line-height: 1;
 }
 h2 {
-  font-size: clamp(14px, 1rem + 3vw, 60px)
+  font-size: clamp(14px, 1rem + 3vw, 60px);
 }
 
 a {
@@ -36,11 +41,17 @@ a {
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
-  margin: 0 0 2rem 0;
+  justify-content: space-between;
 }
-.site-header h1 {
-  margin: 0 auto 0 0;
+
+@media (max-width: 530px) {
+  .site-header {
+    flex-direction: column;
+    gap: 0;
+    margin: 0 0 20px 0;
+  }
 }
+
 .site-header h1 a {
   text-decoration: none;
 }
@@ -49,11 +60,25 @@ a {
   list-style: none;
   display: flex;
   margin: 0;
+  padding: 0;
 }
 .main-menu li a {
   padding: 1rem;
 }
 
-p, ul, ol, dl {
+p,
+ul,
+ol,
+dl {
   max-width: 70ch;
+}
+
+.wp-block-jetpack-slideshow {
+  img {
+    padding: 40px;
+    border: 2vw solid black;
+  }
+}
+.swiper-pagination-custom {
+  justify-content: center !important;
 }
