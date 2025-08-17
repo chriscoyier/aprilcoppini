@@ -31,7 +31,7 @@ module.exports = [
 				// Handle CSS.
 				jetpackWebpackConfig.CssRule( {
 					extensions: [ 'css', 'sass', 'scss' ],
-					extraLoaders: [ 'sass-loader' ],
+					extraLoaders: [ { loader: 'sass-loader', options: { api: 'modern-compiler' } } ],
 				} ),
 
 				// Handle images.
@@ -45,11 +45,7 @@ module.exports = [
 		optimization: {
 			...jetpackWebpackConfig.optimization,
 		},
-		plugins: [
-			...jetpackWebpackConfig.StandardPlugins( {
-				DependencyExtractionPlugin: { injectPolyfill: true },
-			} ),
-		],
+		plugins: [ ...jetpackWebpackConfig.StandardPlugins() ],
 		resolve: {
 			...jetpackWebpackConfig.resolve,
 		},

@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Render_Shortcode_Endpoint(
 	array(
 		'description'          => 'Get a rendered shortcode for a site. Note: The current user must have publishing access.',
@@ -32,6 +36,8 @@ new WPCOM_JSON_API_Render_Shortcode_Endpoint(
  * Render shortcode endpoint class.
  *
  * /sites/%s/shortcodes/render -> $blog_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Render_Shortcode_Endpoint extends WPCOM_JSON_API_Render_Endpoint {
 	/**
@@ -63,7 +69,7 @@ class WPCOM_JSON_API_Render_Shortcode_Endpoint extends WPCOM_JSON_API_Render_End
 		// Make sure only one shortcode is being rendered at a time
 		$pattern = get_shortcode_regex();
 		preg_match_all( "/$pattern/s", $shortcode, $matches );
-		if ( count( $matches[0] ) > 1 ) {
+		if ( is_countable( $matches[0] ) && count( $matches[0] ) > 1 ) {
 			return new WP_Error( 'invalid_shortcode', 'Only one shortcode can be rendered at a time.', 400 );
 		}
 

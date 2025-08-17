@@ -5,6 +5,10 @@
  * Endpoint: /sites/%s/media/new
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Upload_Media_Endpoint(
 	array(
 		'description'          => 'Upload a new media item.',
@@ -44,6 +48,8 @@ new WPCOM_JSON_API_Upload_Media_Endpoint(
 
 /**
  * Upload media item API class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Upload_Media_Endpoint extends WPCOM_JSON_API_Endpoint {
 	/**
@@ -78,7 +84,7 @@ class WPCOM_JSON_API_Upload_Media_Endpoint extends WPCOM_JSON_API_Endpoint {
 				// check for WP_Error if we ever actually need $media_id.
 				$media_id = media_handle_upload( '.api.media.item.', 0 );
 				if ( is_wp_error( $media_id ) ) {
-					if ( 1 === count( $input['media'] ) && ! $has_media_urls ) {
+					if ( is_countable( $input['media'] ) && 1 === count( $input['media'] ) && ! $has_media_urls ) {
 						unset( $_FILES['.api.media.item.'] );
 						return $media_id;
 					}

@@ -2,6 +2,7 @@
 
 namespace Yoast\WP\SEO\Helpers;
 
+use WPSEO_Option_Llmstxt;
 use WPSEO_Option_Social;
 use WPSEO_Option_Titles;
 use WPSEO_Options;
@@ -28,13 +29,14 @@ class Options_Helper {
 	/**
 	 * Sets a single field to the options.
 	 *
-	 * @param string $key   The key to set.
-	 * @param mixed  $value The value to set.
+	 * @param string $key          The key to set.
+	 * @param mixed  $value        The value to set.
+	 * @param string $option_group The lookup table which represents the option_group where the key is stored.
 	 *
 	 * @return mixed|null Returns value if found.
 	 */
-	public function set( $key, $value ) {
-		return WPSEO_Options::set( $key, $value );
+	public function set( $key, $value, $option_group = '' ) {
+		return WPSEO_Options::set( $key, $value, $option_group );
 	}
 
 	/**
@@ -76,7 +78,7 @@ class Options_Helper {
 		/**
 		 * Filter: 'wpseo_replacements_filter_sep' - Allow customization of the separator character(s).
 		 *
-		 * @api string $replacement The current separator.
+		 * @param string $replacement The current separator.
 		 */
 		return \apply_filters( 'wpseo_replacements_filter_sep', $replacement );
 	}
@@ -137,5 +139,14 @@ class Options_Helper {
 	 */
 	public function is_twitter_id_valid( $twitter_id ) {
 		return empty( $twitter_id ) || WPSEO_Option_Social::get_instance()->validate_twitter_id( $twitter_id, false );
+	}
+
+	/**
+	 * Gets the limit for the other included pages.
+	 *
+	 * @return int The limit for the other included pages.
+	 */
+	public function get_other_included_pages_limit() {
+		return WPSEO_Option_Llmstxt::get_instance()->get_other_included_pages_limit();
 	}
 }

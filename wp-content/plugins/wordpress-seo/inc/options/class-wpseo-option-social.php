@@ -107,7 +107,7 @@ class WPSEO_Option_Social extends WPSEO_Option {
 	 * @return void
 	 */
 	public function translate_defaults() {
-		self::$twitter_card_types['summary_large_image'] = __( 'Summary with large image', 'wordpress-seo' );
+		self::$twitter_card_types['summary_large_image'] = 'Summary with large image';
 	}
 
 	/**
@@ -168,24 +168,10 @@ class WPSEO_Option_Social extends WPSEO_Option {
 						if ( $twitter_id ) {
 							$clean[ $key ] = $twitter_id;
 						}
-						else {
-							if ( isset( $old[ $key ] ) && $old[ $key ] !== '' ) {
+						elseif ( isset( $old[ $key ] ) && $old[ $key ] !== '' ) {
 								$twitter_id = sanitize_text_field( ltrim( $old[ $key ], '@' ) );
-								if ( preg_match( '`^[A-Za-z0-9_]{1,25}$`', $twitter_id ) ) {
-									$clean[ $key ] = $twitter_id;
-								}
-							}
-							if ( function_exists( 'add_settings_error' ) ) {
-								add_settings_error(
-									$this->group_name, // Slug title of the setting.
-									$key, // Suffix-ID for the error message box.
-									sprintf(
-										/* translators: %s expands to a twitter user name. */
-										__( '%s does not seem to be a valid Twitter Username. Please correct.', 'wordpress-seo' ),
-										'<strong>' . esc_html( sanitize_text_field( $dirty[ $key ] ) ) . '</strong>'
-									), // The error message.
-									'error' // Message type.
-								);
+							if ( preg_match( '`^[A-Za-z0-9_]{1,25}$`', $twitter_id ) ) {
+								$clean[ $key ] = $twitter_id;
 							}
 						}
 						unset( $twitter_id );
@@ -256,8 +242,7 @@ class WPSEO_Option_Social extends WPSEO_Option {
 	 * @return string|false The validated URL or false if the URL is not valid.
 	 */
 	public function validate_social_url( $url ) {
-		$submitted_url = trim( htmlspecialchars( $url, ENT_COMPAT, get_bloginfo( 'charset' ), true ) );
-		$validated_url = filter_var( WPSEO_Utils::sanitize_url( $submitted_url ), FILTER_VALIDATE_URL );
+		$validated_url = filter_var( WPSEO_Utils::sanitize_url( trim( $url ) ), FILTER_VALIDATE_URL );
 
 		return $validated_url;
 	}
@@ -286,7 +271,7 @@ class WPSEO_Option_Social extends WPSEO_Option {
 			return $twitter_id;
 		}
 
-		if ( preg_match( '`^http(?:s)?://(?:www\.)?twitter\.com/(?P<handle>[A-Za-z0-9_]{1,25})/?$`', $twitter_id, $matches ) ) {
+		if ( preg_match( '`^http(?:s)?://(?:www\.)?(?:twitter|x)\.com/(?P<handle>[A-Za-z0-9_]{1,25})/?$`', $twitter_id, $matches ) ) {
 			return $matches['handle'];
 		}
 
@@ -331,7 +316,6 @@ class WPSEO_Option_Social extends WPSEO_Option {
 			unset( $move, $key );
 		}
 		unset( $old_option );
-
 
 		return $option_value;
 	}

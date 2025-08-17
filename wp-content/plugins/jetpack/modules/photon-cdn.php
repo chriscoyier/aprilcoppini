@@ -1,7 +1,7 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
  * Module Name: Asset CDN
- * Module Description: Jetpack’s Site Accelerator loads your site faster by optimizing your images and serving your images and static files from our global network of servers.
+ * Module Description: Serve static files like CSS and JS from Jetpack’s global CDN for faster load times.
  * Sort Order: 26
  * Recommendation Order: 1
  * First Introduced: 6.6
@@ -18,7 +18,7 @@ use Automattic\Jetpack\Assets;
 
 $GLOBALS['concatenate_scripts'] = false; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
-Assets::add_resource_hint( '//c0.wp.com', 'dns-prefetch' );
+Assets::add_resource_hint( '//c0.wp.com', 'preconnect' );
 
 /**
  * Asset CDN module main class file.
@@ -52,7 +52,7 @@ class Jetpack_Photon_Static_Assets_CDN {
 		 * is available and we know whether the response will be AMP or not. This is particularly important
 		 * for AMP-first (native AMP) pages where there are no AMP-specific URLs.
 		 */
-		if ( Jetpack_AMP_Support::is_amp_request() ) {
+		if ( class_exists( Jetpack_AMP_Support::class ) && Jetpack_AMP_Support::is_amp_request() ) {
 			return;
 		}
 
@@ -117,7 +117,7 @@ class Jetpack_Photon_Static_Assets_CDN {
 	public static function fix_script_relative_path( $relative, $src ) {
 
 		// Note relevant in AMP responses. See note above.
-		if ( Jetpack_AMP_Support::is_amp_request() ) {
+		if ( class_exists( Jetpack_AMP_Support::class ) && Jetpack_AMP_Support::is_amp_request() ) {
 			return $relative;
 		}
 
@@ -226,7 +226,7 @@ class Jetpack_Photon_Static_Assets_CDN {
 	 */
 	public static function get_plugin_assets( $plugin, $version ) {
 		if ( 'jetpack' === $plugin && JETPACK__VERSION === $version ) {
-			if ( ! self::is_public_version( $version ) ) {
+			if ( ! self::is_public_version( $version ) || ! file_exists( JETPACK__PLUGIN_DIR . 'modules/photon-cdn/jetpack-manifest.php' ) ) {
 				return false;
 			}
 
@@ -300,7 +300,7 @@ class Jetpack_Photon_Static_Assets_CDN {
 	 * @return Boolean whether the file is a JS or CSS.
 	 */
 	public static function is_js_or_css_file( $path ) {
-		return ( false === strpos( $path, '?' ) ) && in_array( substr( $path, -3 ), array( 'css', '.js' ), true );
+		return ( ! str_contains( $path, '?' ) ) && in_array( substr( $path, -3 ), array( 'css', '.js' ), true );
 	}
 
 	/**

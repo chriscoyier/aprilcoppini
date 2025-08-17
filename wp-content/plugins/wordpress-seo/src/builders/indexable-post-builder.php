@@ -83,6 +83,8 @@ class Indexable_Post_Builder {
 	 * @required
 	 *
 	 * @param Indexable_Repository $indexable_repository The indexable repository.
+	 *
+	 * @return void
 	 */
 	public function set_indexable_repository( Indexable_Repository $indexable_repository ) {
 		$this->indexable_repository = $indexable_repository;
@@ -125,6 +127,8 @@ class Indexable_Post_Builder {
 		);
 
 		$indexable->readability_score = (int) $this->meta->get_value( 'content_score', $post_id );
+
+		$indexable->inclusive_language_score = (int) $this->meta->get_value( 'inclusive_language_score', $post_id );
 
 		$indexable->is_cornerstone    = ( $this->meta->get_value( 'is_cornerstone', $post_id ) === '1' );
 		$indexable->is_robots_noindex = $this->get_robots_noindex(
@@ -179,7 +183,7 @@ class Indexable_Post_Builder {
 	 * @param string $post_type The post type.
 	 * @param int    $post_id   The post ID.
 	 *
-	 * @return false|string|WP_Error The permalink.
+	 * @return WP_Error|string|false The permalink.
 	 */
 	protected function get_permalink( $post_type, $post_id ) {
 		if ( $post_type !== 'attachment' ) {

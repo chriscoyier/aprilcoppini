@@ -1,10 +1,9 @@
-/*!
-  Copyright (c) 2018 Jed Watson.
-  Licensed under the MIT License (MIT), see
-  http://jedwatson.github.io/classnames
-*/
+/*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */
 
-/*!
- 2021 Jason Mulligan <jason.mulligan@avoidwork.com>
- @version 8.0.6
-*/
+/**
+ * filesize
+ *
+ * @copyright 2024 Jason Mulligan <jason.mulligan@avoidwork.com>
+ * @license BSD-3-Clause
+ * @version 10.1.6
+ */

@@ -27,7 +27,7 @@ class Post_Connection_JITM extends JITM {
 	/**
 	 * Tracking object.
 	 *
-	 * @var Automattic\Jetpack\Tracking
+	 * @var \Automattic\Jetpack\Tracking
 	 *
 	 * @access private
 	 */
@@ -41,36 +41,11 @@ class Post_Connection_JITM extends JITM {
 	}
 
 	/**
-	 * Prepare actions according to screen and post type.
-	 *
-	 * @since 1.1.0
-	 * @since-jetpack 3.8.2
-	 *
-	 * @uses Jetpack_Autoupdate::get_possible_failures()
-	 *
-	 * @param \WP_Screen $screen WP Core's screen object.
-	 */
-	public function prepare_jitms( $screen ) {
-		parent::prepare_jitms( $screen );
-		if ( ! in_array(
-			$screen->id,
-			array(
-				'jetpack_page_akismet-key-config',
-				'admin_page_jetpack_modules',
-			),
-			true
-		) ) {
-			// Not really a JITM. Don't know where else to put this :) .
-			add_action( 'admin_notices', array( $this, 'delete_user_update_connection_owner_notice' ) );
-		}
-	}
-
-	/**
 	 * A special filter for WooCommerce, to set a message based on local state.
 	 *
-	 * @param string $content The current message.
+	 * @param object $content The current message.
 	 *
-	 * @return array The new message.
+	 * @return object The new message.
 	 */
 	public static function jitm_woocommerce_services_msg( $content ) {
 		if ( ! function_exists( 'wc_get_base_location' ) ) {
@@ -138,7 +113,7 @@ class Post_Connection_JITM extends JITM {
 				array(
 					'creative-mail-action' => 'install',
 				),
-				admin_url( 'edit.php?post_type=feedback' )
+				admin_url( 'admin.php?page=jetpack-forms-admin' )
 			),
 			'creative-mail-install'
 		);
@@ -155,7 +130,7 @@ class Post_Connection_JITM extends JITM {
 				array(
 					'creative-mail-action' => 'activate',
 				),
-				admin_url( 'edit.php?post_type=feedback' )
+				admin_url( 'admin.php?page=jetpack-forms-admin' )
 			),
 			'creative-mail-install'
 		);
@@ -230,172 +205,6 @@ class Post_Connection_JITM extends JITM {
 	}
 
 	/**
-	 * This is an entire admin notice dedicated to messaging and handling of the case where a user is trying to delete
-	 * the connection owner.
-	 */
-	public function delete_user_update_connection_owner_notice() {
-		global $current_screen;
-
-		/*
-		 * phpcs:disable WordPress.Security.NonceVerification.Recommended
-		 *
-		 * This function is firing within wp-admin and checks (below) if it is in the midst of a deletion on the users
-		 * page. Nonce will be already checked by WordPress, so we do not need to check ourselves.
-		 */
-
-		if ( ! isset( $current_screen->base ) || 'users' !== $current_screen->base ) {
-			return;
-		}
-
-		if ( ! isset( $_REQUEST['action'] ) || 'delete' !== $_REQUEST['action'] ) {
-			return;
-		}
-
-		// Get connection owner or bail.
-		$connection_manager  = new Manager();
-		$connection_owner_id = $connection_manager->get_connection_owner_id();
-		if ( ! $connection_owner_id ) {
-			return;
-		}
-		$connection_owner_userdata = get_userdata( $connection_owner_id );
-
-		// Bail if we're not trying to delete connection owner.
-		$user_ids_to_delete = array();
-		if ( isset( $_REQUEST['users'] ) ) {
-			$user_ids_to_delete = array_map( 'sanitize_text_field', wp_unslash( $_REQUEST['users'] ) );
-		} elseif ( isset( $_REQUEST['user'] ) ) {
-			$user_ids_to_delete[] = sanitize_text_field( wp_unslash( $_REQUEST['user'] ) );
-		}
-
-		// phpcs:enable
-		$user_ids_to_delete        = array_map( 'absint', $user_ids_to_delete );
-		$deleting_connection_owner = in_array( $connection_owner_id, (array) $user_ids_to_delete, true );
-		if ( ! $deleting_connection_owner ) {
-			return;
-		}
-
-		// Bail if they're trying to delete themselves to avoid confusion.
-		if ( get_current_user_id() === $connection_owner_id ) {
-			return;
-		}
-
-		// Track it!
-		if ( method_exists( $this->tracking, 'record_user_event' ) ) {
-			$this->tracking->record_user_event( 'delete_connection_owner_notice_view' );
-		}
-
-		$connected_admins = $connection_manager->get_connected_users( 'jetpack_disconnect' );
-		$user             = is_a( $connection_owner_userdata, 'WP_User' ) ? esc_html( $connection_owner_userdata->data->user_login ) : '';
-
-		echo "<div class='notice notice-warning' id='jetpack-notice-switch-connection-owner'>";
-		echo '<h2>' . esc_html__( 'Important notice about your Jetpack connection:', 'jetpack-jitm' ) . '</h2>';
-		echo '<p>' . sprintf(
-			/* translators: WordPress User, if available. */
-			esc_html__( 'Warning! You are about to delete the Jetpack connection owner (%s) for this site, which may cause some of your Jetpack features to stop working.', 'jetpack-jitm' ),
-			esc_html( $user )
-		) . '</p>';
-
-		if ( ! empty( $connected_admins ) && count( $connected_admins ) > 1 ) {
-			echo '<form id="jp-switch-connection-owner" action="" method="post">';
-			echo "<label for='owner'>" . esc_html__( 'You can choose to transfer connection ownership to one of these already-connected admins:', 'jetpack-jitm' ) . ' </label>';
-
-			$connected_admin_ids = array_map(
-				function ( $connected_admin ) {
-						return $connected_admin->ID;
-				},
-				$connected_admins
-			);
-
-			wp_dropdown_users(
-				array(
-					'name'    => 'owner',
-					'include' => array_diff( $connected_admin_ids, array( $connection_owner_id ) ),
-					'show'    => 'display_name_with_login',
-				)
-			);
-
-			echo '<p>';
-			submit_button( esc_html__( 'Set new connection owner', 'jetpack-jitm' ), 'primary', 'jp-switch-connection-owner-submit', false );
-			echo '</p>';
-
-			echo "<div id='jp-switch-user-results'></div>";
-			echo '</form>';
-			?>
-			<script type="text/javascript">
-				jQuery( document ).ready( function( $ ) {
-					$( '#jp-switch-connection-owner' ).on( 'submit', function( e ) {
-						var formData = $( this ).serialize();
-						var submitBtn = document.getElementById( 'jp-switch-connection-owner-submit' );
-						var results = document.getElementById( 'jp-switch-user-results' );
-
-						submitBtn.disabled = true;
-
-						$.ajax( {
-							type        : "POST",
-							url         : "<?php echo esc_url( get_rest_url() . 'jetpack/v4/connection/owner' ); ?>",
-							data        : formData,
-							headers     : {
-								'X-WP-Nonce': "<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>",
-							},
-							success: function() {
-								results.innerHTML = "<?php esc_html_e( 'Success!', 'jetpack-jitm' ); ?>";
-								setTimeout( function() {
-									$( '#jetpack-notice-switch-connection-owner' ).hide( 'slow' );
-								}, 1000 );
-							}
-						} ).done( function() {
-							submitBtn.disabled = false;
-						} );
-
-						e.preventDefault();
-						return false;
-					} );
-				} );
-			</script>
-			<?php
-		} else {
-			echo '<p>' . esc_html__( 'Every Jetpack site needs at least one connected admin for the features to work properly. Please connect to your WordPress.com account via the button below. Once you connect, you may refresh this page to see an option to change the connection owner.', 'jetpack-jitm' ) . '</p>';
-			$connect_url = $connection_manager->get_authorization_url();
-			$connect_url = add_query_arg( 'from', 'delete_connection_owner_notice', $connect_url );
-			echo "<a href='" . esc_url( $connect_url ) . "' target='_blank' rel='noopener noreferrer' class='button-primary'>" . esc_html__( 'Connect to WordPress.com', 'jetpack-jitm' ) . '</a>';
-		}
-
-		echo '<p>';
-		printf(
-			wp_kses(
-				/* translators: URL to Jetpack support doc regarding the primary user. */
-				__( "<a href='%s' target='_blank' rel='noopener noreferrer'>Learn more</a> about the connection owner and what will break if you do not have one.", 'jetpack-jitm' ),
-				array(
-					'a' => array(
-						'href'   => true,
-						'target' => true,
-						'rel'    => true,
-					),
-				)
-			),
-			esc_url( Redirect::get_url( 'jetpack-support-primary-user' ) )
-		);
-		echo '</p>';
-		echo '<p>';
-		printf(
-			wp_kses(
-				/* translators: URL to contact Jetpack support. */
-				__( 'As always, feel free to <a href="%s" target="_blank" rel="noopener noreferrer">contact our support team</a> if you have any questions.', 'jetpack-jitm' ),
-				array(
-					'a' => array(
-						'href'   => true,
-						'target' => true,
-						'rel'    => true,
-					),
-				)
-			),
-			esc_url( Redirect::get_url( 'jetpack-contact-support' ) )
-		);
-		echo '</p>';
-		echo '</div>';
-	}
-
-	/**
 	 * Dismisses a JITM feature class so that it will no longer be shown.
 	 *
 	 * @param string $id The id of the JITM that was dismissed.
@@ -416,7 +225,11 @@ class Post_Connection_JITM extends JITM {
 	}
 
 	/**
-	 * Asks the wpcom API for the current message to display keyed on query string and message path
+	 * Asks the wpcom API for the current message to display keyed on query string and message path.
+	 *
+	 * For sites running on the Dotcom Simple codebase, the network request is bypassed
+	 * via Client::wpcom_json_api_request_as_blog allowing for the JITM\Engine to be called
+	 * directly.
 	 *
 	 * @param string $message_path The message path to ask for.
 	 * @param string $query The query string originally from the front end.
@@ -457,15 +270,17 @@ class Post_Connection_JITM extends JITM {
 			array(
 				'external_user_id' => urlencode_deep( $user->ID ),
 				'user_roles'       => urlencode_deep( $user_roles ),
-				'query_string'     => urlencode_deep( $query ),
+				'query_string'     => urlencode_deep( build_query( $query ) ),
 				'mobile_browser'   => Device_Detection::is_smartphone() ? 1 : 0,
 				'_locale'          => get_user_locale(),
 			),
 			sprintf( '/sites/%d/jitm/%s', $site_id, $message_path )
 		);
 
+		$cache_key = 'jetpack_jitm_' . substr( md5( $path ), 0, 31 );
+
 		// Attempt to get from cache.
-		$envelopes = get_transient( 'jetpack_jitm_' . substr( md5( $path ), 0, 31 ) );
+		$envelopes = get_transient( $cache_key );
 
 		// If something is in the cache and it was put in the cache after the last sync we care about, use it.
 		$use_cache = false;
@@ -483,8 +298,16 @@ class Post_Connection_JITM extends JITM {
 		}
 
 		if ( $use_cache ) {
-			$last_sync  = (int) get_transient( 'jetpack_last_plugin_sync' );
-			$from_cache = $envelopes && $last_sync > 0 && $last_sync < $envelopes['last_response_time'];
+			$last_sync = (int) get_transient( 'jetpack_last_plugin_sync' );
+			// The sync timestamp indicates when a plugin change was last sent to Jetpack, however,
+			// it's stored in a transient and doesn't stay forever. Therefore, an admin who last changed
+			// a plugin a month ago is likely to have $last_sync=0.
+			//
+			// If the sync timestamp is missing (value 0): use the cache.
+			// If the timestamp exists and is older than the cached envelope: use the cache.
+			// If the timestamp exists and is newer: bypass and refresh.
+			// (This case means the JITM was created before the last plugin activate/deactivate and is invalid).
+			$from_cache = $envelopes && ( 0 === $last_sync || $last_sync < $envelopes['last_response_time'] );
 		} else {
 			$from_cache = false;
 		}
@@ -518,8 +341,7 @@ class Post_Connection_JITM extends JITM {
 			// Do not cache if expiration is 0 or we're not using the cache.
 			if ( 0 !== $expiration && $use_cache ) {
 				$envelopes['last_response_time'] = time();
-
-				set_transient( 'jetpack_jitm_' . substr( md5( $path ), 0, 31 ), $envelopes, $expiration );
+				set_transient( $cache_key, $envelopes, $expiration );
 			}
 		}
 
@@ -551,7 +373,8 @@ class Post_Connection_JITM extends JITM {
 			$this->tracking->record_user_event(
 				'jitm_view_client',
 				array(
-					'jitm_id' => $envelope->id,
+					'jitm_id'           => $envelope->id,
+					'jitm_message_path' => $message_path,
 				)
 			);
 
@@ -596,6 +419,7 @@ class Post_Connection_JITM extends JITM {
 			}
 
 			$envelope->content->icon = $this->generate_icon( $envelope->content->icon, $full_jp_logo_exists );
+			$envelope->message_path  = esc_attr( $message_path );
 
 			$stats->add( 'jitm', $envelope->id . '-viewed' );
 			$stats->do_server_side_stats();
@@ -603,5 +427,4 @@ class Post_Connection_JITM extends JITM {
 
 		return $envelopes;
 	}
-
 }

@@ -6,17 +6,25 @@
  * @package automattic/jetpack
  */
 
+use Automattic\Jetpack\Blaze;
+use Automattic\Jetpack\Boost_Speed_Score\Speed_Score_History;
 use Automattic\Jetpack\Connection\Manager as Connection_Manager;
 use Automattic\Jetpack\Connection\Plugin_Storage as Connection_Plugin_Storage;
 use Automattic\Jetpack\Connection\REST_Connector;
 use Automattic\Jetpack\Constants;
+use Automattic\Jetpack\Current_Plan as Jetpack_Plan;
 use Automattic\Jetpack\Device_Detection\User_Agent_Info;
 use Automattic\Jetpack\Identity_Crisis;
+use Automattic\Jetpack\Image_CDN\Image_CDN_Core;
+use Automattic\Jetpack\Image_CDN\Image_CDN_Image;
+use Automattic\Jetpack\IP\Utils as IP_Utils;
 use Automattic\Jetpack\Licensing;
 use Automattic\Jetpack\Licensing\Endpoints as Licensing_Endpoints;
 use Automattic\Jetpack\My_Jetpack\Initializer as My_Jetpack_Initializer;
+use Automattic\Jetpack\My_Jetpack\Jetpack_Manage;
 use Automattic\Jetpack\Partner;
 use Automattic\Jetpack\Partner_Coupon as Jetpack_Partner_Coupon;
+use Automattic\Jetpack\Publicize\Keyring_Helper;
 use Automattic\Jetpack\Stats\Options as Stats_Options;
 use Automattic\Jetpack\Status;
 use Automattic\Jetpack\Status\Host;
@@ -63,6 +71,10 @@ class Jetpack_Redux_State_Helper {
 		// "mock" a block module in order to get it searchable in the settings.
 		$modules['blocks']['module']                    = 'blocks';
 		$modules['blocks']['additional_search_queries'] = esc_html_x( 'blocks, block, gutenberg', 'Search terms', 'jetpack' );
+
+		// "mock" an Earn module in order to get it searchable in the settings.
+		$modules['earn']['module']                    = 'earn';
+		$modules['earn']['additional_search_queries'] = esc_html_x( 'earn, paypal, stripe, payments, pay', 'Search terms', 'jetpack' );
 
 		// Collecting roles that can view site stats.
 		$stats_roles   = array();
@@ -117,29 +129,31 @@ class Jetpack_Redux_State_Helper {
 
 		$connection_status = array_merge( REST_Connector::connection_status( false ), $connection_status );
 
-		$host = new Host();
+		$speed_score_history = new Speed_Score_History( wp_parse_url( get_site_url(), PHP_URL_HOST ) );
+
+		$block_availability = Jetpack_Gutenberg::get_cached_availability();
 
 		return array(
-			'WP_API_root'                 => esc_url_raw( rest_url() ),
-			'WP_API_nonce'                => wp_create_nonce( 'wp_rest' ),
-			'registrationNonce'           => wp_create_nonce( 'jetpack-registration-nonce' ),
-			'purchaseToken'               => self::get_purchase_token(),
-			'partnerCoupon'               => Jetpack_Partner_Coupon::get_coupon(),
-			'pluginBaseUrl'               => plugins_url( '', JETPACK__PLUGIN_FILE ),
-			'connectionStatus'            => $connection_status,
-			'connectedPlugins'            => Connection_Plugin_Storage::get_all(),
-			'connectUrl'                  => false == $current_user_data['isConnected'] // phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual
+			'WP_API_root'                          => esc_url_raw( rest_url() ),
+			'WP_API_nonce'                         => wp_create_nonce( 'wp_rest' ),
+			'registrationNonce'                    => '', // Not used, keeping it for compatibility reasons, see https://github.com/Automattic/jetpack/pull/42076
+			'purchaseToken'                        => self::get_purchase_token(),
+			'partnerCoupon'                        => Jetpack_Partner_Coupon::get_coupon(),
+			'pluginBaseUrl'                        => plugins_url( '', JETPACK__PLUGIN_FILE ),
+			'connectionStatus'                     => $connection_status,
+			'connectedPlugins'                     => Connection_Plugin_Storage::get_all(),
+			'connectUrl'                           => false == $current_user_data['isConnected'] // phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual
 				? Jetpack::init()->build_connect_url( true, false, false )
 				: '',
-			'dismissedNotices'            => self::get_dismissed_jetpack_notices(),
-			'isDevVersion'                => Jetpack::is_development_version(),
-			'currentVersion'              => JETPACK__VERSION,
-			'is_gutenberg_available'      => true,
-			'getModules'                  => $modules,
-			'rawUrl'                      => ( new Status() )->get_site_suffix(),
-			'adminUrl'                    => esc_url( admin_url() ),
-			'siteTitle'                   => (string) htmlspecialchars_decode( get_option( 'blogname' ), ENT_QUOTES ),
-			'stats'                       => array(
+			'dismissedNotices'                     => self::get_dismissed_jetpack_notices(),
+			'isDevVersion'                         => Jetpack::is_development_version(),
+			'currentVersion'                       => JETPACK__VERSION,
+			'is_gutenberg_available'               => true,
+			'getModules'                           => $modules,
+			'rawUrl'                               => ( new Status() )->get_site_suffix(),
+			'adminUrl'                             => esc_url( admin_url() ),
+			'siteTitle'                            => (string) htmlspecialchars_decode( get_option( 'blogname' ), ENT_QUOTES ),
+			'stats'                                => array(
 				// data is populated asynchronously on page load.
 				'data'  => array(
 					'general' => false,
@@ -149,13 +163,13 @@ class Jetpack_Redux_State_Helper {
 				),
 				'roles' => $stats_roles,
 			),
-			'aff'                         => Partner::init()->get_partner_code( Partner::AFFILIATE_CODE ),
-			'partnerSubsidiaryId'         => Partner::init()->get_partner_code( Partner::SUBSIDIARY_CODE ),
-			'settings'                    => self::get_flattened_settings( $modules ),
-			'userData'                    => array(
+			'aff'                                  => Partner::init()->get_partner_code( Partner::AFFILIATE_CODE ),
+			'partnerSubsidiaryId'                  => Partner::init()->get_partner_code( Partner::SUBSIDIARY_CODE ),
+			'settings'                             => self::get_flattened_settings(),
+			'userData'                             => array(
 				'currentUser' => $current_user_data,
 			),
-			'siteData'                    => array(
+			'siteData'                             => array(
 				'blog_id'                    => Jetpack_Options::get_option( 'id', 0 ),
 				'icon'                       => has_site_icon()
 					? apply_filters( 'jetpack_photon_url', get_site_icon_url(), array( 'w' => 64 ) )
@@ -169,9 +183,6 @@ class Jetpack_Redux_State_Helper {
 				 * @param bool $are_promotions_active Status of promotions visibility. True by default.
 				 */
 				'showPromotions'             => apply_filters( 'jetpack_show_promotions', true ),
-				'isAtomicSite'               => $host->is_woa_site(),
-				'isWoASite'                  => $host->is_woa_site(),
-				'isAtomicPlatform'           => $host->is_atomic_platform(),
 				'plan'                       => Jetpack_Plan::get(),
 				'showBackups'                => Jetpack::show_backups_ui(),
 				'showRecommendations'        => Jetpack_Recommendations::is_enabled(),
@@ -179,45 +190,60 @@ class Jetpack_Redux_State_Helper {
 				'showMyJetpack'              => My_Jetpack_Initializer::should_initialize(),
 				'isMultisite'                => is_multisite(),
 				'dateFormat'                 => get_option( 'date_format' ),
+				'latestBoostSpeedScores'     => $speed_score_history->latest(),
+				'isSharingBlockAvailable'    => (bool) isset( $block_availability['sharing-buttons'] )
+					&& $block_availability['sharing-buttons']['available'],
 			),
-			'themeData'                   => array(
-				'name'      => $current_theme->get( 'Name' ),
-				'hasUpdate' => (bool) get_theme_update_available( $current_theme ),
-				'support'   => array(
+			'themeData'                            => array(
+				'name'         => $current_theme->get( 'Name' ),
+				'stylesheet'   => $current_theme->get_stylesheet(),
+				'hasUpdate'    => (bool) get_theme_update_available( $current_theme ),
+				'isBlockTheme' => (bool) $current_theme->is_block_theme(),
+				'support'      => array(
 					'infinite-scroll' => current_theme_supports( 'infinite-scroll' ) || in_array( $current_theme->get_stylesheet(), $inf_scr_support_themes, true ),
 					'widgets'         => current_theme_supports( 'widgets' ),
-					'webfonts'        => (
-						// @todo Remove conditional once we drop support for WordPress 6.1
-						function_exists( 'wp_theme_has_theme_json' ) ? wp_theme_has_theme_json() : WP_Theme_JSON_Resolver::theme_has_support()
-					) && function_exists( 'wp_register_webfont_provider' ) && function_exists( 'wp_register_webfonts' ),
+					'webfonts'        => wp_theme_has_theme_json()
+						&& ( function_exists( 'wp_register_webfont_provider' ) || function_exists( 'wp_register_webfonts' ) ),
 				),
 			),
-			'jetpackStateNotices'         => array(
+			'jetpackStateNotices'                  => array(
 				'messageCode'      => Jetpack::state( 'message' ),
 				'errorCode'        => Jetpack::state( 'error' ),
 				'errorDescription' => Jetpack::state( 'error_description' ),
 				'messageContent'   => Jetpack::state( 'display_update_modal' ) ? self::get_update_modal_data() : null,
 			),
-			'tracksUserData'              => Jetpack_Tracks_Client::get_connected_user_tracks_identity(),
-			'currentIp'                   => function_exists( 'jetpack_protect_get_ip' ) ? jetpack_protect_get_ip() : false,
-			'lastPostUrl'                 => esc_url( $last_post ),
-			'externalServicesConnectUrls' => self::get_external_services_connect_urls(),
-			'calypsoEnv'                  => Jetpack::get_calypso_env(),
-			'products'                    => Jetpack::get_products_for_purchase(),
-			'recommendationsStep'         => Jetpack_Core_Json_Api_Endpoints::get_recommendations_step()['step'],
-			'isSafari'                    => $is_safari || User_Agent_Info::is_opera_desktop(), // @todo Rename isSafari everywhere.
-			'doNotUseConnectionIframe'    => Constants::is_true( 'JETPACK_SHOULD_NOT_USE_CONNECTION_IFRAME' ),
-			'licensing'                   => array(
+			'tracksUserData'                       => Jetpack_Tracks_Client::get_connected_user_tracks_identity(),
+			'currentIp'                            => IP_Utils::get_ip(),
+			'lastPostUrl'                          => esc_url( $last_post ),
+			'externalServicesConnectUrls'          => self::get_external_services_connect_urls(),
+			'calypsoEnv'                           => ( new Host() )->get_calypso_env(),
+			'products'                             => Jetpack::get_products_for_purchase(),
+			'recommendationsStep'                  => Jetpack_Core_Json_Api_Endpoints::get_recommendations_step()['step'],
+			'isSafari'                             => $is_safari || User_Agent_Info::is_opera_desktop(), // @todo Rename isSafari everywhere.
+			'doNotUseConnectionIframe'             => Constants::is_true( 'JETPACK_SHOULD_NOT_USE_CONNECTION_IFRAME' ),
+			'licensing'                            => array(
 				'error'                   => Licensing::instance()->last_error(),
 				'showLicensingUi'         => Licensing::instance()->is_licensing_input_enabled(),
 				'userCounts'              => Licensing_Endpoints::get_user_license_counts(),
 				'activationNoticeDismiss' => Licensing::instance()->get_license_activation_notice_dismiss(),
 			),
-			'hasSeenWCConnectionModal'    => Jetpack_Options::get_option( 'has_seen_wc_connection_modal', false ),
-			'newRecommendations'          => Jetpack_Recommendations::get_new_conditional_recommendations(),
+			'jetpackManage'                        => array(
+				'isEnabled'       => Jetpack_Manage::could_use_jp_manage(),
+				'isAgencyAccount' => Jetpack_Manage::is_agency_account(),
+			),
+			'hasSeenWCConnectionModal'             => Jetpack_Options::get_option( 'has_seen_wc_connection_modal', false ),
+			'newRecommendations'                   => Jetpack_Recommendations::get_new_conditional_recommendations(),
 			// Check if WooCommerce plugin is active (based on https://docs.woocommerce.com/document/create-a-plugin/).
-			'isWooCommerceActive'         => in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', Jetpack::get_active_plugins() ), true ),
-			'useMyJetpackLicensingUI'     => My_Jetpack_Initializer::is_licensing_ui_enabled(),
+			'isWooCommerceActive'                  => in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', Jetpack::get_active_plugins() ), true ),
+			'useMyJetpackLicensingUI'              => My_Jetpack_Initializer::is_licensing_ui_enabled(),
+			'isOdysseyStatsEnabled'                => Stats_Options::get_option( 'enable_odyssey_stats' ),
+			'shouldInitializeBlaze'                => Blaze::should_initialize(),
+			'isBlazeDashboardEnabled'              => Blaze::is_dashboard_enabled(),
+			'isSubscriptionSiteEnabled'            => apply_filters( 'jetpack_subscription_site_enabled', false ),
+			'newsletterDateExample'                => gmdate( get_option( 'date_format' ), time() ),
+			'subscriptionSiteEditSupported'        => $current_theme->is_block_theme(),
+			/* This filter is already documented in jetpack/modules/subscriptions.php */
+			'isWpAdminSubscriberManagementEnabled' => apply_filters( 'jetpack_wp_admin_subscriber_management_enabled', false ),
 		);
 	}
 
@@ -268,17 +294,16 @@ class Jetpack_Redux_State_Helper {
 		// This allows us to embed videopress videos into the release post.
 		add_filter( 'wp_kses_allowed_html', array( __CLASS__, 'allow_post_embed_iframe' ), 10, 2 );
 		$content = wp_kses_post( $post['content'] );
-		remove_filter( 'wp_kses_allowed_html', array( __CLASS__, 'allow_post_embed_iframe' ), 10, 2 );
+		remove_filter( 'wp_kses_allowed_html', array( __CLASS__, 'allow_post_embed_iframe' ), 10 );
 
 		$post_title = isset( $post['title'] ) ? $post['title'] : null;
 		$title      = wp_kses( $post_title, array() );
 
 		$post_thumbnail = isset( $post['post_thumbnail'] ) ? $post['post_thumbnail'] : null;
 		if ( ! empty( $post_thumbnail ) ) {
-			require_once JETPACK__PLUGIN_DIR . '_inc/lib/class.jetpack-photon-image.php';
-			$photon_image = new Jetpack_Photon_Image(
+			$photon_image = new Image_CDN_Image(
 				array(
-					'file'   => jetpack_photon_url( $post_thumbnail['URL'] ),
+					'file'   => Image_CDN_Core::cdn_url( $post_thumbnail['URL'] ),
 					'width'  => $post_thumbnail['width'],
 					'height' => $post_thumbnail['height'],
 				),
@@ -363,11 +388,10 @@ class Jetpack_Redux_State_Helper {
 	 */
 	public static function get_external_services_connect_urls() {
 		$connect_urls = array();
-		require_once JETPACK__PLUGIN_DIR . '_inc/lib/class.jetpack-keyring-service-helper.php';
 		// phpcs:disable
-		foreach ( Jetpack_Keyring_Service_Helper::SERVICES as $service_name => $service_info ) {
+		foreach ( Keyring_Helper::SERVICES as $service_name => $service_info ) {
 			// phpcs:enable
-			$connect_urls[ $service_name ] = Jetpack_Keyring_Service_Helper::connect_url( $service_name, $service_info['for'] );
+			$connect_urls[ $service_name ] = Keyring_Helper::connect_url( $service_name, $service_info['for'] );
 		}
 		return $connect_urls;
 	}
@@ -442,9 +466,11 @@ function jetpack_current_user_data() {
 		'isConnected' => $is_user_connected,
 		'isMaster'    => $is_master_user,
 		'username'    => $current_user->user_login,
+		'displayName' => $current_user->display_name,
+		'email'       => $current_user->user_email,
 		'id'          => $current_user->ID,
 		'wpcomUser'   => $dotcom_data,
-		'gravatar'    => get_avatar_url( $current_user->ID, 64, 'mm', '', array( 'force_display' => true ) ),
+		'gravatar'    => get_avatar_url( $current_user->ID ),
 		'permissions' => array(
 			'admin_page'         => current_user_can( 'jetpack_admin_page' ),
 			'connect'            => current_user_can( 'jetpack_connect' ),

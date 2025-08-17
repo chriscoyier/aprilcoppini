@@ -5,6 +5,10 @@
  * @package automattic/jetpack
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 require_once __DIR__ . '/../class.json-api.php';
 
 /**
@@ -76,6 +80,8 @@ class WPCOM_JSON_API_Links {
 
 	/**
 	 * Overriding PHP's default __wakeup method to prvent unserializing of the instance, and return an error message.
+	 *
+	 * @return never
 	 */
 	public function __wakeup() {
 		die( "Please don't __wakeup WPCOM_JSON_API_Links" );
@@ -340,7 +346,7 @@ class WPCOM_JSON_API_Links {
 					continue;
 				}
 
-				$endpoint_path       = untrailingslashit( $endpoint['path'] );
+				$endpoint_path       = untrailingslashit( (string) $endpoint['path'] );
 				$endpoint_path_regex = str_replace( array( '%s', '%d' ), array( '([^/?&]+)', '(\d+)' ), $endpoint_path );
 
 				if ( ! preg_match( "#^$endpoint_path_regex\$#", $path ) ) {

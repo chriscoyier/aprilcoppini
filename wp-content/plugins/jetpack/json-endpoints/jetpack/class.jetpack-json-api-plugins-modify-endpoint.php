@@ -2,6 +2,10 @@
 
 use Automattic\Jetpack\Constants;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new Jetpack_JSON_API_Plugins_Modify_Endpoint(
 	array(
 		'description'             => 'Activate/Deactivate a Plugin on your Jetpack Site, or set automatic updates',
@@ -16,10 +20,11 @@ new Jetpack_JSON_API_Plugins_Modify_Endpoint(
 		),
 		'allow_jetpack_site_auth' => true,
 		'request_format'          => array(
-			'action'       => '(string) Possible values are \'update\'',
-			'autoupdate'   => '(bool) Whether or not to automatically update the plugin',
-			'active'       => '(bool) Activate or deactivate the plugin',
-			'network_wide' => '(bool) Do action network wide (default value: false)',
+			'action'           => '(string) Possible values are \'update\'',
+			'autoupdate'       => '(bool) Whether or not to automatically update the plugin',
+			'active'           => '(bool) Activate or deactivate the plugin',
+			'network_wide'     => '(bool) Do action network wide (default value: false)',
+			'scheduled_update' => '(bool) If the update is happening as a result of a scheduled update event',
 		),
 		'query_parameters'        => array(
 			'autoupdate' => '(bool=false) If the update is happening as a result of autoupdate event',
@@ -112,6 +117,8 @@ new Jetpack_JSON_API_Plugins_Modify_Endpoint(
  *
  * POST  /sites/%s/plugins/%s
  * POST  /sites/%s/plugins
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_Endpoint {
 
@@ -153,6 +160,7 @@ class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_
 	 * @return bool|WP_Error
 	 */
 	public function callback( $path = '', $blog_id = 0, $object = null ) {
+
 		Jetpack_JSON_API_Endpoint::validate_input( $object );
 		switch ( $this->action ) {
 			case 'delete':
@@ -167,7 +175,9 @@ class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_
 				break;
 		}
 
-		if ( isset( $args['autoupdate'] ) || isset( $args['autoupdate_translations'] ) ) {
+		$args = $this->input();
+
+		if ( is_array( $args ) && ( isset( $args['autoupdate'] ) || isset( $args['autoupdate_translations'] ) ) ) {
 			$this->needed_capabilities = 'update_plugins';
 		}
 
@@ -378,12 +388,17 @@ class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_
 	 * @return bool|WP_Error
 	 */
 	protected function update() {
-
 		$query_args = $this->query_args();
-		if ( isset( $query_args['autoupdate'] ) && $query_args['autoupdate'] ) {
-			Constants::set_constant( 'JETPACK_PLUGIN_AUTOUPDATE', true );
+
+		$is_automatic_update = false;
+		if ( isset( $query_args['autoupdate'] ) && $query_args['autoupdate'] || $this->scheduled_update ) {
+			$is_automatic_update = true;
 		}
-		wp_clean_plugins_cache();
+
+		if ( $this->scheduled_update ) {
+			Constants::set_constant( 'SCHEDULED_AUTOUPDATE', true );
+		}
+		wp_clean_plugins_cache( false );
 		ob_start();
 		wp_update_plugins(); // Check for Plugin updates
 		ob_end_clean();
@@ -405,9 +420,12 @@ class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_
 		remove_action( 'upgrader_process_complete', 'wp_version_check' );
 		remove_action( 'upgrader_process_complete', 'wp_update_themes' );
 
+		// Set the lock timeout to 15 minutes if it's scheduled update, otherwise default to one hour.
+		$lock_release_timeout = $this->scheduled_update ? 15 * MINUTE_IN_SECONDS : null;
+
 		// Early return if unable to obtain auto_updater lock.
 		// @see https://github.com/WordPress/wordpress-develop/blob/66469efa99e7978c8824e287834135aa9842e84f/src/wp-admin/includes/class-wp-automatic-updater.php#L453.
-		if ( Constants::get_constant( 'JETPACK_PLUGIN_AUTOUPDATE' ) && ! WP_Upgrader::create_lock( 'auto_updater' ) ) {
+		if ( $is_automatic_update && ! WP_Upgrader::create_lock( 'auto_updater', $lock_release_timeout ) ) {
 			return new WP_Error( 'update_fail', __( 'Updates are already in progress.', 'jetpack' ), 400 );
 		}
 
@@ -421,13 +439,13 @@ class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_
 			}
 
 			// Rely on WP_Automatic_Updater class to check if a plugin item should be updated if it is a Jetpack autoupdate request.
-			if ( Constants::get_constant( 'JETPACK_PLUGIN_AUTOUPDATE' ) && ! ( new WP_Automatic_Updater() )->should_update( 'plugin', $update_plugins->response[ $plugin ], WP_PLUGIN_DIR ) ) {
+			if ( $is_automatic_update && ! ( new WP_Automatic_Updater() )->should_update( 'plugin', $update_plugins->response[ $plugin ], WP_PLUGIN_DIR ) ) {
 				continue;
 			}
 
 			// Establish per plugin lock.
 			$plugin_slug = Jetpack_Autoupdate::get_plugin_slug( $plugin );
-			if ( ! WP_Upgrader::create_lock( 'jetpack_' . $plugin_slug ) ) {
+			if ( ! WP_Upgrader::create_lock( 'jetpack_' . $plugin_slug, $lock_release_timeout ) ) {
 				continue;
 			}
 
@@ -452,8 +470,8 @@ class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_
 			// This avoids the plugin to be deactivated.
 			// Using bulk upgrade puts the site into maintenance mode during the upgrades
 			$result               = $upgrader->bulk_upgrade( array( $plugin ) );
-			$errors               = $upgrader->skin->get_errors();
-			$this->log[ $plugin ] = $upgrader->skin->get_upgrade_messages();
+			$errors               = $skin->get_errors();
+			$this->log[ $plugin ] = $skin->get_upgrade_messages();
 
 			// release individual plugin lock.
 			WP_Upgrader::release_lock( 'jetpack_' . $plugin_slug );
@@ -464,7 +482,7 @@ class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_
 		}
 
 		// release auto_udpate lock.
-		if ( Constants::get_constant( 'JETPACK_PLUGIN_AUTOUPDATE' ) ) {
+		if ( $is_automatic_update ) {
 			WP_Upgrader::release_lock( 'auto_updater' );
 		}
 
@@ -484,7 +502,7 @@ class Jetpack_JSON_API_Plugins_Modify_Endpoint extends Jetpack_JSON_API_Plugins_
 		include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
 		// Clear the cache.
-		wp_clean_plugins_cache();
+		wp_clean_plugins_cache( false );
 		ob_start();
 		wp_update_plugins(); // Check for Plugin updates
 		ob_end_clean();

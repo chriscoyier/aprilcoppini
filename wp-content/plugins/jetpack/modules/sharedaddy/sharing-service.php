@@ -72,7 +72,7 @@ class Sharing_Service {
 				$config = array();
 
 				// Pre-load custom modules otherwise they won't know who they are
-				if ( substr( $id, 0, 7 ) === 'custom-' && is_array( $options[ $id ] ) ) {
+				if ( str_starts_with( $id, 'custom-' ) && is_array( $options[ $id ] ) ) {
 					$config = $options[ $id ];
 				}
 
@@ -105,8 +105,12 @@ class Sharing_Service {
 			'pinterest'        => 'Share_Pinterest',
 			'pocket'           => 'Share_Pocket',
 			'telegram'         => 'Share_Telegram',
+			'threads'          => 'Share_Threads',
 			'jetpack-whatsapp' => 'Jetpack_Share_WhatsApp',
-			'skype'            => 'Share_Skype',
+			'mastodon'         => 'Share_Mastodon',
+			'nextdoor'         => 'Share_Nextdoor',
+			'x'                => 'Share_X',
+			'bluesky'          => 'Share_Bluesky',
 		);
 
 		if ( is_multisite() && is_plugin_active( 'press-this/press-this-plugin.php' ) ) {
@@ -116,8 +120,10 @@ class Sharing_Service {
 		if ( $include_custom ) {
 			// Add any custom services in
 			$options = $this->get_global_options();
-			foreach ( (array) $options['custom'] as $custom_id ) {
-				$services[ $custom_id ] = 'Share_Custom';
+			if ( isset( $options['custom'] ) ) {
+				foreach ( $options['custom'] as $custom_id ) {
+					$services[ $custom_id ] = 'Share_Custom';
+				}
 			}
 		}
 
@@ -277,7 +283,7 @@ class Sharing_Service {
 		 *
 		 * @see https://github.com/Automattic/jetpack/issues/6121
 		 */
-		if ( ! is_array( $options ) || ! isset( $options['button_style'], $options['global'] ) ) {
+		if ( ! is_array( $options ) || ! isset( $options['button_style'] ) || ! isset( $options['global'] ) ) {
 			$global_options = array( 'global' => $this->get_global_options() );
 			$options        = is_array( $options )
 				? array_merge( $options, $global_options )
@@ -290,8 +296,8 @@ class Sharing_Service {
 		if ( ! is_array( $enabled ) ) {
 			$enabled = array(
 				'visible' => array(
-					'twitter',
 					'facebook',
+					'x',
 				),
 				'hidden'  => array(),
 			);
@@ -309,13 +315,13 @@ class Sharing_Service {
 		}
 
 		// Cleanup after any filters that may have produced duplicate services
-		if ( is_array( $enabled['visible'] ) ) {
+		if ( isset( $enabled['visible'] ) && is_array( $enabled['visible'] ) ) {
 			$enabled['visible'] = array_unique( $enabled['visible'] );
 		} else {
 			$enabled['visible'] = array();
 		}
 
-		if ( is_array( $enabled['hidden'] ) ) {
+		if ( isset( $enabled['hidden'] ) && is_array( $enabled['hidden'] ) ) {
 			$enabled['hidden'] = array_unique( $enabled['hidden'] );
 		} else {
 			$enabled['hidden'] = array();
@@ -350,7 +356,7 @@ class Sharing_Service {
 		$blog = apply_filters( 'sharing_services_enabled', $blog );
 
 		// Add CSS for NASCAR
-		if ( count( $blog['visible'] ) || count( $blog['hidden'] ) ) {
+		if ( ( is_countable( $blog['visible'] ) && count( $blog['visible'] ) ) || ( is_countable( $blog['hidden'] ) && count( $blog['hidden'] ) ) ) {
 			add_filter( 'post_flair_block_css', 'post_flair_service_enabled_sharing' );
 		}
 
@@ -495,7 +501,7 @@ class Sharing_Service {
 			}
 		}
 
-		if ( false === $this->global['sharing_label'] ) {
+		if ( ! isset( $this->global['sharing_label'] ) || false === $this->global['sharing_label'] || $this->global['sharing_label'] === 'Share this:' ) {
 			$this->global['sharing_label'] = $this->default_sharing_label;
 		}
 
@@ -505,12 +511,12 @@ class Sharing_Service {
 	/**
 	 * Save a sharing service for use.
 	 *
-	 * @param int            $id Sharing unique ID.
-	 * @param Sharing_Source $service Sharing service.
+	 * @param int                     $id Sharing unique ID.
+	 * @param Sharing_Advanced_Source $service Sharing service.
 	 *
 	 * @return void
 	 */
-	public function set_service( $id, Sharing_Source $service ) {
+	public function set_service( $id, Sharing_Advanced_Source $service ) {
 		// Update the options for this service
 		$options = get_option( 'sharing-options' );
 
@@ -683,7 +689,9 @@ class Sharing_Service_Total {
 		$this->service = $services->get_service( $id );
 		$this->total   = (int) $total;
 
-		$this->name = $this->service->get_name();
+		if ( $this->service instanceof Sharing_Source ) {
+			$this->name = $this->service->get_name();
+		}
 	}
 
 	/**
@@ -692,13 +700,13 @@ class Sharing_Service_Total {
 	 * @param object $a Sharing_Service_Total object.
 	 * @param object $b Sharing_Service_Total object.
 	 *
-	 * @return bool
+	 * @return int -1, 0, or 1 if $a is <, =, or > $b
 	 */
 	public static function cmp( $a, $b ) {
 		if ( $a->total === $b->total ) {
-			return $a->name < $b->name;
+			return $b->name <=> $a->name;
 		}
-		return $a->total < $b->total;
+		return $b->total <=> $a->total;
 	}
 }
 
@@ -753,13 +761,13 @@ class Sharing_Post_Total {
 	 * @param object $a Sharing_Post_Total object.
 	 * @param object $b Sharing_Post_Total object.
 	 *
-	 * @return bool
+	 * @return int -1, 0, or 1 if $a is <, =, or > $b
 	 */
 	public static function cmp( $a, $b ) {
 		if ( $a->total === $b->total ) {
-			return $a->id < $b->id;
+			return $b->id <=> $a->id;
 		}
-		return $a->total < $b->total;
+		return $b->total <=> $a->total;
 	}
 }
 
@@ -899,7 +907,7 @@ function sharing_add_header() {
 		$service->display_header();
 	}
 
-	if ( count( $enabled['all'] ) > 0 && sharing_maybe_enqueue_scripts() ) {
+	if ( is_countable( $enabled['all'] ) && ( count( $enabled['all'] ) > 0 ) && sharing_maybe_enqueue_scripts() ) {
 		wp_enqueue_style( 'sharedaddy', plugin_dir_url( __FILE__ ) . 'sharing.css', array(), JETPACK__VERSION );
 		wp_enqueue_style( 'social-logos' );
 	}
@@ -924,7 +932,11 @@ function sharing_process_requests() {
 		}
 	}
 }
-add_action( 'template_redirect', 'sharing_process_requests', 9 );
+
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checking for the data being present.
+if ( isset( $_GET['share'] ) ) {
+	add_action( 'template_redirect', 'sharing_process_requests', 9 );
+}
 
 /**
  * Gets the url to customise the sharing buttons in Calypso.
@@ -950,7 +962,8 @@ function sharing_display( $text = '', $echo = false ) {
 		return $text;
 	}
 
-	if ( empty( $post ) ) {
+	// We require the post to not be empty and be an actual WordPress post object. If it's not - we just return.
+	if ( empty( $post ) || ! $post instanceof \WP_Post ) {
 		return $text;
 	}
 
@@ -960,6 +973,14 @@ function sharing_display( $text = '', $echo = false ) {
 
 	// Prevent from rendering sharing buttons in block which is fetched from REST endpoint by editor
 	if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+		return $text;
+	}
+
+	// Do not output sharing buttons for ActivityPub requests.
+	if (
+		function_exists( '\Activitypub\is_activitypub_request' )
+		&& \Activitypub\is_activitypub_request()
+	) {
 		return $text;
 	}
 
@@ -1084,7 +1105,7 @@ function sharing_display( $text = '', $echo = false ) {
 		 */
 		$enabled = apply_filters( 'sharing_enabled', $sharer->get_blog_services() );
 
-		if ( count( $enabled['all'] ) > 0 ) {
+		if ( is_countable( $enabled['all'] ) && ( count( $enabled['all'] ) > 0 ) ) {
 			$dir = get_option( 'text_direction' );
 
 			// Wrapper.
@@ -1122,10 +1143,12 @@ function sharing_display( $text = '', $echo = false ) {
 				$visible .= '<li class="' . implode( ' ', $klasses ) . '">' . $service->get_display( $post ) . '</li>';
 			}
 
-			$parts   = array();
-			$parts[] = $visible;
-			if ( count( $enabled['hidden'] ) > 0 ) {
-				if ( count( $enabled['visible'] ) > 0 ) {
+			$parts         = array();
+			$parts[]       = $visible;
+			$count_hidden  = is_countable( $enabled['hidden'] ) ? count( $enabled['hidden'] ) : 0;
+			$count_visible = is_countable( $enabled['visible'] ) ? count( $enabled['visible'] ) : 0;
+			if ( $count_hidden > 0 ) {
+				if ( $count_visible > 0 ) {
 					$expand = __( 'More', 'jetpack' );
 				} else {
 					$expand = __( 'Share', 'jetpack' );
@@ -1149,22 +1172,21 @@ function sharing_display( $text = '', $echo = false ) {
 				}
 			}
 
-			if ( count( $enabled['hidden'] ) > 0 ) {
+			if ( $count_hidden > 0 ) {
 				$sharing_content .= '<div class="sharing-hidden"><div class="inner" style="display: none;';
 
-				if ( count( $enabled['hidden'] ) === 1 ) {
+				if ( $count_hidden === 1 ) {
 					$sharing_content .= 'width:150px;';
 				}
 
 				$sharing_content .= '">';
 
-				if ( count( $enabled['hidden'] ) === 1 ) {
+				if ( $count_hidden === 1 ) {
 					$sharing_content .= '<ul style="background-image:none;">';
 				} else {
 					$sharing_content .= '<ul>';
 				}
 
-				$count = 1;
 				foreach ( $enabled['hidden'] as $service ) {
 					// Individual HTML for sharing service.
 					$klasses = array( 'share-' . $service->get_class() );
@@ -1177,12 +1199,6 @@ function sharing_display( $text = '', $echo = false ) {
 					$sharing_content .= '<li class="' . implode( ' ', $klasses ) . '">';
 					$sharing_content .= $service->get_display( $post );
 					$sharing_content .= '</li>';
-
-					if ( ( $count % 2 ) === 0 ) {
-						$sharing_content .= '<li class="share-end"></li>';
-					}
-
-					++$count;
 				}
 
 				// End of wrapper.

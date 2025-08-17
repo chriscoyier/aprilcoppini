@@ -5,6 +5,8 @@
  * @package automattic/jetpack
  */
 
+use Automattic\Jetpack\Image_CDN\Image_CDN_Core;
+
 /**
  * Class Jetpack_Media_Summary
  *
@@ -22,7 +24,7 @@ class Jetpack_Media_Summary {
 	/**
 	 * Get media summary for a post.
 	 *
-	 * @param int   $post_id Post ID.
+	 * @param ?int  $post_id Post ID.
 	 * @param int   $blog_id Blog ID, if applicable.
 	 * @param array $args {
 	 *      Optional. An array of arguments.
@@ -32,8 +34,7 @@ class Jetpack_Media_Summary {
 	 *
 	 * @return array|mixed|void
 	 */
-	public static function get( $post_id, $blog_id = 0, $args = array() ) {
-		// @todo: Use type hinting in the line above when at PHP 7.0+.
+	public static function get( ?int $post_id, int $blog_id = 0, array $args = array() ) {
 		$post_id = (int) $post_id;
 		$blog_id = (int) $blog_id;
 
@@ -96,6 +97,7 @@ class Jetpack_Media_Summary {
 			if ( $switched ) {
 				restore_current_blog();
 			}
+			self::$cache[ $cache_key ] = $return;
 			return $return;
 		}
 
@@ -143,6 +145,9 @@ class Jetpack_Media_Summary {
 						break;
 					case 'youtube':
 						if ( 0 === $return['count']['video'] ) {
+							if ( ! isset( $extract['shortcode']['youtube']['id'][0] ) ) {
+								break;
+							}
 							$return['type']            = 'video';
 							$return['video']           = esc_url_raw( 'http://www.youtube.com/watch?feature=player_embedded&v=' . $extract['shortcode']['youtube']['id'][0] );
 							$return['image']           = self::get_video_poster( 'youtube', $extract['shortcode']['youtube']['id'][0] );
@@ -153,6 +158,9 @@ class Jetpack_Media_Summary {
 						break;
 					case 'vimeo':
 						if ( 0 === $return['count']['video'] ) {
+							if ( ! isset( $extract['shortcode']['vimeo']['id'][0] ) ) {
+								break;
+							}
 							$return['type']            = 'video';
 							$return['video']           = esc_url_raw( 'http://vimeo.com/' . $extract['shortcode']['vimeo']['id'][0] );
 							$return['secure']['video'] = self::https( $return['video'] );
@@ -177,23 +185,23 @@ class Jetpack_Media_Summary {
 						$return['type']            = 'video';
 						$return['video']           = 'http://' . $embed;
 						$return['secure']['video'] = self::https( $return['video'] );
-						if ( false !== strpos( $embed, 'youtube' ) ) {
+						if ( str_contains( $embed, 'youtube' ) ) {
 							$return['image']           = self::get_video_poster( 'youtube', jetpack_get_youtube_id( $return['video'] ) );
 							$return['secure']['image'] = self::https( $return['image'] );
-						} elseif ( false !== strpos( $embed, 'youtu.be' ) ) {
+						} elseif ( str_contains( $embed, 'youtu.be' ) ) {
 							$youtube_id                = jetpack_get_youtube_id( $return['video'] );
 							$return['video']           = 'http://youtube.com/watch?v=' . $youtube_id . '&feature=youtu.be';
 							$return['secure']['video'] = self::https( $return['video'] );
 							$return['image']           = self::get_video_poster( 'youtube', jetpack_get_youtube_id( $return['video'] ) );
 							$return['secure']['image'] = self::https( $return['image'] );
-						} elseif ( false !== strpos( $embed, 'vimeo' ) ) {
+						} elseif ( str_contains( $embed, 'vimeo' ) ) {
 							$poster_image = get_post_meta( $post_id, 'vimeo_poster_image', true );
 							if ( ! empty( $poster_image ) ) {
 								$return['image']           = $poster_image;
 								$poster_url_parts          = wp_parse_url( $poster_image );
 								$return['secure']['image'] = 'https://secure-a.vimeocdn.com' . $poster_url_parts['path'];
 							}
-						} elseif ( false !== strpos( $embed, 'dailymotion' ) ) {
+						} elseif ( str_contains( $embed, 'dailymotion' ) ) {
 							$return['image']           = str_replace( 'dailymotion.com/video/', 'dailymotion.com/thumbnail/video/', $embed );
 							$return['image']           = wp_parse_url( $return['image'], PHP_URL_SCHEME ) === null ? 'http://' . $return['image'] : $return['image'];
 							$return['secure']['image'] = self::https( $return['image'] );
@@ -245,7 +253,7 @@ class Jetpack_Media_Summary {
 
 				foreach ( $paragraphs as $i => $paragraph ) {
 					// Don't include 'actual' captions as a paragraph.
-					if ( false !== strpos( $paragraph, '[caption' ) ) {
+					if ( str_contains( $paragraph, '[caption' ) ) {
 						unset( $paragraphs[ $i ] );
 						continue;
 					}
@@ -257,11 +265,13 @@ class Jetpack_Media_Summary {
 					++$number_of_paragraphs;
 				}
 
-				$return['image']           = $extract['image'][0]['url'];
-				$return['secure']['image'] = self::ssl_img( $return['image'] );
-				++$return['count']['image'];
+				if ( isset( $extract['image'][0]['url'] ) ) {
+					$return['image']           = $extract['image'][0]['url'];
+					$return['secure']['image'] = self::ssl_img( $return['image'] );
+					++$return['count']['image'];
+				}
 
-				if ( $number_of_paragraphs <= 2 && 1 === count( $extract['image'] ) ) {
+				if ( $number_of_paragraphs <= 2 && is_countable( $extract['image'] ) && 1 === count( $extract['image'] ) ) {  // @phan-suppress-current-line PhanTypePossiblyInvalidDimOffset -- We established the image offset exists with '! empty( $extract['has']['image']' earlier.
 					// If we have lots of text or images, let's not treat it as an image post, but return its first image.
 					$return['type'] = 'image';
 				}
@@ -306,10 +316,10 @@ class Jetpack_Media_Summary {
 	 * @return string URL.
 	 */
 	public static function ssl_img( $url ) {
-		if ( false !== strpos( $url, 'files.wordpress.com' ) ) {
+		if ( str_contains( $url, 'files.wordpress.com' ) ) {
 			return self::https( $url );
 		} else {
-			return self::https( jetpack_photon_url( $url ) );
+			return self::https( Image_CDN_Core::cdn_url( $url ) );
 		}
 	}
 

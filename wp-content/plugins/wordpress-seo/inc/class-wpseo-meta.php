@@ -77,7 +77,6 @@ class WPSEO_Meta {
 	 *            Array format:
 	 *                (required)       'type'          => (string) field type. i.e. text / textarea / checkbox /
 	 *                                                    radio / select / multiselect / upload etc.
-	 *                (required)       'title'         => (string) table row title.
 	 *                (recommended)    'default_value' => (string|array) default value for the field.
 	 *                                                    IMPORTANT:
 	 *                                                    - if the field has options, the default has to be the
@@ -94,11 +93,7 @@ class WPSEO_Meta {
 	 *                (optional)        'autocomplete' => (bool) whether autocomplete is on for text fields,
 	 *                                                    defaults to true.
 	 *                (optional)        'class'        => (string) classname(s) to add to the actual <input> tag.
-	 *                (optional)        'description'  => (string) description to show underneath the field.
-	 *                (optional)        'expl'         => (string) label for a checkbox.
-	 *                (optional)        'help'         => (string) help text to show on mouse over ? image.
 	 *                (optional)        'rows'         => (int) number of rows for a textarea, defaults to 3.
-	 *                (optional)        'placeholder'  => (string) Currently only used by add-on plugins.
 	 *                (optional)        'serialized'   => (bool) whether the value is expected to be serialized,
 	 *                                                     i.e. an array or object, defaults to false.
 	 *                                                     Currently only used by add-on plugins.
@@ -111,105 +106,79 @@ class WPSEO_Meta {
 			],
 			'title' => [
 				'type'          => 'hidden',
-				'title'         => '', // Translation added later.
 				'default_value' => '',
-				'description'   => '', // Translation added later.
-				'help'          => '', // Translation added later.
 			],
 			'metadesc' => [
 				'type'          => 'hidden',
-				'title'         => '', // Translation added later.
 				'default_value' => '',
 				'class'         => 'metadesc',
 				'rows'          => 2,
-				'description'   => '', // Translation added later.
-				'help'          => '', // Translation added later.
 			],
 			'linkdex' => [
 				'type'          => 'hidden',
-				'title'         => 'linkdex',
 				'default_value' => '0',
-				'description'   => '',
 			],
 			'content_score' => [
 				'type'          => 'hidden',
-				'title'         => 'content_score',
 				'default_value' => '0',
-				'description'   => '',
 			],
 			'inclusive_language_score' => [
 				'type'          => 'hidden',
-				'title'         => 'inclusive_language_score',
 				'default_value' => '0',
-				'description'   => '',
 			],
 			'is_cornerstone' => [
 				'type'          => 'hidden',
-				'title'         => 'is_cornerstone',
 				'default_value' => 'false',
-				'description'   => '',
 			],
 		],
 		'advanced' => [
 			'meta-robots-noindex'  => [
 				'type'          => 'hidden',
-				'title'         => '', // Translation added later.
 				'default_value' => '0', // = post-type default.
 				'options'       => [
-					'0' => '', // Post type default - translation added later.
-					'2' => '', // Index - translation added later.
-					'1' => '', // No-index - translation added later.
+					'0' => '', // Post type default.
+					'2' => '', // Index.
+					'1' => '', // No-index.
 				],
 			],
 			'meta-robots-nofollow' => [
 				'type'          => 'hidden',
-				'title'         => '', // Translation added later.
 				'default_value' => '0', // = follow.
 				'options'       => [
-					'0' => '', // Follow - translation added later.
-					'1' => '', // No-follow - translation added later.
+					'0' => '', // Follow.
+					'1' => '', // No-follow.
 				],
 			],
 			'meta-robots-adv'      => [
 				'type'          => 'hidden',
-				'title'         => '', // Translation added later.
 				'default_value' => '',
-				'description'   => '', // Translation added later.
 				'options'       => [
-					'noimageindex' => '', // Translation added later.
-					'noarchive'    => '', // Translation added later.
-					'nosnippet'    => '', // Translation added later.
+					'noimageindex' => '',
+					'noarchive'    => '',
+					'nosnippet'    => '',
 				],
 			],
 			'bctitle'              => [
 				'type'          => 'hidden',
-				'title'         => '', // Translation added later.
 				'default_value' => '',
-				'description'   => '', // Translation added later.
 			],
 			'canonical'            => [
 				'type'          => 'hidden',
-				'title'         => '', // Translation added later.
 				'default_value' => '',
-				'description'   => '', // Translation added later.
 			],
 			'redirect'             => [
 				'type'          => 'url',
-				'title'         => '', // Translation added later.
 				'default_value' => '',
-				'description'   => '', // Translation added later.
 			],
 		],
 		'social'   => [],
 		'schema'   => [
 			'schema_page_type'    => [
 				'type'    => 'hidden',
-				'title'   => '',
 				'options' => Schema_Types::PAGE_TYPES,
 			],
 			'schema_article_type' => [
 				'type'          => 'hidden',
-				'title'         => '',
 				'hide_on_pages' => true,
 				'options'       => Schema_Types::ARTICLE_TYPES,
 			],
@@ -217,10 +186,6 @@ class WPSEO_Meta {
 		/* Fields we should validate & save, but not show on any form. */
 		'non_form' => [
 			'linkdex' => [
-				'type'          => null,
-				'default_value' => '0',
-			],
-			'zapier_trigger_sent' => [
 				'type'          => null,
 				'default_value' => '0',
 			],
@@ -275,13 +240,11 @@ class WPSEO_Meta {
 	 */
 	public static function init() {
 		foreach ( self::$social_networks as $option => $network ) {
-			if ( WPSEO_Options::get( $option, false ) === true ) {
+			if ( WPSEO_Options::get( $option, false, [ 'wpseo_social' ] ) === true ) {
 				foreach ( self::$social_fields as $box => $type ) {
 					self::$meta_fields['social'][ $network . '-' . $box ] = [
 						'type'          => $type,
-						'title'         => '', // Translation added later.
 						'default_value' => '',
-						'description'   => '', // Translation added later.
 					];
 				}
 			}
@@ -304,7 +267,7 @@ class WPSEO_Meta {
 				register_meta(
 					'post',
 					self::$meta_prefix . $key,
-					[ 'sanitize_callback' => [ __CLASS__, 'sanitize_post_meta' ] ]
+					[ 'sanitize_callback' => [ self::class, 'sanitize_post_meta' ] ]
 				);
 
 				// Set the $fields_index property for efficiency.
@@ -327,8 +290,8 @@ class WPSEO_Meta {
 
 		self::filter_schema_article_types();
 
-		add_filter( 'update_post_metadata', [ __CLASS__, 'remove_meta_if_default' ], 10, 5 );
-		add_filter( 'add_post_metadata', [ __CLASS__, 'dont_save_meta_if_default' ], 10, 4 );
+		add_filter( 'update_post_metadata', [ self::class, 'remove_meta_if_default' ], 10, 5 );
+		add_filter( 'add_post_metadata', [ self::class, 'dont_save_meta_if_default' ], 10, 4 );
 	}
 
 	/**
@@ -371,19 +334,10 @@ class WPSEO_Meta {
 					return [];
 				}
 
-				/* Adjust the no-index text strings based on the post type. */
-				$post_type_object = get_post_type_object( $post_type );
-
-				$field_defs['meta-robots-noindex']['title']        = sprintf( $field_defs['meta-robots-noindex']['title'], $post_type_object->labels->singular_name );
-				$field_defs['meta-robots-noindex']['options']['0'] = sprintf( $field_defs['meta-robots-noindex']['options']['0'], ( ( WPSEO_Options::get( 'noindex-' . $post_type, false ) === true ) ? $field_defs['meta-robots-noindex']['options']['1'] : $field_defs['meta-robots-noindex']['options']['2'] ), $post_type_object->label );
-				$field_defs['meta-robots-nofollow']['title']       = sprintf( $field_defs['meta-robots-nofollow']['title'], $post_type_object->labels->singular_name );
-
 				/* Don't show the breadcrumb title field if breadcrumbs aren't enabled. */
 				if ( WPSEO_Options::get( 'breadcrumbs-enable', false ) !== true && ! current_theme_supports( 'yoast-seo-breadcrumbs' ) ) {
 					unset( $field_defs['bctitle'] );
 				}
-
-				global $post;
 
 				if ( empty( $post->ID ) || ( ! empty( $post->ID ) && self::get_value( 'redirect', $post->ID ) === '' ) ) {
 					unset( $field_defs['redirect'] );
@@ -404,7 +358,7 @@ class WPSEO_Meta {
 					/** This filter is documented in inc/options/class-wpseo-option-titles.php */
 					$allowed_article_types = apply_filters( 'wpseo_schema_article_types', Schema_Types::ARTICLE_TYPES );
 
-					if ( ! \array_key_exists( $default_schema_article_type, $allowed_article_types ) ) {
+					if ( ! array_key_exists( $default_schema_article_type, $allowed_article_types ) ) {
 						$default_schema_article_type = WPSEO_Options::get_default( 'wpseo_titles', 'schema-article-type-' . $post_type );
 					}
 					$field_defs['schema_article_type']['default'] = $default_schema_article_type;
@@ -455,7 +409,6 @@ class WPSEO_Meta {
 				}
 				break;
 
-
 			case ( $field_def['type'] === 'select' || $field_def['type'] === 'radio' ):
 				// Only allow value if it's one of the predefined options.
 				if ( isset( $field_def['options'][ $meta_value ] ) ) {
@@ -463,11 +416,9 @@ class WPSEO_Meta {
 				}
 				break;
 
-
 			case ( $field_def['type'] === 'hidden' && $meta_key === self::$meta_prefix . 'meta-robots-adv' ):
 				$clean = self::validate_meta_robots_adv( $meta_value );
 				break;
-
 
 			case ( $field_def['type'] === 'url' || $meta_key === self::$meta_prefix . 'canonical' ):
 				// Validate as url(-part).
@@ -476,7 +427,6 @@ class WPSEO_Meta {
 					$clean = $url;
 				}
 				break;
-
 
 			case ( $field_def['type'] === 'upload' && in_array( $meta_key, [ self::$meta_prefix . 'opengraph-image', self::$meta_prefix . 'twitter-image' ], true ) ):
 				// Validate as url.
@@ -517,7 +467,6 @@ class WPSEO_Meta {
 			case ( $field_def['type'] === 'multiselect' ):
 				$clean = $meta_value;
 				break;
-
 
 			case ( $field_def['type'] === 'text' ):
 			default:
@@ -1015,7 +964,7 @@ class WPSEO_Meta {
 		/**
 		 * The indexable repository.
 		 *
-		 * @var Indexable_Repository
+		 * @var Indexable_Repository $repository
 		 */
 		$repository = YoastSEO()->classes->get( Indexable_Repository::class );
 
@@ -1024,13 +973,12 @@ class WPSEO_Meta {
 			->where( 'primary_focus_keyword', $keyword )
 			->where( 'object_type', 'post' )
 			->where_not_equal( 'object_id', $post_id )
-			->limit( 2 )
+			->where_not_equal( 'post_status', 'trash' )
+			->limit( 2 )    // Limit to 2 results to save time and resources.
 			->find_array();
 
-		$callback = static function ( $row ) {
-			return (int) $row['object_id'];
-		};
-		$post_ids = array_map( $callback, $post_ids );
+		// Get object_id from each subarray in $post_ids.
+		$post_ids = ( is_array( $post_ids ) ) ? array_column( $post_ids, 'object_id' ) : [];
 
 		/*
 		 * If Premium is installed, get the additional keywords as well.
@@ -1050,6 +998,39 @@ class WPSEO_Meta {
 		}
 
 		return $post_ids;
+	}
+
+	/**
+	 * Returns the post types for the given post ids.
+	 *
+	 * @param array $post_ids The post ids to get the post types for.
+	 *
+	 * @return array The post types.
+	 */
+	public static function post_types_for_ids( $post_ids ) {
+		// Check if post ids is not empty.
+		if ( ! empty( $post_ids ) ) {
+			/**
+			 * The indexable repository.
+			 *
+			 * @var Indexable_Repository $repository
+			 */
+			$repository = YoastSEO()->classes->get( Indexable_Repository::class );
+
+			// Get the post subtypes for the posts that share the keyword.
+			$post_types = $repository->query()
+				->select( 'object_sub_type' )
+				->where_in( 'object_id', $post_ids )
+				->find_array();
+
+			// Get object_sub_type from each subarray in $post_ids.
+			$post_types = array_column( $post_types, 'object_sub_type' );
+		}
+		else {
+			$post_types = [];
+		}
+
+		return $post_types;
 	}
 
 	/**

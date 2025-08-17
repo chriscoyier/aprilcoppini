@@ -1,9 +1,15 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Auto update endpoint class.
  *
  * POST /sites/%s/maybe_auto_update
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Maybe_Auto_Update_Endpoint extends Jetpack_JSON_API_Endpoint {
 
@@ -53,5 +59,4 @@ class Jetpack_JSON_API_Maybe_Auto_Update_Endpoint extends Jetpack_JSON_API_Endpo
 	public function get_update_results( $results ) {
 		$this->update_results = $results;
 	}
-
 }

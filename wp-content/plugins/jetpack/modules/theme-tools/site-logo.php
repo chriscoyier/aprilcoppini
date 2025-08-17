@@ -30,6 +30,7 @@
 function site_logo_init() {
 	// Only load our code if our theme declares support, and the standalone plugin is not activated.
 	if ( current_theme_supports( 'site-logo' ) && ! class_exists( 'Site_Logo', false ) ) {
+		_deprecated_hook( 'site-logo', '13.4', 'custom-logo', 'Jetpack no longer supports site-logo feature. Add custom-logo support to your theme instead: https://developer.wordpress.org/themes/functionality/custom-logo/' );
 		// Load our class for namespacing.
 		if ( defined( 'IS_WPCOM' ) && IS_WPCOM ) {
 			// wpcom handles the image sizes differently.
@@ -70,11 +71,11 @@ add_action( 'after_switch_theme', 'jetpack_update_custom_logo_from_site_logo', 1
  *
  * @since 9.9.0
  *
- * @param int|array $site_logo Option.
- * @return int
+ * @param int|array|WP_Error $site_logo Option.
+ * @return int|WP_Error
  */
 function jetpack_site_logo_block_compat( $site_logo ) {
-	if ( isset( $site_logo['id'] ) ) {
+	if ( is_array( $site_logo ) && isset( $site_logo['id'] ) ) {
 		remove_filter( 'option_site_logo', 'jetpack_site_logo_block_compat', 1 );
 		update_option( 'site_logo', $site_logo['id'] );
 		return $site_logo['id'];

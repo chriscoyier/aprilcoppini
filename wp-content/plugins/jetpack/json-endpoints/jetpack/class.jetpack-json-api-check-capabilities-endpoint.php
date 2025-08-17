@@ -1,9 +1,15 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Check capabilities endpoint class.
  *
  * GET /sites/%s/me/capability
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Check_Capabilities_Endpoint extends Jetpack_JSON_API_Modules_Endpoint {
 	/**
@@ -12,7 +18,7 @@ class Jetpack_JSON_API_Check_Capabilities_Endpoint extends Jetpack_JSON_API_Modu
 	 *
 	 * @param string $path - the path.
 	 * @param int    $_blog_id - the blog ID.
-	 * @param obj    $object - parameter is for making the method signature compatible with its parent class method.
+	 * @param object $object - parameter is for making the method signature compatible with its parent class method.
 	 * @return bool|bool[]|WP_Error
 	 */
 	public function callback( $path = '', $_blog_id = 0, $object = null ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable

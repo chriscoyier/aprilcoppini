@@ -482,10 +482,15 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			$this->logger->report( '-- Building Master Sitemap.' );
 		}
 
-		$buffer = new Jetpack_Sitemap_Buffer_Master(
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'master',
 			JP_SITEMAP_MAX_ITEMS,
 			JP_SITEMAP_MAX_BYTES
 		);
+
+		if ( ! $buffer ) {
+			return;
+		}
 
 		if ( 0 < $max[ JP_PAGE_SITEMAP_TYPE ]['number'] ) {
 			if ( 1 === $max[ JP_PAGE_SITEMAP_TYPE ]['number'] ) {
@@ -587,10 +592,15 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			$this->logger->report( "-- Building $debug_name" );
 		}
 
-		$buffer = new Jetpack_Sitemap_Buffer_Page(
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'page',
 			JP_SITEMAP_MAX_ITEMS,
 			JP_SITEMAP_MAX_BYTES
 		);
+
+		if ( ! $buffer ) {
+			return false;
+		}
 
 		// Add entry for the main page (only if we're at the first one) and it isn't already going to be included as a page.
 		if ( 1 === $number && 'page' !== get_option( 'show_on_front' ) ) {
@@ -686,6 +696,9 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 
 					if ( true === $buffer->append( $item['xml'] ) ) {
 						$last_post_id = -$index;
+						if ( isset( $url['lastmod'] ) ) {
+							$buffer->view_time( jp_sitemap_datetime( $url['lastmod'] ) );
+						}
 					} else {
 						break;
 					}
@@ -760,10 +773,15 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			$this->logger->report( "-- Building $debug_name" );
 		}
 
-		$buffer = new Jetpack_Sitemap_Buffer_Image(
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'image',
 			JP_SITEMAP_MAX_ITEMS,
 			JP_SITEMAP_MAX_BYTES
 		);
+
+		if ( ! $buffer ) {
+			return false;
+		}
 
 		// Add as many items to the buffer as possible.
 		while ( false === $buffer->is_full() ) {
@@ -839,10 +857,15 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			$this->logger->report( "-- Building $debug_name" );
 		}
 
-		$buffer = new Jetpack_Sitemap_Buffer_Video(
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'video',
 			JP_SITEMAP_MAX_ITEMS,
 			JP_SITEMAP_MAX_BYTES
 		);
+
+		if ( ! $buffer ) {
+			return false;
+		}
 
 		// Add as many items to the buffer as possible.
 		while ( false === $buffer->is_full() ) {
@@ -1056,6 +1079,16 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 	 * @return string The news sitemap xml.
 	 */
 	public function news_sitemap_xml() {
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'news',
+			JP_SITEMAP_MAX_ITEMS,
+			JP_SITEMAP_MAX_BYTES
+		);
+
+		if ( ! $buffer ) {
+			return '';
+		}
+
 		$the_stored_news_sitemap = get_transient( 'jetpack_news_sitemap_xml' );
 
 		if ( false === $the_stored_news_sitemap ) {
@@ -1078,18 +1111,16 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 				JP_NEWS_SITEMAP_MAX_ITEMS
 			);
 
-			$buffer = new Jetpack_Sitemap_Buffer_News(
-				min( $item_limit, JP_NEWS_SITEMAP_MAX_ITEMS ),
-				JP_SITEMAP_MAX_BYTES
-			);
+			$posts = $this->librarian->query_most_recent_posts( $item_limit );
+			if ( empty( $posts ) ) {
+				$buffer->append( array( 'url' => array( 'loc' => home_url( '/' ) ) ) );
+			} else {
+				foreach ( $posts as $post ) {
+					$current_item = $this->post_to_news_sitemap_item( $post );
 
-			$posts = $this->librarian->query_most_recent_posts( JP_NEWS_SITEMAP_MAX_ITEMS );
-
-			foreach ( $posts as $post ) {
-				$current_item = $this->post_to_news_sitemap_item( $post );
-
-				if ( false === $buffer->append( $current_item['xml'] ) ) {
-					break;
+					if ( $current_item['xml'] !== null && false === $buffer->append( $current_item['xml'] ) ) {
+						break;
+					}
 				}
 			}
 
@@ -1116,7 +1147,7 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 	 * @access private
 	 * @since 4.8.0
 	 *
-	 * @param WP_Post $post The post to be processed.
+	 * @param object $post The post to be processed. Similar to WP_Post, but without post_content and post_content_filtered.
 	 *
 	 * @return array
 	 *              @type array  $xml An XML fragment representing the post URL.
@@ -1133,6 +1164,7 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 		 *
 		 * @param bool   $skip Current boolean. False by default, so no post is skipped.
 		 * @param object $post Current post in the form of a $wpdb result object. Not WP_Post.
+		 *                     Doesn't have all the properties of a WP_Post.
 		 */
 		if ( true === apply_filters( 'jetpack_sitemap_skip_post', false, $post ) ) {
 			return array(
@@ -1287,7 +1319,7 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 	private function video_post_to_sitemap_item( $post ) {
 
 		/**
-		 * Filter condition to allow skipping specific image posts in the sitemap.
+		 * Filter condition to allow skipping specific video posts in the sitemap.
 		 *
 		 * @module sitemaps
 		 *
@@ -1387,7 +1419,7 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 	 * @access private
 	 * @since 4.8.0
 	 *
-	 * @param WP_Post $post The post to be processed.
+	 * @param object $post The post to be processed. Similar to WP_Post, but without post_content and post_content_filtered.
 	 *
 	 * @return string An XML fragment representing the post URL.
 	 */
@@ -1403,8 +1435,9 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 		 *
 		 * @since 3.9.0
 		 *
-		 * @param bool    $skip Current boolean. False by default, so no post is skipped.
-		 * @param WP_POST $post Current post object.
+		 * @param bool   $skip Current boolean. False by default, so no post is skipped.
+		 * @param object $post Current post in the form of a $wpdb result object. Not WP_Post.
+		 *                     Doesn't have all the properties of a WP_Post.
 		 */
 		if ( apply_filters( 'jetpack_sitemap_news_skip_post', false, $post ) ) {
 			return array(

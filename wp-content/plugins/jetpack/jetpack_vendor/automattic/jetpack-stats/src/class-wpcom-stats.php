@@ -8,6 +8,7 @@
 namespace Automattic\Jetpack\Stats;
 
 use Automattic\Jetpack\Connection\Client;
+use Automattic\Jetpack\Status\Host;
 use Jetpack_Options;
 use WP_Error;
 
@@ -50,6 +51,20 @@ class WPCOM_Stats {
 	protected $resource;
 
 	/**
+	 * If the site is on WPCOM Simple.
+	 *
+	 * @var bool
+	 */
+	protected $is_wpcom_simple;
+
+	/**
+	 * The constructor.
+	 */
+	public function __construct() {
+		$this->is_wpcom_simple = ( new Host() )->is_wpcom_simple();
+	}
+
+	/**
 	 * Get site's stats.
 	 *
 	 * @link https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/stats/
@@ -80,10 +95,29 @@ class WPCOM_Stats {
 	 *
 	 * @link https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/stats/top-posts/
 	 * @param array $args Optional query parameters.
+	 * @param bool  $override_cache Optional override cache.
 	 * @return array|WP_Error
 	 */
-	public function get_top_posts( $args = array() ) {
+	public function get_top_posts( $args = array(), $override_cache = false ) {
 		$this->resource = 'top-posts';
+
+		// Needed for the Top Posts block, so users can preview changes instantly.
+		if ( $override_cache ) {
+			return $this->fetch_remote_stats( $this->build_endpoint(), $args );
+		}
+
+		return $this->fetch_stats( $args );
+	}
+
+	/**
+	 * Get site's archive pages by views.
+	 *
+	 * @link https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/stats/archives/
+	 * @param array $args Optional query parameters.
+	 * @return array|WP_Error
+	 */
+	public function get_archives( $args = array() ) {
+		$this->resource = 'archives';
 
 		return $this->fetch_stats( $args );
 	}
@@ -197,12 +231,17 @@ class WPCOM_Stats {
 	 * Get a post's views.
 	 *
 	 * @link https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/stats/post/%24post_id/
-	 * @param int   $post_id The video's ID.
-	 * @param array $args    Optional query parameters.
+	 * @param int   $post_id        The post's ID.
+	 * @param array $args           Optional query parameters.
+	 * @param bool  $cache_in_meta  Optional should cache in post meta.
 	 * @return array|WP_Error
 	 */
-	public function get_post_views( $post_id, $args = array() ) {
+	public function get_post_views( $post_id, $args = array(), $cache_in_meta = false ) {
 		$this->resource = sprintf( 'post/%d', $post_id );
+
+		if ( $cache_in_meta ) {
+			return $this->fetch_post_stats( $args, $post_id );
+		}
 
 		return $this->fetch_stats( $args );
 	}
@@ -217,6 +256,19 @@ class WPCOM_Stats {
 	public function get_views_by_country( $args = array() ) {
 
 		$this->resource = 'country-views';
+
+		return $this->fetch_stats( $args );
+	}
+
+	/**
+	 * Get site's views by location.
+	 *
+	 * @param string $geo_mode The type of location to fetch views for (country, region, city).
+	 * @param array  $args     Optional query parameters.
+	 * @return array|WP_Error
+	 */
+	public function get_views_by_location( $geo_mode, $args = array() ) {
+		$this->resource = sprintf( 'location-views/%s', $geo_mode );
 
 		return $this->fetch_stats( $args );
 	}
@@ -285,6 +337,31 @@ class WPCOM_Stats {
 	 * @return array|WP_Error
 	 */
 	public function get_total_post_views( $args = array() ) {
+		if ( $this->is_wpcom_simple ) {
+			$post_ids         = isset( $args['post_ids'] ) ? explode( ',', $args['post_ids'] ) : array();
+			$escaped_post_ids = implode( ',', array_map( 'esc_sql', $post_ids ) );
+
+			$number_of_days = isset( $args['num'] ) ? absint( $args['num'] ) : 1;
+			// It's the same function used in WPCOM simple.
+			// @phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date
+			$end_date = $args['end'] ?? date( 'Y-m-d' );
+
+			$stats = $this->fetch_stats_on_wpcom_simple( $end_date, $number_of_days, $escaped_post_ids );
+
+			$post_views = $stats['-'] ?? array();
+
+			$posts = array_map(
+				function ( $post_id ) use ( $post_views ) {
+					return array(
+						'ID'    => $post_id,
+						'views' => $post_views[ $post_id ] ?? 0,
+					);
+				},
+				$post_ids
+			);
+
+			return array( 'posts' => $posts );
+		}
 
 		$this->resource = 'views/posts';
 
@@ -387,8 +464,74 @@ class WPCOM_Stats {
 
 		// To reduce size in storage: store with time as key, store JSON encoded data.
 		$cached_value = is_wp_error( $wpcom_stats ) ? $wpcom_stats : wp_json_encode( $wpcom_stats );
-		$expiration   = self::STATS_CACHE_EXPIRATION_IN_MINUTES * MINUTE_IN_SECONDS;
+
+		/**
+		 * Filters the expiration time for the stats cache.
+		 *
+		 * @module stats
+		 *
+		 * @since 0.10.0
+		 *
+		 * @param int $expiration The expiration time in minutes.
+		 */
+		$expiration = apply_filters(
+			'jetpack_fetch_stats_cache_expiration',
+			self::STATS_CACHE_EXPIRATION_IN_MINUTES * MINUTE_IN_SECONDS
+		);
 		set_transient( $transient_name, array( time() => $cached_value ), $expiration );
+
+		return $wpcom_stats;
+	}
+
+	/**
+	 * Fetches stats data from WPCOM or local Cache. Caches locally for 5 minutes.
+	 *
+	 * Unlike the above function, this caches data in the post meta table. As such,
+	 * it prevents wp_options from blowing up when retrieving views for large numbers
+	 * of posts at the same time. However, the final response is the same as above.
+	 *
+	 * @param array $args Query parameters.
+	 * @param int   $post_id Post ID to acquire stats for.
+	 *
+	 * @return array|WP_Error
+	 */
+	protected function fetch_post_stats( $args, $post_id ) {
+		$endpoint    = $this->build_endpoint();
+		$meta_name   = '_' . self::STATS_CACHE_TRANSIENT_PREFIX;
+		$stats_cache = get_post_meta( $post_id, $meta_name );
+
+		if ( $stats_cache ) {
+			$data = reset( $stats_cache );
+
+			if (
+				! is_array( $data )
+				|| empty( $data )
+				|| is_wp_error( $data )
+			) {
+				return $data;
+			}
+
+			$time  = key( $data );
+			$views = $data[ $time ] ?? null;
+
+			// Bail if data is malformed.
+			if ( ! is_numeric( $time ) || ! is_array( $views ) ) {
+				return $data;
+			}
+
+			/** This filter is already documented in projects/packages/stats/src/class-wpcom-stats.php */
+			$expiration = apply_filters(
+				'jetpack_fetch_stats_cache_expiration',
+				self::STATS_CACHE_EXPIRATION_IN_MINUTES * MINUTE_IN_SECONDS
+			);
+
+			if ( ( time() - $time ) < $expiration ) {
+				return array_merge( array( 'cached_at' => $time ), $views );
+			}
+		}
+
+		$wpcom_stats = $this->fetch_remote_stats( $endpoint, $args );
+		update_post_meta( $post_id, $meta_name, array( time() => $wpcom_stats ) );
 
 		return $wpcom_stats;
 	}
@@ -399,13 +542,13 @@ class WPCOM_Stats {
 	 * @link https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/stats/
 	 * @param string $endpoint The stats endpoint.
 	 * @param array  $args The query arguments.
-	 * @return array|WP_Error.
+	 * @return array|WP_Error
 	 */
 	protected function fetch_remote_stats( $endpoint, $args ) {
 		if ( is_array( $args ) && ! empty( $args ) ) {
 			$endpoint .= '?' . http_build_query( $args );
 		}
-		$response      = Client::wpcom_json_api_request_as_blog( $endpoint, self::STATS_REST_API_VERSION );
+		$response      = Client::wpcom_json_api_request_as_blog( $endpoint, self::STATS_REST_API_VERSION, array( 'timeout' => 20 ) );
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
 
@@ -414,5 +557,38 @@ class WPCOM_Stats {
 		}
 
 		return json_decode( $response_body, true );
+	}
+
+	/**
+	 * Fetch the stats when executed in WPCOM Simple.
+	 *
+	 * @param string $end_date         The end date.
+	 * @param int    $number_of_days   The number of days.
+	 * @param string $escaped_post_ids The escaped post ids.
+	 *
+	 * @return array
+	 */
+	protected function fetch_stats_on_wpcom_simple( $end_date, $number_of_days, $escaped_post_ids ) {
+		return stats_get_daily_history( null, get_current_blog_id(), 'postviews', 'post_id', $end_date, $number_of_days, " AND post_id IN ($escaped_post_ids)", 0, true );
+	}
+
+	/**
+	 * Convert stats array to object after sanity checking the array is valid.
+	 *
+	 * @since 0.11.0
+	 *
+	 * @param  array $stats_array The stats array.
+	 * @return WP_Error|object|null
+	 */
+	public function convert_stats_array_to_object( $stats_array ) {
+
+		if ( is_wp_error( $stats_array ) ) {
+			return $stats_array;
+		}
+		$encoded_array = wp_json_encode( $stats_array );
+		if ( ! $encoded_array ) {
+			return new WP_Error( 'stats_encoding_error', 'Failed to encode stats array' );
+		}
+		return json_decode( $encoded_array );
 	}
 }

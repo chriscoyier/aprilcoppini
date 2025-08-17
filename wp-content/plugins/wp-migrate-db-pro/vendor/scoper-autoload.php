@@ -4,12 +4,4 @@
 
 $loader = require_once __DIR__.'/autoload.php';
 
-// Exposed functions. For more information see:
-// https://github.com/humbug/php-scoper/blob/master/docs/configuration.md#exposing-functions
-if (!function_exists('composerRequire0321b3b0a573485e7aeb2e6c21c7f37a')) {
-    function composerRequire0321b3b0a573485e7aeb2e6c21c7f37a() {
-        return \DeliciousBrains\WPMDB\Container\composerRequire0321b3b0a573485e7aeb2e6c21c7f37a(...func_get_args());
-    }
-}
-
 return $loader;

@@ -5,6 +5,10 @@
  *            /sites/%s/posts/slug:%s -> $blog_id, $post_id
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Get_Post_Endpoint(
 	array(
 		'description'                          => 'Get a single post (by ID).',
@@ -63,6 +67,8 @@ new WPCOM_JSON_API_Get_Post_Endpoint(
 
 /**
  * Get post endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Get_Post_Endpoint extends WPCOM_JSON_API_Post_Endpoint {
 	/**
@@ -81,7 +87,7 @@ class WPCOM_JSON_API_Get_Post_Endpoint extends WPCOM_JSON_API_Post_Endpoint {
 
 		$args = $this->query_args();
 
-		if ( false === strpos( $path, '/posts/slug:' ) && false === strpos( $path, '/posts/name:' ) ) {
+		if ( ! str_contains( $path, '/posts/slug:' ) && ! str_contains( $path, '/posts/name:' ) ) {
 			$get_by = 'ID';
 		} else {
 			$get_by = 'name';

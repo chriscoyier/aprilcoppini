@@ -40,7 +40,6 @@ class Jetpack_Options {
 					'allowed_xsite_search_ids', // (array) Array of WP.com blog ids that are allowed to search the content of this site
 					'available_modules',
 					'do_activate',
-					'edit_links_calypso_redirect', // (bool) Whether post/page edit links on front end should point to Calypso.
 					'log',
 					'slideshow_background_color',
 					'widget_twitter',
@@ -65,9 +64,7 @@ class Jetpack_Options {
 					'sync_health_status',          // (bool|array) An array of data relating to Jetpack's sync health.
 					'safe_mode_confirmed',         // (bool) True if someone confirms that this site was correctly put into safe mode automatically after an identity crisis is discovered.
 					'migrate_for_idc',             // (bool) True if someone confirms that this site should migrate stats and subscribers from its previous URL
-					'dismissed_connection_banner', // (bool) True if the connection banner has been dismissed
 					'ab_connect_banner_green_bar', // (int) Version displayed of the A/B test for the green bar at the top of the connect banner.
-					'onboarding',                  // (string) Auth token to be used in the onboarding connection flow
 					'tos_agreed',                  // (bool)   Whether or not the TOS for connection has been agreed upon.
 					'static_asset_cdn_files',      // (array) An nested array of files that we can swap out for cdn versions.
 					'mapbox_api_key',              // (string) Mapbox API Key, for use with Map block.
@@ -87,7 +84,6 @@ class Jetpack_Options {
 
 			case 'network':
 				return array(
-					'onboarding',                   // (string) Auth token to be used in the onboarding connection flow
 					'file_data',                     // (array) List of absolute paths to all Jetpack modules
 				);
 		}
@@ -117,8 +113,6 @@ class Jetpack_Options {
 			'setup_wizard_questionnaire',          // (array)  (DEPRECATED) List of user choices from the setup wizard.
 			'setup_wizard_status',                 // (string) (DEPRECATED) Status of the setup wizard.
 			'licensing_error',                     // (string) Last error message occurred while attaching licenses that is yet to be surfaced to the user.
-			'recommendations_banner_dismissed',    // (bool) Determines if the recommendations dashboard banner is dismissed or not.
-			'recommendations_banner_enabled',      // (bool)   Whether the recommendations are enabled or not.
 			'recommendations_data',                // (array)  The user choice and other data for the recommendations.
 			'recommendations_step',                // (string) The current step of the recommendations.
 			'recommendations_conditional',         // (array)  An array of action-based recommendations.
@@ -128,6 +122,13 @@ class Jetpack_Options {
 			'partner_coupon_added',                // (string) A date for when `partner_coupon` was added, so we can auto-purge after a certain time interval.
 			'dismissed_backup_review_restore',     // (bool) Determines if the component review request is dismissed for successful restore requests.
 			'dismissed_backup_review_backups',     // (bool) Determines if the component review request is dismissed for successful backup requests.
+			'identity_crisis_url_secret',          // (array) The IDC URL secret and its expiration date.
+			'identity_crisis_ip_requester',        // (array) The IDC IP address and its expiration date.
+			'dismissed_welcome_banner',            // (bool) Determines if the welcome banner has been dismissed or not.
+			'recommendations_evaluation',          // (object) Catalog of recommended modules with corresponding score following successful site evaluation in Welcome Banner.
+			'dismissed_recommendations',           // (bool) Determines if the recommendations have been dismissed or not.
+			'recommendations_first_run',           // (bool) Determines if the current recommendations are the initial default auto-loaded ones (without user input).
+			'historically_active_modules',         // (array) List of installed plugins/enabled modules that have at one point in time been active and working
 		);
 	}
 
@@ -192,6 +193,27 @@ class Jetpack_Options {
 	 * @return mixed
 	 */
 	public static function get_option( $name, $default = false ) {
+		// Check if external storage should be used for this option
+		if ( self::should_use_external_storage( $name ) ) {
+			/**
+			 * Filter to provide external storage for Jetpack connection options.
+			 * External storage is checked first, with database as fallback.
+			 *
+			 * @since 6.17.0
+			 *
+			 * @param mixed  $value   Current value (null to let database handle).
+			 * @param string $name    Option name, _without_ `jetpack_%` prefix.
+			 * @param mixed  $default Default value if option doesn't exist.
+			 * @return mixed External storage value, or null to fall back to database.
+			 */
+			$external_value = apply_filters( 'jetpack_external_storage_get', null, $name, $default );
+
+			// If external storage provided a value, use it
+			if ( null !== $external_value ) {
+				return $external_value;
+			}
+		}
+
 		/**
 		 * Filter Jetpack Options.
 		 * Can be useful in environments when Jetpack is running with a different setup
@@ -228,9 +250,35 @@ class Jetpack_Options {
 			}
 		}
 
-		trigger_error( sprintf( 'Invalid Jetpack option name: %s', esc_html( $name ) ), E_USER_WARNING ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error -- Don't wish to change legacy behavior.
-
 		return $default;
+	}
+
+	/**
+	 * Determines if external storage should be used for a given option.
+	 *
+	 * @since 6.17.0
+	 *
+	 * @param string $name Option name, _without_ `jetpack_%` prefix.
+	 * @return bool True if external storage should be checked for this option.
+	 */
+	private static function should_use_external_storage( $name ) {
+		// Quick bailout for unsupported options or killswitch
+		if ( ! in_array( $name, array( 'blog_token', 'id' ), true ) ||
+			( defined( 'JETPACK_EXTERNAL_STORAGE_DISABLED' ) && constant( 'JETPACK_EXTERNAL_STORAGE_DISABLED' ) ) ) {
+			return false;
+		}
+
+		/**
+		 * Filter to control whether external storage should be used for a given option.
+		 * Environments use this to opt-in to external storage for their sites.
+		 *
+		 * @since 6.17.0
+		 *
+		 * @param bool   $enabled     Whether external storage should be used (default: false).
+		 * @param string $option_name Option name, _without_ `jetpack_%` prefix.
+		 * @return bool True to use external storage, false to use database only.
+		 */
+		return apply_filters( 'jetpack_should_use_external_storage', false, $name );
 	}
 
 	/**
@@ -284,9 +332,9 @@ class Jetpack_Options {
 	/**
 	 * Updates the single given option.  Updates jetpack_options or jetpack_$name as appropriate.
 	 *
-	 * @param string $name Option name. It must come _without_ `jetpack_%` prefix. The method will prefix the option name.
-	 * @param mixed  $value Option value.
-	 * @param string $autoload If not compact option, allows specifying whether to autoload or not.
+	 * @param string    $name Option name. It must come _without_ `jetpack_%` prefix. The method will prefix the option name.
+	 * @param mixed     $value Option value.
+	 * @param bool|null $autoload If not compact option, allows specifying whether to autoload or not.
 	 *
 	 * @return bool Was the option successfully updated?
 	 */
@@ -629,7 +677,6 @@ class Jetpack_Options {
 			'jetpack_protect_key',
 			'jetpack_protect_blocked_attempts',
 			'jetpack_protect_activating',
-			'jetpack_connection_banner_ab',
 			'jetpack_active_plan',
 			'jetpack_activation_source',
 			'jetpack_site_products',
@@ -637,10 +684,6 @@ class Jetpack_Options {
 			'jetpack_sso_require_two_step',
 			'jetpack_sso_remove_login_form',
 			'jetpack_last_connect_url_check',
-			'jpo_business_address',
-			'jpo_site_type',
-			'jpo_homepage_format',
-			'jpo_contact_page',
 			'jetpack_excluded_extensions',
 		);
 	}

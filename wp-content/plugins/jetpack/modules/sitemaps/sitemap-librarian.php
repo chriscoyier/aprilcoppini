@@ -71,6 +71,11 @@ class Jetpack_Sitemap_Librarian {
 	 * If a sitemap with that type and name does not exist, create it.
 	 * If a sitemap with that type and name does exist, update it.
 	 *
+	 * This method uses get_current_sitemap_post_id() for efficiency,
+	 * as it only retrieves the post ID, which will be typically cached in the persistent object cache.
+	 * This approach avoids loading unnecessary data (like post content) into memory,
+	 * unlike using read_sitemap_data() which would retrieve the full post object.
+	 *
 	 * @access public
 	 * @since 4.8.0
 	 *
@@ -82,9 +87,9 @@ class Jetpack_Sitemap_Librarian {
 	public function store_sitemap_data( $index, $type, $contents, $timestamp ) {
 		$name = jp_sitemap_filename( $type, $index );
 
-		$the_post = $this->read_sitemap_data( $name, $type );
+		$post_id = $this->get_current_sitemap_post_id( $name, $type );
 
-		if ( null === $the_post ) {
+		if ( null === $post_id ) {
 			// Post does not exist.
 			wp_insert_post(
 				array(
@@ -98,7 +103,7 @@ class Jetpack_Sitemap_Librarian {
 			// Post does exist.
 			wp_insert_post(
 				array(
-					'ID'           => $the_post['id'],
+					'ID'           => $post_id,
 					'post_title'   => $name,
 					'post_content' => base64_encode( $contents ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 					'post_type'    => $type,
@@ -108,6 +113,25 @@ class Jetpack_Sitemap_Librarian {
 		}
 	}
 
+	/**
+	 * Get the current sitemap post ID.
+	 *
+	 * @param string $name The name of the sitemap.
+	 * @param string $type The type of the sitemap.
+	 * @return int|null The post ID if it exists, null otherwise.
+	 */
+	private function get_current_sitemap_post_id( $name, $type ) {
+		$args = array(
+			'post_type'      => $type,
+			'post_status'    => 'draft',
+			'posts_per_page' => 1,
+			'title'          => $name,
+			'fields'         => 'ids',
+		);
+
+		$query = new WP_Query( $args );
+		return $query->posts ? $query->posts[0] : null;
+	}
 	/**
 	 * Delete a sitemap by name and type.
 	 *
@@ -272,12 +296,14 @@ class Jetpack_Sitemap_Librarian {
 		foreach ( (array) $post_types as $i => $post_type ) {
 			$post_types[ $i ] = $wpdb->prepare( '%s', $post_type );
 		}
-		$post_types_list = join( ',', $post_types );
+		$post_types_list = implode( ',', $post_types );
+
+		$columns_list = $this->get_sanitized_post_columns( $wpdb );
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WPCS: db call ok; no-cache ok.
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT *
+				"SELECT $columns_list
 					FROM $wpdb->posts
 					WHERE post_status='publish'
 						AND post_type IN ($post_types_list)
@@ -299,7 +325,7 @@ class Jetpack_Sitemap_Librarian {
 	 *
 	 * @param int $post_id Post identifier.
 	 *
-	 * @return int Timestamp in 'Y-m-d h:i:s' format (UTC) of the most recent comment on the given post, or null if no such comments exist.
+	 * @return string Timestamp in 'Y-m-d h:i:s' format (UTC) of the most recent comment on the given post, or null if no such comments exist.
 	 */
 	public function query_latest_approved_comment_time_on_post( $post_id ) {
 		global $wpdb;
@@ -413,12 +439,14 @@ class Jetpack_Sitemap_Librarian {
 			$post_types[ $i ] = $wpdb->prepare( '%s', $post_type );
 		}
 
-		$post_types_list = join( ',', $post_types );
+		$post_types_list = implode( ',', $post_types );
+
+		$columns_list = $this->get_sanitized_post_columns( $wpdb );
 
 		// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.QuotedSimplePlaceholder,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WPCS: db call ok; no-cache ok.
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT *
+				"SELECT $columns_list
 					FROM $wpdb->posts
 					WHERE post_status='publish'
 						AND post_date >= '%s'
@@ -432,4 +460,22 @@ class Jetpack_Sitemap_Librarian {
 		// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.QuotedSimplePlaceholder,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
+	/**
+	 * Returns all columns from the posts table,
+	 * except post_content and post_content_filtered.
+	 *
+	 * @param object $wpdb The WordPress database object.
+	 * @return string The sanitized post columns.
+	 */
+	private function get_sanitized_post_columns( $wpdb ) {
+		$columns = array_filter(
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->get_col( "SHOW COLUMNS FROM $wpdb->posts" ),
+			function ( $column ) {
+				return $column !== 'post_content' && $column !== 'post_content_filtered';
+			}
+		);
+
+		return implode( ',', array_map( 'esc_sql', $columns ) );
+	}
 }

@@ -43,7 +43,7 @@ class WPSEO_Utils {
 		 * Filter: 'wpseo_allow_system_file_edit' - Allow developers to change whether the editing of
 		 * .htaccess and robots.txt is allowed.
 		 *
-		 * @api bool $allowed Whether file editing is allowed.
+		 * @param bool $allowed Whether file editing is allowed.
 		 */
 		return apply_filters( 'wpseo_allow_system_file_edit', $allowed );
 	}
@@ -110,7 +110,7 @@ class WPSEO_Utils {
 			$value = trim( $value );
 		}
 		elseif ( is_array( $value ) ) {
-			$value = array_map( [ __CLASS__, 'trim_recursive' ], $value );
+			$value = array_map( [ self::class, 'trim_recursive' ], $value );
 		}
 
 		return $value;
@@ -232,7 +232,7 @@ class WPSEO_Utils {
 		if ( strpos( $url, '%' ) !== false ) {
 			$url = preg_replace_callback(
 				'`%[a-fA-F0-9]{2}`',
-				static function( $octects ) {
+				static function ( $octects ) {
 					return strtolower( $octects[0] );
 				},
 				$url
@@ -253,7 +253,7 @@ class WPSEO_Utils {
 	 */
 	public static function sanitize_encoded_text_field( $value ) {
 		if ( is_array( $value ) ) {
-			return array_map( [ __CLASS__, 'sanitize_encoded_text_field' ], $value );
+			return array_map( [ self::class, 'sanitize_encoded_text_field' ], $value );
 		}
 
 		return rawurlencode( sanitize_text_field( rawurldecode( $value ) ) );
@@ -381,7 +381,7 @@ class WPSEO_Utils {
 			return $value;
 		}
 		elseif ( is_float( $value ) ) {
-			// phpcs:ignore WordPress.PHP.StrictComparisons -- Purposeful loose comparison.
+			// phpcs:ignore Universal.Operators.StrictComparisons -- Purposeful loose comparison.
 			if ( (int) $value == $value && ! is_nan( $value ) ) {
 				return (int) $value;
 			}
@@ -412,10 +412,12 @@ class WPSEO_Utils {
 	 * Clears the WP or W3TC cache depending on which is used.
 	 *
 	 * @since 1.8.0
+	 *
+	 * @return void
 	 */
 	public static function clear_cache() {
-		if ( function_exists( 'w3tc_pgcache_flush' ) ) {
-			w3tc_pgcache_flush();
+		if ( function_exists( 'w3tc_flush_posts' ) ) {
+			w3tc_flush_posts();
 		}
 		elseif ( function_exists( 'wp_cache_clear_cache' ) ) {
 			wp_cache_clear_cache();
@@ -426,6 +428,8 @@ class WPSEO_Utils {
 	 * Clear rewrite rules.
 	 *
 	 * @since 1.8.0
+	 *
+	 * @return void
 	 */
 	public static function clear_rewrites() {
 		update_option( 'rewrite_rules', '' );
@@ -506,7 +510,7 @@ class WPSEO_Utils {
 				if ( $bc ) {
 					$result = bcdiv( $number1, $number2, $precision ); // String, or NULL if right_operand is 0.
 				}
-				elseif ( $number2 != 0 ) { // phpcs:ignore WordPress.PHP.StrictComparisons -- Purposeful loose comparison.
+				elseif ( $number2 != 0 ) { // phpcs:ignore Universal.Operators.StrictComparisons -- Purposeful loose comparison.
 					$result = ( $number1 / $number2 );
 				}
 
@@ -521,7 +525,7 @@ class WPSEO_Utils {
 				if ( $bc ) {
 					$result = bcmod( $number1, $number2 ); // String, or NULL if modulus is 0.
 				}
-				elseif ( $number2 != 0 ) { // phpcs:ignore WordPress.PHP.StrictComparisons -- Purposeful loose comparison.
+				elseif ( $number2 != 0 ) { // phpcs:ignore Universal.Operators.StrictComparisons -- Purposeful loose comparison.
 					$result = ( $number1 % $number2 );
 				}
 
@@ -538,7 +542,7 @@ class WPSEO_Utils {
 					$result = bccomp( $number1, $number2, $precision ); // Returns int 0, 1 or -1.
 				}
 				else {
-					// phpcs:ignore WordPress.PHP.StrictComparisons -- Purposeful loose comparison.
+					// phpcs:ignore Universal.Operators.StrictComparisons -- Purposeful loose comparison.
 					$result = ( $number1 == $number2 ) ? 0 : ( ( $number1 > $number2 ) ? 1 : -1 );
 				}
 				break;
@@ -553,7 +557,7 @@ class WPSEO_Utils {
 					}
 				}
 				else {
-					// phpcs:ignore WordPress.PHP.StrictComparisons -- Purposeful loose comparison.
+					// phpcs:ignore Universal.Operators.StrictComparisons -- Purposeful loose comparison.
 					$result = ( intval( $result ) == $result ) ? intval( $result ) : floatval( $result );
 				}
 			}
@@ -659,13 +663,8 @@ class WPSEO_Utils {
 	 */
 	public static function is_yoast_seo_free_page( $current_page ) {
 		$yoast_seo_free_pages = [
-			'wpseo_dashboard',
-			'wpseo_titles',
-			'wpseo_social',
-			'wpseo_advanced',
 			'wpseo_tools',
 			'wpseo_search_console',
-			'wpseo_licenses',
 		];
 
 		return in_array( $current_page, $yoast_seo_free_pages, true );
@@ -793,7 +792,7 @@ class WPSEO_Utils {
 	/**
 	 * Determines whether the plugin is active for the entire network.
 	 *
-	 * @return bool Whether or not the plugin is network-active.
+	 * @return bool Whether the plugin is network-active.
 	 */
 	public static function is_plugin_network_active() {
 		return YoastSEO()->helpers->url->is_plugin_network_active();
@@ -805,15 +804,11 @@ class WPSEO_Utils {
 	 * @return string The post type, or an empty string.
 	 */
 	public static function get_post_type() {
-		global $post;
+		$wp_screen = get_current_screen();
 
-		if ( isset( $post->post_type ) ) {
-			return $post->post_type;
+		if ( $wp_screen !== null && ! empty( $wp_screen->post_type ) ) {
+			return $wp_screen->post_type;
 		}
-		elseif ( isset( $_GET['post_type'] ) ) {
-			return sanitize_text_field( wp_unslash( $_GET['post_type'] ) );
-		}
-
 		return '';
 	}
 
@@ -850,8 +845,12 @@ class WPSEO_Utils {
 		else {
 			$label_object = WPSEO_Taxonomy::get_labels();
 
-			$taxonomy_slug = filter_input( INPUT_GET, 'taxonomy', FILTER_DEFAULT, [ 'options' => [ 'default' => '' ] ] );
-			$no_index      = WPSEO_Options::get( 'noindex-tax-' . $taxonomy_slug, false );
+			$wp_screen = get_current_screen();
+
+			if ( $wp_screen !== null && ! empty( $wp_screen->taxonomy ) ) {
+				$taxonomy_slug = $wp_screen->taxonomy;
+				$no_index      = WPSEO_Options::get( 'noindex-tax-' . $taxonomy_slug, false );
+			}
 		}
 
 		$wpseo_admin_l10n = [
@@ -862,9 +861,7 @@ class WPSEO_Utils {
 			'postTypeNamePlural'    => ( $page_type === 'post' ) ? $label_object->label : $label_object->name,
 			'postTypeNameSingular'  => ( $page_type === 'post' ) ? $label_object->labels->singular_name : $label_object->singular_name,
 			'isBreadcrumbsDisabled' => WPSEO_Options::get( 'breadcrumbs-enable', false ) !== true && ! current_theme_supports( 'yoast-seo-breadcrumbs' ),
-			// phpcs:ignore Generic.ControlStructures.DisallowYodaConditions -- Bug: squizlabs/PHP_CodeSniffer#2962.
-			'isPrivateBlog'         => ( (string) get_option( 'blog_public' ) ) === '0',
-			'news_seo_is_active'    => ( defined( 'WPSEO_NEWS_FILE' ) ),
+			'isAiFeatureActive'     => (bool) WPSEO_Options::get( 'enable_ai_generator' ),
 		];
 
 		$additional_entries = apply_filters( 'wpseo_admin_l10n', [] );
@@ -912,7 +909,7 @@ class WPSEO_Utils {
 	 *
 	 * @param array $data The data to format.
 	 *
-	 * @return false|string The prepared JSON string.
+	 * @return string|false The prepared JSON string.
 	 */
 	public static function format_json_encode( $data ) {
 		$flags = ( JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
@@ -923,12 +920,12 @@ class WPSEO_Utils {
 			/**
 			 * Filter the Yoast SEO development mode.
 			 *
-			 * @api array $data Allows filtering of the JSON data for debug purposes.
+			 * @param array $data Allows filtering of the JSON data for debug purposes.
 			 */
 			$data = apply_filters( 'wpseo_debug_json_data', $data );
 		}
 
-		// phpcs:ignore Yoast.Yoast.AlternativeFunctions.json_encode_wp_json_encodeWithAdditionalParams -- This is the definition of format_json_encode.
+		// phpcs:ignore Yoast.Yoast.JsonEncodeAlternative.FoundWithAdditionalParams -- This is the definition of format_json_encode.
 		return wp_json_encode( $data, $flags );
 	}
 
@@ -1093,35 +1090,9 @@ class WPSEO_Utils {
 		/**
 		 * The feature flag integration.
 		 *
-		 * @var Feature_Flag_Integration $feature_flag_integration;
+		 * @var Feature_Flag_Integration $feature_flag_integration
 		 */
 		$feature_flag_integration = YoastSEO()->classes->get( Feature_Flag_Integration::class );
 		return $feature_flag_integration->get_enabled_features();
-	}
-
-	/* ********************* DEPRECATED METHODS ********************* */
-
-	/**
-	 * Translates a decimal analysis score into a textual one.
-	 *
-	 * @since 1.8.0
-	 * @deprecated 19.5
-	 * @codeCoverageIgnore
-	 *
-	 * @param int  $val       The decimal score to translate.
-	 * @param bool $css_value Whether to return the i18n translated score or the CSS class value.
-	 *
-	 * @return string
-	 */
-	public static function translate_score( $val, $css_value = true ) {
-		_deprecated_function( __METHOD__, 'WPSEO 19.5', 'YoastSEO()->helpers->score_icon' );
-
-		$seo_rank = WPSEO_Rank::from_numeric_score( $val );
-
-		if ( $css_value ) {
-			return $seo_rank->get_css_class();
-		}
-
-		return $seo_rank->get_label();
 	}
 }

@@ -6,11 +6,17 @@
  * @package automattic/jetpack
  */
 
-use Automattic\Jetpack\Backup\Helper_Script_Manager;
+use Automattic\Jetpack\Backup\V0005\Helper_Script_Manager;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
 
 /**
  * API endpoint /sites/%s/delete-backup-helper-script
  * This API endpoint deletes a Jetpack Backup Helper Script
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Delete_Backup_Helper_Script_Endpoint extends Jetpack_JSON_API_Endpoint {
 	/**
@@ -35,11 +41,11 @@ class Jetpack_JSON_API_Delete_Backup_Helper_Script_Endpoint extends Jetpack_JSON
 	protected $script_path = null;
 
 	/**
-	 * True if the specified file has been successfully deleted.
+	 * An array with 'success' => true if the specified file has been successfully deleted, or an instance of WP_Error.
 	 *
-	 * @var boolean
+	 * @var array|WP_Error
 	 */
-	protected $result = false;
+	protected $result;
 
 	/**
 	 * Checks that the input args look like a valid Helper Script path.
@@ -62,8 +68,14 @@ class Jetpack_JSON_API_Delete_Backup_Helper_Script_Endpoint extends Jetpack_JSON
 	 * Deletes the specified Helper Script.
 	 */
 	protected function delete() {
-		$this->result = Helper_Script_Manager::delete_helper_script( $this->script_path );
+		$delete_result = Helper_Script_Manager::delete_helper_script( $this->script_path );
 		Helper_Script_Manager::cleanup_expired_helper_scripts();
+
+		if ( is_wp_error( $delete_result ) ) {
+			$this->result = $delete_result;
+		} else {
+			$this->result = array( 'success' => true );
+		}
 	}
 
 	/**
@@ -72,9 +84,6 @@ class Jetpack_JSON_API_Delete_Backup_Helper_Script_Endpoint extends Jetpack_JSON
 	 * @return array An array containing one key; 'success', which specifies whether the operation was successful.
 	 */
 	protected function result() {
-		return array(
-			'success' => $this->result,
-		);
+		return $this->result;
 	}
-
 }

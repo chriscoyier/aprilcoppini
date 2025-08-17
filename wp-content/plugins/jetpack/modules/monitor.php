@@ -1,7 +1,7 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
- * Module Name: Monitor
- * Module Description: Jetpack’s downtime monitoring will continuously watch your site and alert you the moment that downtime is detected.
+ * Module Name: Downtime Monitor
+ * Module Description: Get instant alerts if your site goes down and know when it’s back online.
  * Sort Order: 28
  * Recommendation Order: 10
  * First Introduced: 2.6
@@ -19,6 +19,8 @@ use Automattic\Jetpack\Connection\Manager as Connection_Manager;
 
 /**
  * Class Jetpack_Monitor
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_Monitor {
 
@@ -129,7 +131,6 @@ class Jetpack_Monitor {
 
 		return $xml->getResponse();
 	}
-
 }
 
 new Jetpack_Monitor();

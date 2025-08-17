@@ -1,7 +1,7 @@
 <?php
 /**
  * Module Name: Carousel
- * Module Description: Display images and galleries in a gorgeous, full-screen browsing experience
+ * Module Description: Turn your image galleries into immersive, full‑screen slideshows.
  * Sort Order: 22
  * Recommendation Order: 12
  * First Introduced: 1.5
@@ -9,7 +9,7 @@
  * Auto Activate: No
  * Module Tags: Photos and Videos
  * Feature: Appearance
- * Additional Search Queries: gallery, carousel, diaporama, slideshow, images, lightbox, exif, metadata, image
+ * Additional Search Queries: gallery, carousel, diaporama, slideshow, images, lightbox, exif, metadata, image, creator
  *
  * @package automattic/jetpack
  */

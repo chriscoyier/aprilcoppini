@@ -11,6 +11,10 @@
 
 use Automattic\Jetpack\Status;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Update_Comment_Endpoint(
 	array(
 		'description'                          => 'Create a comment on a post.',
@@ -148,6 +152,8 @@ new WPCOM_JSON_API_Update_Comment_Endpoint(
 
 /**
  * Update comments endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Update_Comment_Endpoint extends WPCOM_JSON_API_Comment_Endpoint {
 	/**
@@ -189,7 +195,7 @@ class WPCOM_JSON_API_Update_Comment_Endpoint extends WPCOM_JSON_API_Comment_Endp
 		if ( $this->api->ends_with( $path, '/delete' ) ) {
 			return $this->delete_comment( $path, $blog_id, $object_id );
 		} elseif ( $this->api->ends_with( $path, '/new' ) ) {
-			if ( false !== strpos( $path, '/posts/' ) ) {
+			if ( str_contains( $path, '/posts/' ) ) {
 				return $this->new_comment( $path, $blog_id, $object_id, 0 );
 			} else {
 				return $this->new_comment( $path, $blog_id, 0, $object_id );
@@ -213,6 +219,7 @@ class WPCOM_JSON_API_Update_Comment_Endpoint extends WPCOM_JSON_API_Comment_Endp
 	 * @return bool|WP_Error|array
 	 */
 	public function new_comment( $path, $blog_id, $post_id, $comment_parent_id ) {
+		$comment_parent = null;
 		if ( ! $post_id ) {
 			$comment_parent = get_comment( $comment_parent_id );
 			if ( ! $comment_parent_id || ! $comment_parent || is_wp_error( $comment_parent ) ) {

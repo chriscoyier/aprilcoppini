@@ -1,10 +1,16 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Core modify endpoint class.
  *
  * POST /sites/%s/core
  * POST /sites/%s/core/update
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Core_Modify_Endpoint extends Jetpack_JSON_API_Core_Endpoint {
 
@@ -115,5 +121,4 @@ class Jetpack_JSON_API_Core_Modify_Endpoint extends Jetpack_JSON_API_Core_Endpoi
 		remove_filter( 'send_core_update_notification_email', '__return_false' );
 		return $update;
 	}
-
 }

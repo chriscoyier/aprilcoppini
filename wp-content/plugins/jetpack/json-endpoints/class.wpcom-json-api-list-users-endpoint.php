@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * List users endpoint.
  */
@@ -14,6 +18,8 @@ new WPCOM_JSON_API_List_Users_Endpoint(
 		'path_labels'          => array(
 			'$site' => '(int|string) Site ID or domain',
 		),
+		'rest_route'           => '/users',
+		'rest_min_jp_version'  => '14.5-a.2',
 
 		'query_parameters'     => array(
 			'number'          => '(int=20) Limit the total number of authors returned.',
@@ -33,11 +39,12 @@ new WPCOM_JSON_API_List_Users_Endpoint(
 				'post_count'   => 'Order by number of posts published.',
 			),
 			'authors_only'    => '(bool) Set to true to fetch authors only',
-			'include_viewers' => '(bool) Set to true to include viewers for Simple sites',
+			'include_viewers' => '(bool) Set to true to include viewers for Simple sites. When you pass in this parameter, order, order_by and search_columns are ignored. Currently, `search` is limited to the first page of results.',
 			'type'            => "(string) Specify the post type to query authors for. Only works when combined with the `authors_only` flag. Defaults to 'post'. Post types besides post and page need to be whitelisted using the <code>rest_api_allowed_post_types</code> filter.",
 			'search'          => '(string) Find matching users.',
 			'search_columns'  => "(array) Specify which columns to check for matching users. Can be any of 'ID', 'user_login', 'user_email', 'user_url', 'user_nicename', and 'display_name'. Only works when combined with `search` parameter.",
 			'role'            => '(string) Specify a specific user role to fetch.',
+			'capability'      => '(string) Specify a specific capability to fetch. You can specify multiple by comma separating them, in which case the user needs to match all capabilities provided.',
 		),
 
 		'response_format'      => array(
@@ -58,7 +65,7 @@ new WPCOM_JSON_API_List_Users_Endpoint(
 				"nice_name": "apiexamples",
 				"URL": "http://apiexamples.wordpress.com",
 				"avatar_URL": "https://1.gravatar.com/avatar/a2afb7b6c0e23e5d363d8612fb1bd5ad?s=96&d=identicon&r=G",
-				"profile_URL": "https://en.gravatar.com/apiexamples",
+				"profile_URL": "https://gravatar.com/apiexamples",
 				"site_ID": 82974409,
 				"roles": [
 					"administrator"
@@ -81,6 +88,8 @@ new WPCOM_JSON_API_List_Users_Endpoint(
  * List users endpoint class.
  *
  * /sites/%s/users/ -> $blog_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_List_Users_Endpoint extends WPCOM_JSON_API_Endpoint {
 
@@ -93,6 +102,13 @@ class WPCOM_JSON_API_List_Users_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'found' => '(int) The total number of authors found that match the request (ignoring limits and offsets).',
 		'users' => '(array:author) Array of user objects',
 	);
+
+	/**
+	 * Columns in which to search for a user match.
+	 *
+	 * @var array
+	 */
+	public $search_columns;
 
 	/**
 	 * API callback.
@@ -159,6 +175,10 @@ class WPCOM_JSON_API_List_Users_Endpoint extends WPCOM_JSON_API_Endpoint {
 			$query['role'] = $args['role'];
 		}
 
+		if ( ! empty( $args['capability'] ) ) {
+			$query['capability'] = $args['capability'];
+		}
+
 		$user_query = new WP_User_Query( $query );
 
 		remove_filter( 'user_search_columns', array( $this, 'api_user_override_search_columns' ) );
@@ -176,14 +196,16 @@ class WPCOM_JSON_API_List_Users_Endpoint extends WPCOM_JSON_API_Endpoint {
 		) : array();
 		$viewers = array_map( array( $this, 'get_author' ), $viewers );
 
-		// we restrict search field to name when include_viewers is true.
+		// When include_viewers is true, search by username or email.
 		if ( $include_viewers && ! empty( $args['search'] ) ) {
 			$viewers = array_filter(
 				$viewers,
 				function ( $viewer ) use ( $args ) {
+					// Convert to WP_User so expected fields are available.
+					$wp_viewer = new WP_User( $viewer->ID );
 					// remove special database search characters from search term
 					$search_term = str_replace( '*', '', $args['search'] );
-					return strpos( $viewer->name, $search_term ) !== false;
+					return ( str_contains( $wp_viewer->user_login, $search_term ) || str_contains( $wp_viewer->user_email, $search_term ) || str_contains( $wp_viewer->display_name, $search_term ) );
 				}
 			);
 		}
@@ -192,8 +214,17 @@ class WPCOM_JSON_API_List_Users_Endpoint extends WPCOM_JSON_API_Endpoint {
 		foreach ( array_keys( $this->response_format ) as $key ) {
 			switch ( $key ) {
 				case 'found':
-					$user_count     = (int) $user_query->get_total();
-					$viewer_count   = $include_viewers ? count( $viewers ) : 0;
+					$user_count = (int) $user_query->get_total();
+
+					$viewer_count = 0;
+					if ( $include_viewers ) {
+						if ( empty( $args['search'] ) ) {
+							$viewer_count = (int) get_count_private_blog_users( $blog_id );
+						} else {
+							$viewer_count = count( $viewers );
+						}
+					}
+
 					$return[ $key ] = $user_count + $viewer_count;
 					break;
 				case 'users':

@@ -28,39 +28,39 @@ class Dashboard {
 	/**
 	 * Plan instance
 	 *
-	 * @var Automattic\Jetpack\Search\Plan
+	 * @var \Automattic\Jetpack\Search\Plan
 	 */
 	protected $plan;
 
 	/**
 	 * Connection manager instance
 	 *
-	 * @var Automattic\Jetpack\Connection\Manager
+	 * @var \Automattic\Jetpack\Connection\Manager
 	 */
 	protected $connection_manager;
 
 	/**
 	 * Module_Control instance
 	 *
-	 * @var Automattic\Jetpack\Search\Module_Control
+	 * @var \Automattic\Jetpack\Search\Module_Control
 	 */
 	protected $module_control;
 
 	/**
 	 * Priority for the dashboard menu
-	 * For Jetpack sites: Jetpack uses 998 and 'Admin_Menu' uses 1000, so we need to use 999.
-	 * For simple site: the value is overriden in a child class with value 100000 to wait for all menus to be registered.
+	 * For Jetpack sites: Akismet uses 4, so we use 1 to ensure both menus are added when only they exist.
+	 * For Simple sites: the value is overriden in a child class with value 100000 to wait for all menus to be registered.
 	 *
 	 * @var int
 	 */
-	protected $search_menu_priority = 999;
+	protected $search_menu_priority = 1;
 
 	/**
 	 * Contructor
 	 *
-	 * @param Automattic\Jetpack\Search\Plan           $plan - Plan instance.
-	 * @param Automattic\Jetpack\Connection\Manager    $connection_manager - Connection Manager instance.
-	 * @param Automattic\Jetpack\Search\Module_Control $module_control - Module_Control instance.
+	 * @param \Automattic\Jetpack\Search\Plan           $plan - Plan instance.
+	 * @param \Automattic\Jetpack\Connection\Manager    $connection_manager - Connection Manager instance.
+	 * @param \Automattic\Jetpack\Search\Module_Control $module_control - Module_Control instance.
 	 */
 	public function __construct( $plan = null, $connection_manager = null, $module_control = null ) {
 		$this->plan               = $plan ? $plan : new Plan();
@@ -82,7 +82,6 @@ class Dashboard {
 	public function init_hooks() {
 		if ( ! self::$initialized ) {
 			self::$initialized = true;
-			// Jetpack uses 998 and 'Admin_Menu' uses 1000.
 			add_action( 'admin_menu', array( $this, 'add_wp_admin_submenu' ), $this->search_menu_priority );
 			// Check if the site plan changed and deactivate module accordingly.
 			add_action( 'current_screen', array( $this, 'check_plan_deactivate_search_module' ) );
@@ -103,7 +102,7 @@ class Dashboard {
 				'manage_options',
 				'jetpack-search',
 				array( $this, 'render' ),
-				100
+				10
 			);
 		} else {
 			// always add the page, but hide it from the menu.
@@ -136,7 +135,7 @@ class Dashboard {
 	/**
 	 * Test whether we should show Search menu.
 	 *
-	 * @return {boolean} Show search sub menu or not.
+	 * @return boolean Show search sub menu or not.
 	 */
 	protected function should_add_search_submenu() {
 		/**
@@ -192,11 +191,7 @@ class Dashboard {
 		);
 
 		// Connection initial state.
-		wp_add_inline_script(
-			'jp-search-dashboard',
-			Connection_Initial_State::render(),
-			'before'
-		);
+		Connection_Initial_State::render_script( 'jp-search-dashboard' );
 	}
 
 	/**
@@ -209,7 +204,7 @@ class Dashboard {
 	/**
 	 * Deactivate search module if plan doesn't support search.
 	 *
-	 * @param WP_Screen $current_screen Creent screen object.
+	 * @param \WP_Screen $current_screen Creent screen object.
 	 */
 	public function check_plan_deactivate_search_module( $current_screen ) {
 		// Only run on Jetpack admin pages.
@@ -222,5 +217,4 @@ class Dashboard {
 			$this->module_control->deactivate();
 		}
 	}
-
 }

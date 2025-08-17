@@ -1,0 +1,32 @@
+/*! react */
+
+/*! uplot */
+
+/*! uplot-wrappers-common */
+
+/*!*************************!*\
+  !*** ./common/index.ts ***!
+  \*************************/
+
+/*!*******************************!*\
+  !*** ./react/uplot-react.tsx ***!
+  \*******************************/
+
+/*!**************************************************************************************!*\
+  !*** external {"amd":"react","commonjs":"react","commonjs2":"react","root":"React"} ***!
+  \**************************************************************************************/
+
+/*!**************************************************************************************!*\
+  !*** external {"amd":"uplot","commonjs":"uplot","commonjs2":"uplot","root":"uPlot"} ***!
+  \**************************************************************************************/
+
+/**
+ * react-router v7.6.2
+ *
+ * Copyright (c) Remix Software Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.md file in the root directory of this source tree.
+ *
+ * @license MIT
+ */

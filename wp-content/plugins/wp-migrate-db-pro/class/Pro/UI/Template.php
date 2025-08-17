@@ -70,15 +70,7 @@ class Template extends \DeliciousBrains\WPMDB\Common\UI\TemplateBase
         $this->dynamic_props  = DynamicProperties::getInstance();
         $this->addon          = $addon;
         $this->plugin_manager = $plugin_manager;
-
-        // Insert backups tab into plugin_tabs array
-        array_splice($this->plugin_tabs, 1, 0, [
-            [
-                'slug'  => 'backups',
-                'title' => _x('Backups', 'Get backups', 'wp-migrate-db'),
-            ],
-        ]);
-    }
+	}
 
     public function register()
     {

@@ -2,6 +2,10 @@
 
 // phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Menus abstract endpoint class.
  */
@@ -100,6 +104,20 @@ abstract class WPCOM_JSON_API_Menus_Translator {
 	 * @var array
 	 */
 	protected $filters = array();
+
+	/**
+	 * False if $menus was an array on construct, true otherwise.
+	 *
+	 * @var bool
+	 */
+	public $is_single_menu;
+
+	/**
+	 * A menu or array of menus.
+	 *
+	 * @var mixed
+	 */
+	public $menus;
 
 	/**
 	 * Class constructor.
@@ -766,7 +784,6 @@ class WPCOM_JSON_API_Menus_Complexify extends WPCOM_JSON_API_Menus_Translator {
 			array_key_exists( $location_name, $existing_locations ) ||
 			in_array( $location_name, $widget_location_names, true );
 	}
-
 }
 
 new WPCOM_JSON_API_Menus_New_Menu_Endpoint(
@@ -797,6 +814,8 @@ new WPCOM_JSON_API_Menus_New_Menu_Endpoint(
 
 /**
  * New menu endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Menus_New_Menu_Endpoint extends WPCOM_JSON_API_Menus_Abstract_Endpoint {
 
@@ -861,6 +880,8 @@ new WPCOM_JSON_API_Menus_Update_Menu_Endpoint(
 
 /**
  * Update menu endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Menus_Update_Menu_Endpoint extends WPCOM_JSON_API_Menus_Abstract_Endpoint {
 
@@ -1024,6 +1045,8 @@ new WPCOM_JSON_API_Menus_List_Menus_Endpoint(
 
 /**
  * List menus endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Menus_List_Menus_Endpoint extends WPCOM_JSON_API_Menus_Abstract_Endpoint {
 
@@ -1098,6 +1121,8 @@ new WPCOM_JSON_API_Menus_Get_Menu_Endpoint(
 
 /**
  * Get menu endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Menus_Get_Menu_Endpoint extends WPCOM_JSON_API_Menus_Abstract_Endpoint {
 
@@ -1162,6 +1187,8 @@ new WPCOM_JSON_API_Menus_Delete_Menu_Endpoint(
 
 /**
  * Delete menu endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Menus_Delete_Menu_Endpoint extends WPCOM_JSON_API_Menus_Abstract_Endpoint {
 

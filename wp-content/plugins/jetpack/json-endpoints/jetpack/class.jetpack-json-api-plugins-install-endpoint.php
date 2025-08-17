@@ -2,6 +2,10 @@
 
 use Automattic\Jetpack\Plugins_Installer;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 require_once ABSPATH . 'wp-admin/includes/file.php';
 // POST /sites/%s/plugins/%s/install
@@ -56,6 +60,8 @@ new Jetpack_JSON_API_Plugins_Install_Endpoint(
  * Plugins install enedpoint class.
  *
  * POST /sites/%s/plugins/%s/install
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Plugins_Install_Endpoint extends Jetpack_JSON_API_Plugins_Endpoint {
 
@@ -88,6 +94,10 @@ class Jetpack_JSON_API_Plugins_Install_Endpoint extends Jetpack_JSON_API_Plugins
 					return $result;
 				}
 			}
+		}
+
+		if ( ! $result ) {
+			return new WP_Error( 'plugin_install_failed', __( 'Plugin install failed because the result was invalid.', 'jetpack' ) );
 		}
 
 		if ( is_wp_error( $result ) ) {

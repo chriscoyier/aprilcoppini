@@ -46,7 +46,7 @@ class Jetpack_Provision {
 		// If Jetpack is currently connected, and is not in Safe Mode already, kick off a sync of the current
 		// functions/callables so that we can test if this site is in IDC.
 		if ( Jetpack::is_connection_ready() && ! Identity_Crisis::validate_sync_error_idc_option() && Actions::sync_allowed() ) {
-			Actions::do_full_sync( array( 'functions' => true ) );
+			Actions::do_full_sync( array( 'functions' => true ), 'provision' );
 			Actions::$sender->do_full_sync();
 		}
 
@@ -135,16 +135,8 @@ class Jetpack_Provision {
 			$request_body['plan'] = $named_args['plan'];
 		}
 
-		if ( isset( $named_args['onboarding'] ) && ! empty( $named_args['onboarding'] ) ) {
-			$request_body['onboarding'] = (int) $named_args['onboarding'];
-		}
-
 		if ( isset( $named_args['force_connect'] ) && ! empty( $named_args['force_connect'] ) ) {
 			$request_body['force_connect'] = (int) $named_args['force_connect'];
-		}
-
-		if ( isset( $request_body['onboarding'] ) && (bool) $request_body['onboarding'] ) {
-			Jetpack::create_onboarding_token();
 		}
 
 		return $request_body;
@@ -194,7 +186,7 @@ class Jetpack_Provision {
 		}
 
 		// Add calypso env if set.
-		$calypso_env = Jetpack::get_calypso_env();
+		$calypso_env = ( new \Automattic\Jetpack\Status\Host() )->get_calypso_env();
 		if ( ! empty( $calypso_env ) ) {
 			$url = add_query_arg( array( 'calypso_env' => $calypso_env ), $url );
 		}
@@ -267,7 +259,7 @@ class Jetpack_Provision {
 	 *
 	 * @param string $access_token Access token.
 	 *
-	 * @return array|\Automattic\Jetpack\Connection\WP_Error|bool|WP_Error
+	 * @return array|bool|WP_Error
 	 */
 	private static function verify_token( $access_token ) {
 		$request = array(
@@ -308,7 +300,7 @@ class Jetpack_Provision {
 	 * @return string API URL.
 	 */
 	private static function get_api_host() {
-		$env_api_host = getenv( 'JETPACK_START_API_HOST', true ); // phpcs:ignore PHPCompatibility.FunctionUse.NewFunctionParameters.getenv_local_onlyFound
+		$env_api_host = getenv( 'JETPACK_START_API_HOST', true );
 		return $env_api_host ? 'https://' . $env_api_host : JETPACK__WPCOM_JSON_API_BASE;
 	}
 }

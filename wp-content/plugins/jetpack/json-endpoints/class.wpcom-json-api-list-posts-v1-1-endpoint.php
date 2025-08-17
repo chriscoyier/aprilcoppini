@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * List posts v1_1 endpoint.
  */
@@ -17,6 +21,8 @@ new WPCOM_JSON_API_List_Posts_v1_1_Endpoint(
 		'path_labels'                          => array(
 			'$site' => '(int|string) Site ID or domain',
 		),
+		'rest_route'                           => '/posts',
+		'rest_min_jp_version'                  => '14.5-a.2',
 
 		'allow_fallback_to_jetpack_blog_token' => true,
 
@@ -45,6 +51,7 @@ new WPCOM_JSON_API_List_Posts_v1_1_Endpoint(
 			'term'            => '(object:string) Specify comma-separated term slugs to search within, indexed by taxonomy slug.',
 			'type'            => "(string) Specify the post type. Defaults to 'post', use 'any' to query for both posts and pages. Post types besides post and page need to be whitelisted using the <code>rest_api_allowed_post_types</code> filter.",
 			'parent_id'       => '(int) Returns only posts which are children of the specified post. Applies only to hierarchical post types.',
+			'include'         => '(array:int|int) Includes the specified post ID(s) in the response',
 			'exclude'         => '(array:int|int) Excludes the specified post ID(s) from the response',
 			'exclude_tree'    => '(int) Excludes the specified post and all of its descendants from the response. Applies only to hierarchical post types.',
 			'status'          => '(string) Comma-separated list of statuses for which to query, including any of: "publish", "private", "draft", "pending", "future", and "trash", or simply "any". Defaults to "publish"',
@@ -67,6 +74,8 @@ new WPCOM_JSON_API_List_Posts_v1_1_Endpoint(
  * List Posts v1_1 Endpoint class.
  *
  * /sites/%s/posts/ -> $blog_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_List_Posts_v1_1_Endpoint extends WPCOM_JSON_API_Post_v1_1_Endpoint { // phpcs:ignore
 	/**
@@ -220,6 +229,10 @@ class WPCOM_JSON_API_List_Posts_v1_1_Endpoint extends WPCOM_JSON_API_Post_v1_1_E
 			$query['has_password'] = false;
 		}
 
+		if ( isset( $args['include'] ) ) {
+			$query['post__in'] = is_array( $args['include'] ) ? $args['include'] : array( (int) $args['include'] );
+		}
+
 		if ( isset( $args['meta_key'] ) ) {
 			$show = false;
 			if ( WPCOM_JSON_API_Metadata::is_public( $args['meta_key'] ) ) {
@@ -251,7 +264,7 @@ class WPCOM_JSON_API_List_Posts_v1_1_Endpoint extends WPCOM_JSON_API_Post_v1_1_E
 		} elseif ( 'require' === $args['sticky'] ) {
 			$sticky = get_option( 'sticky_posts' );
 			if ( is_array( $sticky ) && ! empty( $sticky ) ) {
-				$query['post__in'] = $sticky;
+				$query['post__in'] = isset( $args['include'] ) ? array_merge( $query['post__in'], $sticky ) : $sticky;
 			} else {
 				// no sticky posts exist.
 				return array(
@@ -435,12 +448,14 @@ class WPCOM_JSON_API_List_Posts_v1_1_Endpoint extends WPCOM_JSON_API_Post_v1_1_E
 					if ( $is_eligible_for_page_handle && $return['posts'] ) {
 						$last_post = end( $return['posts'] );
 						reset( $return['posts'] );
-						if ( ( $return['found'] > count( $return['posts'] ) ) && $last_post ) {
+						$post_count = is_countable( $return['posts'] ) ? count( $return['posts'] ) : 0;
+						if ( ( $return['found'] > $post_count ) && $last_post ) {
 							if ( ! isset( $return[ $key ] ) ) {
 								$return[ $key ] = (object) array();
 							}
-							if ( isset( $last_post['ID'] ) ) {
-								$return[ $key ]->next_page = $this->build_page_handle( $last_post, $query );
+							$handle = $this->build_page_handle( $last_post, $query );
+							if ( $handle !== null ) {
+								$return[ $key ]->next_page = $handle;
 							}
 						}
 					}
@@ -471,6 +486,9 @@ class WPCOM_JSON_API_List_Posts_v1_1_Endpoint extends WPCOM_JSON_API_Post_v1_1_E
 		$column = $query['orderby'];
 		if ( ! $column ) {
 			$column = 'date';
+		}
+		if ( ! isset( $post['ID'] ) || ! isset( $post[ $column ] ) ) {
+			return null;
 		}
 		return build_query(
 			array(

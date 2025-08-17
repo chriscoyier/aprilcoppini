@@ -1,9 +1,15 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Get option backup endpoint.
  *
  * /sites/%s/options/backup      -> $blog_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Get_Option_Backup_Endpoint extends Jetpack_JSON_API_Endpoint {
 	/**
@@ -65,5 +71,4 @@ class Jetpack_JSON_API_Get_Option_Backup_Endpoint extends Jetpack_JSON_API_Endpo
 		global $wpdb;
 		return $wpdb->get_row( $wpdb->prepare( "select * from `{$wpdb->options}` where option_name = %s", $name ) );
 	}
-
 }

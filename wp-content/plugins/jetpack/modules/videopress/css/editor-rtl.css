@@ -7,8 +7,7 @@
 
 .mce-videopress-checkbox .mce-checkbox {
   right: 120px !important;
-  width: 100% !important;
-  /* assigning a full width so the label area is clickable */
+  width: 100% !important; /* assigning a full width so the label area is clickable */
 }
 
 .mce-videopress-checkbox .mce-label {
@@ -26,7 +25,7 @@
   color: #4f94d4;
 }
 
-.mce-videopress-checkbox .mce-i-checkbox:before {
+.mce-videopress-checkbox .mce-i-checkbox::before {
   display: inline-block;
   vertical-align: middle;
   width: 16px;
@@ -38,7 +37,7 @@
   content: "\f147";
 }
 
-.mce-videopress-checkbox .mce-i-checkbox.mce-checked:before {
+.mce-videopress-checkbox .mce-i-checkbox.mce-checked::before {
   content: "\f147";
 }
 

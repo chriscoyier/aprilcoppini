@@ -5,6 +5,10 @@
  * Endpoint: v1.1/sites/%s/media/%d
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Update_Media_v1_1_Endpoint(
 	array(
 		'description'          => 'Edit basic information about a media item.',
@@ -75,6 +79,8 @@ new WPCOM_JSON_API_Update_Media_v1_1_Endpoint(
 // phpcs:disable PEAR.NamingConventions.ValidClassName.Invalid
 /**
  * Update media item info v1.1 class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Update_Media_v1_1_Endpoint extends WPCOM_JSON_API_Endpoint {
 	/**
@@ -127,7 +133,7 @@ class WPCOM_JSON_API_Update_Media_v1_1_Endpoint extends WPCOM_JSON_API_Endpoint 
 		}
 
 		// audio only artist/album info.
-		if ( 0 === strpos( $item->mime_type, 'audio/' ) ) {
+		if ( str_starts_with( $item->mime_type, 'audio/' ) ) {
 			$changed = false;
 			$id3data = wp_get_attachment_metadata( $media_id );
 

@@ -96,6 +96,8 @@ class Storage_Post_Type {
 		} else {
 			wp_insert_post( $data_post_data );
 		}
+
+		delete_transient( $this->post_type_slug() . '_' . $key );
 	}
 
 	/**
@@ -107,7 +109,7 @@ class Storage_Post_Type {
 	 * @return mixed
 	 */
 	public function get( $key, $default ) {
-		$cached = wp_cache_get( $key, $this->post_type_slug() );
+		$cached = get_transient( $this->post_type_slug() . '_' . $key );
 		if ( $cached ) {
 			return $cached;
 		}
@@ -142,7 +144,7 @@ class Storage_Post_Type {
 			return $default;
 		}
 
-		wp_cache_set( $key, $value['data'], $this->post_type_slug(), HOUR_IN_SECONDS );
+		set_transient( $this->post_type_slug() . '_' . $key, $value['data'], HOUR_IN_SECONDS );
 
 		return $value['data'];
 	}
@@ -199,21 +201,86 @@ class Storage_Post_Type {
 	}
 
 	/**
-	 * We're not using any taxonomies with our storage post type at the moment,
-	 * so it's not necessary to do anything more complex
-	 * than a simple delete DB Query.
-	 *
-	 * @return false|int
+	 * Clear all data stored in post types. On systems which support it, this
+	 * will use wp_cache_flush_group and a db query to efficiently flush the
+	 * cache. Otherwise, it will fall back to deleting each item.
 	 */
 	public function clear() {
+		if (
+			function_exists( 'wp_cache_flush_group' ) &&
+			function_exists( 'wp_cache_supports' ) &&
+			wp_cache_supports( 'flush_group' )
+		) {
+			$this->clear_bulk();
+		} else {
+			$this->clear_manually();
+		}
+	}
+
+	/**
+	 * Clear all data stored in post types using wp_cache_flush_group and a db
+	 * query. This is more efficient than deleting each item individually.
+	 * Make sure that wp_cache_supports( 'flush_group' ) returns true before
+	 * calling this method.
+	 */
+	private function clear_bulk() {
 		global $wpdb;
 
-		wp_cache_delete( null, $this->post_type_slug() );
-
-		return $wpdb->delete(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete(
 			$wpdb->posts,
 			array( 'post_type' => $this->post_type_slug() ),
 			array( '%s' )
 		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM $wpdb->options WHERE option_name LIKE %s",
+				'_transient_' . $this->post_type_slug() . '_%'
+			)
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM $wpdb->options WHERE option_name LIKE %s",
+				'_transient_timeout_' . $this->post_type_slug() . '_%'
+			)
+		);
+
+		wp_cache_flush_group( $this->post_type_slug() );
+		wp_cache_flush_group( 'options' );
+	}
+
+	/**
+	 * Clear all data stored in post types by deleting each item individually.
+	 * This is less efficient than using wp_cache_flush_group and a db query,
+	 * but works on all systems.
+	 */
+	private function clear_manually() {
+		$posts = get_posts(
+			array(
+				'post_type'      => $this->post_type_slug(),
+				'posts_per_page' => -1,
+			)
+		);
+
+		$keys = array();
+		foreach ( $posts as $post ) {
+			wp_delete_post( $post->ID, true );
+			wp_cache_delete( $post->post_name, $this->post_type_slug() );
+			$keys[] = '_transient_' . $this->post_type_slug() . '_' . $post->post_name;
+			$keys[] = '_transient_timeout_' . $this->post_type_slug() . '_' . $post->post_name;
+		}
+
+		if ( empty( $keys ) ) {
+			return;
+		}
+
+		foreach ( $posts as $post ) {
+			$key = $this->post_type_slug() . '_' . $post->post_name;
+			delete_transient( $key );
+		}
 	}
 }

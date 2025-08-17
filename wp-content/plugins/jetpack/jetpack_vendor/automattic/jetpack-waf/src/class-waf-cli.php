@@ -7,11 +7,11 @@
 
 namespace Automattic\Jetpack\Waf;
 
-use \WP_CLI;
-use \WP_CLI_Command;
+use WP_CLI;
+use WP_CLI_Command;
 
 /**
- * Just a few sample commands to learn how WP-CLI works
+ * Set up the WAF, change its mode, or generate its rules.
  */
 class CLI extends WP_CLI_Command {
 	/**
@@ -142,6 +142,7 @@ class CLI extends WP_CLI_Command {
 	 */
 	public function generate_rules() {
 		try {
+			Waf_Constants::define_entrypoint();
 			Waf_Rules_Manager::generate_automatic_rules();
 			Waf_Rules_Manager::generate_rules();
 		} catch ( \Exception $e ) {
@@ -159,7 +160,7 @@ class CLI extends WP_CLI_Command {
 			sprintf(
 				/* translators: %1$s is the name of the mode that was just switched to. */
 				__( 'Jetpack WAF rules successfully created to: "%1$s".', 'jetpack-waf' ),
-				Waf_Runner::get_waf_file_path( Waf_Rules_Manager::RULES_ENTRYPOINT_FILE )
+				Waf_Runner::get_waf_file_path( JETPACK_WAF_ENTRYPOINT )
 			)
 		);
 	}

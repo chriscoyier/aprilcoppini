@@ -5,6 +5,10 @@
  * @package automattic/jetpack
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Base class for Jetpack_Site, so that we have a real class instead of just passing around an array.
  */
@@ -81,12 +85,12 @@ class SAL_Token {
 	}
 
 	/**
-	 * Set's the scope variable to 'global'.
+	 * Checks if the scope is 'global'.
 	 *
-	 * @return string
+	 * @return bool
 	 */
 	public function is_global() {
-		return $scope === 'global'; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
+		return $this->scope === 'global';
 	}
 
 	/**
@@ -115,14 +119,15 @@ class SAL_Token {
 	 */
 	public static function from_rest_token( $token ) {
 		$user_id            = isset( $token['user_id'] ) ? $token['user_id'] : get_current_user_id();
-		$scope              = isset( $token['scope'] ) ? $token['scope'][0] : null;
+		$scope              = isset( $token['scope'][0] ) ? $token['scope'][0] : null;
 		$client_id          = isset( $token['client_id'] ) ? $token['client_id'] : null;
 		$external_user_id   = isset( $token['external_user_id'] ) ? $token['external_user_id'] : null;
 		$external_user_code = isset( $token['external_user_code'] ) ? $token['external_user_code'] : null;
 		$auth               = isset( $token['auth'] ) ? $token['auth'] : null;
+		$blog_id            = isset( $token['blog_id'] ) ? $token['blog_id'] : null;
 
 		return new SAL_Token(
-			$token['blog_id'],
+			$blog_id,
 			$user_id,
 			$scope, // there's only ever one scope in our current API implementation, auth or global.
 			$client_id,

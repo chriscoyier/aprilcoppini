@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Render_Embed_Endpoint(
 	array(
 		'description'          => 'Get a rendered embed for a site. Note: The current user must have publishing access.',
@@ -30,6 +34,8 @@ new WPCOM_JSON_API_Render_Embed_Endpoint(
  * Render embed endpoint class.
  *
  * /sites/%s/embeds/render -> $blog_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Render_Embed_Endpoint extends WPCOM_JSON_API_Render_Endpoint {
 	/**
@@ -58,7 +64,7 @@ class WPCOM_JSON_API_Render_Embed_Endpoint extends WPCOM_JSON_API_Render_Endpoin
 			return new WP_Error( 'invalid_embed_url', __( 'The embed_url parameter must be a valid URL.', 'jetpack' ), 400 );
 		}
 
-		if ( count( $matches[1] ) > 1 ) {
+		if ( is_countable( $matches[1] ) && count( $matches[1] ) > 1 ) {
 			return new WP_Error( 'invalid_embed', __( 'Only one embed can be rendered at a time.', 'jetpack' ), 400 );
 		}
 
@@ -86,5 +92,4 @@ class WPCOM_JSON_API_Render_Embed_Endpoint extends WPCOM_JSON_API_Render_Endpoin
 
 		return $return;
 	}
-
 }

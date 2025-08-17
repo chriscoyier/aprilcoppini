@@ -91,6 +91,8 @@ class Receiver {
 
 		$options = apply_filters( 'wpmdb_transfers_requests_options', $requests_options );
 
+        $compressed = false;
+
 		try {
 			$response = \Requests::post( $url, array(), $data, $options );
 		} catch ( \Exception $e ) {
@@ -138,7 +140,8 @@ class Receiver {
 		}
 
 		$handle = $this->tmpfile;
-		stream_filter_prepend( $handle, 'zlib.inflate' );
+
+
 		rewind( $handle );
 
 		$meta = $this->payload->process_payload( $state_data, $handle, true );

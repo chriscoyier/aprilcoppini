@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Post Endpoint class.
  */
@@ -51,7 +55,7 @@ abstract class WPCOM_JSON_API_Post_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'format'           => array(), // see constructor
 		'geo'              => '(object>geo|false)',
 		'menu_order'       => '(int) (Pages Only) The order pages should appear in.',
-		'publicize_URLs'   => '(array:URL) Array of Twitter and Facebook URLs published by this post.',
+		'publicize_URLs'   => '(array:URL) Array of Facebook URLs published by this post.',
 		'tags'             => '(object:tag) Hash of tags (keyed by tag name) applied to the post.',
 		'categories'       => '(object:category) Hash of categories (keyed by category name) applied to the post.',
 		'attachments'      => '(object:attachment) Hash of post attachments (keyed by attachment ID).',
@@ -110,11 +114,6 @@ abstract class WPCOM_JSON_API_Post_Endpoint extends WPCOM_JSON_API_Endpoint {
 			if ( isset( $args['content_width'] ) && $args['content_width'] ) {
 				$GLOBALS['content_width'] = (int) $args['content_width'];
 			}
-		}
-
-		if ( isset( $_SERVER['HTTP_USER_AGENT'] ) && strpos( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ), 'wp-windows8' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- we're not using this value and making changes, just checking if it exists.
-			remove_shortcode( 'gallery', 'gallery_shortcode' );
-			add_shortcode( 'gallery', array( $this, 'win8_gallery_shortcode' ) );
 		}
 
 		switch ( $field ) {
@@ -391,6 +390,7 @@ abstract class WPCOM_JSON_API_Post_Endpoint extends WPCOM_JSON_API_Endpoint {
 					if ( $publicize ) {
 						foreach ( $publicize as $service => $data ) {
 							switch ( $service ) {
+								// @todo Explore removing once Twitter has been removed from Publicize.
 								case 'twitter':
 									foreach ( $data as $datum ) {
 										$publicize_urls[] = esc_url_raw( "https://twitter.com/{$datum['user_id']}/status/{$datum['post_id']}" );
@@ -518,7 +518,7 @@ abstract class WPCOM_JSON_API_Post_Endpoint extends WPCOM_JSON_API_Endpoint {
 		$old_pages = $pages;
 		$old_page  = $page;
 
-		$content = join( "\n\n", $pages );
+		$content = implode( "\n\n", $pages );
 		$content = preg_replace( '/<!--more(.*?)?-->/', '', $content );
 		$pages   = array( $content ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		$page    = 1; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
@@ -570,115 +570,9 @@ abstract class WPCOM_JSON_API_Post_Endpoint extends WPCOM_JSON_API_Endpoint {
 	}
 
 	/**
-	 * Win8 Gallery shortcode.
-	 *
-	 * @param array $attr - the attribute.
-	 */
-	public function win8_gallery_shortcode( $attr ) {
-		global $post;
-
-		static $instance = 0;
-		++$instance;
-
-		// @todo - find out if this is a bug, intentionally unused, or can be removed.
-		$output = ''; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-
-		// We're trusting author input, so let's at least make sure it looks like a valid orderby statement
-		if ( isset( $attr['orderby'] ) ) {
-			$attr['orderby'] = sanitize_sql_orderby( $attr['orderby'] );
-			if ( ! $attr['orderby'] ) {
-				unset( $attr['orderby'] );
-			}
-		}
-
-		$atts = shortcode_atts(
-			array(
-				'order'     => 'ASC',
-				'orderby'   => 'menu_order ID',
-				'id'        => $post->ID,
-				'include'   => '',
-				'exclude'   => '',
-				'slideshow' => false,
-			),
-			$attr,
-			'gallery'
-		);
-		$id   = ! empty( $atts['id'] ) ? (int) $atts['id'] : 0;
-
-		// Custom image size and always use it.
-		add_image_size( 'win8app-column', 480 );
-		$size = 'win8app-column';
-
-		if ( 'RAND' === $atts['order'] ) {
-			$orderby = 'none';
-		} else {
-			$orderby = $atts['orderby'];
-		}
-
-		if ( ! empty( $atts['include'] ) ) {
-			$include      = preg_replace( '/[^0-9,]+/', '', $atts['include'] );
-			$_attachments = get_posts(
-				array(
-					'include'        => $include,
-					'post_status'    => 'inherit',
-					'post_type'      => 'attachment',
-					'post_mime_type' => 'image',
-					'order'          => $atts['order'],
-					'orderby'        => $orderby,
-				)
-			);
-			$attachments  = array();
-			foreach ( $_attachments as $key => $val ) {
-				$attachments[ $val->ID ] = $_attachments[ $key ];
-			}
-		} elseif ( ! empty( $atts['exclude'] ) ) {
-			$exclude     = preg_replace( '/[^0-9,]+/', '', $atts['exclude'] );
-			$attachments = get_children(
-				array(
-					'post_parent'    => $id,
-					'exclude'        => $exclude,
-					'post_status'    => 'inherit',
-					'post_type'      => 'attachment',
-					'post_mime_type' => 'image',
-					'order'          => $atts['order'],
-					'orderby'        => $orderby,
-				)
-			);
-		} else {
-			$attachments = get_children(
-				array(
-					'post_parent'    => $id,
-					'post_status'    => 'inherit',
-					'post_type'      => 'attachment',
-					'post_mime_type' => 'image',
-					'order'          => $atts['order'],
-					'orderby'        => $orderby,
-				)
-			);
-		}
-
-		if ( ! empty( $attachments ) ) {
-			foreach ( $attachments as $id => $attachment ) {
-				$link = isset( $attr['link'] ) && 'file' === $attr['link']
-					? wp_get_attachment_link( $id, $size, false, false )
-					: wp_get_attachment_link( $id, $size, true, false );
-				// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-				if ( $captiontag && trim( $attachment->post_excerpt ) ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable
-					$output .= "<div class='wp-caption aligncenter'>$link
-						<p class='wp-caption-text'>" . wptexturize( $attachment->post_excerpt ) . '</p>
-						</div>';
-				} else {
-					$output .= $link . ' ';
-				}
-				// phpcs:enable VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-			}
-		}
-	}
-
-	/**
 	 * Returns attachment object.
 	 *
-	 * @param object - $attachment attachment row.
+	 * @param object $attachment attachment row.
 	 *
 	 * @return object
 	 */

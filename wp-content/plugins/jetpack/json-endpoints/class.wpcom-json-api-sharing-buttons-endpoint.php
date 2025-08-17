@@ -1,6 +1,11 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
 // phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Sharing button endpoint class.
  */
@@ -229,7 +234,6 @@ abstract class WPCOM_JSON_API_Sharing_Button_Endpoint extends WPCOM_JSON_API_End
 
 		return $updated_service;
 	}
-
 }
 
 new WPCOM_JSON_API_Get_Sharing_Buttons_Endpoint(
@@ -285,6 +289,8 @@ new WPCOM_JSON_API_Get_Sharing_Buttons_Endpoint(
  * Get sharing buttons endpoint class.
  *
  * GET /sites/%s/sharing-buttons -> $blog_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Get_Sharing_Buttons_Endpoint extends WPCOM_JSON_API_Sharing_Button_Endpoint {
 
@@ -391,6 +397,8 @@ new WPCOM_JSON_API_Get_Sharing_Button_Endpoint(
  * Get sharing button endpoint class.
  *
  * GET /sites/%s/sharing-buttons/%s -> $blog_id, $button_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Get_Sharing_Button_Endpoint extends WPCOM_JSON_API_Sharing_Button_Endpoint {
 
@@ -422,7 +430,6 @@ class WPCOM_JSON_API_Get_Sharing_Button_Endpoint extends WPCOM_JSON_API_Sharing_
 			return $this->format_sharing_button( $all_buttons[ $button_id ] );
 		}
 	}
-
 }
 
 new WPCOM_JSON_API_Update_Sharing_Buttons_Endpoint(
@@ -477,6 +484,8 @@ new WPCOM_JSON_API_Update_Sharing_Buttons_Endpoint(
  * Update sharing buttons endpoint.
  *
  * POST /sites/%s/sharing-buttons -> $blog_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Update_Sharing_Buttons_Endpoint extends WPCOM_JSON_API_Sharing_Button_Endpoint {
 
@@ -555,7 +564,6 @@ class WPCOM_JSON_API_Update_Sharing_Buttons_Endpoint extends WPCOM_JSON_API_Shar
 			'updated' => $updated,
 		);
 	}
-
 }
 
 new WPCOM_JSON_API_Update_Sharing_Button_Endpoint(
@@ -667,6 +675,8 @@ new WPCOM_JSON_API_Update_Sharing_Button_Endpoint(
  *
  * POST /sites/%s/sharing-buttons/new -> $blog_id
  * POST /sites/%s/sharing-buttons/%s -> $blog_id, $button_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Update_Sharing_Button_Endpoint extends WPCOM_JSON_API_Sharing_Button_Endpoint {
 
@@ -714,7 +724,6 @@ class WPCOM_JSON_API_Update_Sharing_Button_Endpoint extends WPCOM_JSON_API_Shari
 			return $this->format_sharing_button( $updated_service );
 		}
 	}
-
 }
 
 new WPCOM_JSON_API_Delete_Sharing_Button_Endpoint(
@@ -747,6 +756,8 @@ new WPCOM_JSON_API_Delete_Sharing_Button_Endpoint(
  * Delete sharing button endpoint class.
  *
  * POST /sites/%s/sharing-buttons/%s/delete -> $blog_id, $button_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Delete_Sharing_Button_Endpoint extends WPCOM_JSON_API_Sharing_Button_Endpoint {
 	/**
@@ -788,5 +799,4 @@ class WPCOM_JSON_API_Delete_Sharing_Button_Endpoint extends WPCOM_JSON_API_Shari
 			'success' => $success,
 		);
 	}
-
 }

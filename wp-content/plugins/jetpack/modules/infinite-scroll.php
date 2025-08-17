@@ -1,7 +1,7 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
  * Module Name: Infinite Scroll
- * Module Description: Automatically load new content when a visitor scrolls
+ * Module Description: Automatically load new posts as visitors scroll down your site.
  * Sort Order: 26
  * First Introduced: 2.0
  * Requires Connection: No
@@ -11,6 +11,7 @@
  * Additional Search Queries: scroll, infinite, infinite scroll
  */
 
+use Automattic\Jetpack\Current_Plan as Jetpack_Plan;
 use Automattic\Jetpack\Stats\Options as Stats_Options;
 
 /**

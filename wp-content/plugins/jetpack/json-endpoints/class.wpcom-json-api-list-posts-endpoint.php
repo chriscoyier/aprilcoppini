@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * List posts endpoint.
  */
@@ -16,6 +20,8 @@ new WPCOM_JSON_API_List_Posts_Endpoint(
 		'path_labels'                          => array(
 			'$site' => '(int|string) Site ID or domain',
 		),
+		'rest_route'                           => '/posts',
+		'rest_min_jp_version'                  => '14.5-a.2',
 
 		'allow_fallback_to_jetpack_blog_token' => true,
 
@@ -41,6 +47,7 @@ new WPCOM_JSON_API_List_Posts_Endpoint(
 			'term'         => '(object:string) Specify comma-separated term slugs to search within, indexed by taxonomy slug.',
 			'type'         => "(string) Specify the post type. Defaults to 'post', use 'any' to query for both posts and pages. Post types besides post and page need to be whitelisted using the <code>rest_api_allowed_post_types</code> filter.",
 			'parent_id'    => '(int) Returns only posts which are children of the specified post. Applies only to hierarchical post types.',
+			'include'      => '(array:int|int) Includes the specified post ID(s) in the response',
 			'exclude'      => '(array:int|int) Excludes the specified post ID(s) from the response',
 			'exclude_tree' => '(int) Excludes the specified post and all of its descendants from the response. Applies only to hierarchical post types.',
 			'status'       => array(
@@ -70,13 +77,15 @@ new WPCOM_JSON_API_List_Posts_Endpoint(
  * List posts endpoint class.
  *
  * /sites/%s/posts/ -> $blog_id
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_List_Posts_Endpoint extends WPCOM_JSON_API_Post_Endpoint {
 
 	/**
 	 * The date range.
 	 *
-	 * @var array.
+	 * @var array
 	 */
 	public $date_range = array();
 
@@ -195,6 +204,10 @@ class WPCOM_JSON_API_List_Posts_Endpoint extends WPCOM_JSON_API_Post_Endpoint {
 			$query['has_password'] = false;
 		}
 
+		if ( isset( $args['include'] ) ) {
+			$query['post__in'] = is_array( $args['include'] ) ? $args['include'] : array( (int) $args['include'] );
+		}
+
 		if ( isset( $args['meta_key'] ) ) {
 			$show = false;
 			if ( WPCOM_JSON_API_Metadata::is_public( $args['meta_key'] ) ) {
@@ -225,7 +238,7 @@ class WPCOM_JSON_API_List_Posts_Endpoint extends WPCOM_JSON_API_Post_Endpoint {
 			is_array( $sticky )
 		) {
 			if ( $args['sticky'] ) {
-				$query['post__in'] = $sticky;
+				$query['post__in'] = isset( $args['include'] ) ? array_merge( $query['post__in'], $sticky ) : $sticky;
 			} else {
 				$query['post__not_in']        = $sticky;
 				$query['ignore_sticky_posts'] = 1;

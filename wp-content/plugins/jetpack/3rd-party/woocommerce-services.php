@@ -3,7 +3,7 @@
 use Automattic\Jetpack\Plugins_Installer;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+	exit( 0 );
 }
 
 /**
@@ -42,8 +42,13 @@ class WC_Services_Installer {
 	 */
 	public function __construct() {
 		add_action( 'jetpack_loaded', array( $this, 'on_jetpack_loaded' ) );
-		add_action( 'admin_init', array( $this, 'add_error_notice' ) );
-		add_action( 'admin_init', array( $this, 'try_install' ) );
+		if ( ! empty( $_GET['wc-services-install-error'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			add_action( 'admin_notices', array( $this, 'error_notice' ) );
+		}
+
+		if ( isset( $_GET['wc-services-action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			add_action( 'admin_init', array( $this, 'try_install' ) );
+		}
 	}
 
 	/**
@@ -99,27 +104,20 @@ class WC_Services_Installer {
 
 		wp_safe_redirect( $redirect );
 
-		exit;
-	}
-
-	/**
-	 * Set up installation error admin notice.
-	 */
-	public function add_error_notice() {
-		if ( ! empty( $_GET['wc-services-install-error'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			add_action( 'admin_notices', array( $this, 'error_notice' ) );
-		}
+		exit( 0 );
 	}
 
 	/**
 	 * Notify the user that the installation of WooCommerce Services failed.
 	 */
 	public function error_notice() {
-		?>
-		<div class="notice notice-error is-dismissible">
-			<p><?php esc_html_e( 'There was an error installing WooCommerce Services.', 'jetpack' ); ?></p>
-		</div>
-		<?php
+		wp_admin_notice(
+			esc_html__( 'There was an error installing WooCommerce Services.', 'jetpack' ),
+			array(
+				'type'        => 'error',
+				'dismissible' => true,
+			)
+		);
 	}
 
 	/**

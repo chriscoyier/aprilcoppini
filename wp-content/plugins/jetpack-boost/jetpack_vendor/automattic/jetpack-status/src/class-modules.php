@@ -7,7 +7,9 @@
 
 namespace Automattic\Jetpack;
 
-use Automattic\Jetpack\Constants as Constants;
+use Automattic\Jetpack\Current_Plan as Jetpack_Plan;
+use Automattic\Jetpack\IP\Utils as IP_Utils;
+use Automattic\Jetpack\Status\Host;
 
 /**
  * Class Automattic\Jetpack\Modules
@@ -20,10 +22,16 @@ class Modules {
 	 * Check whether or not a Jetpack module is active.
 	 *
 	 * @param string $module The slug of a Jetpack module.
+	 * @param bool   $available_only Whether to only check among available modules.
+	 *
 	 * @return bool
 	 */
-	public function is_active( $module ) {
-		return in_array( $module, self::get_active(), true );
+	public function is_active( $module, $available_only = true ) {
+		if ( defined( 'IS_WPCOM' ) && IS_WPCOM ) {
+			return true;
+		}
+
+		return in_array( $module, self::get_active( $available_only ), true );
 	}
 
 	/**
@@ -79,9 +87,8 @@ class Modules {
 			if ( $mod['module_tags'] ) {
 				$mod['module_tags'] = explode( ',', $mod['module_tags'] );
 				$mod['module_tags'] = array_map( 'trim', $mod['module_tags'] );
-				$mod['module_tags'] = array_map( 'jetpack_get_module_i18n_tag', $mod['module_tags'] );
 			} else {
-				$mod['module_tags'] = array( jetpack_get_module_i18n_tag( 'Other' ) );
+				$mod['module_tags'] = array( 'Other' );
 			}
 
 			if ( $mod['plan_classes'] ) {
@@ -95,7 +102,7 @@ class Modules {
 				$mod['feature'] = explode( ',', $mod['feature'] );
 				$mod['feature'] = array_map( 'trim', $mod['feature'] );
 			} else {
-				$mod['feature'] = array( jetpack_get_module_i18n_tag( 'Other' ) );
+				$mod['feature'] = array( 'Other' );
 			}
 
 			$modules_details[ $module ] = $mod;
@@ -161,7 +168,7 @@ class Modules {
 		}
 
 		$key           = md5( $file_name . maybe_serialize( $headers ) );
-		$refresh_cache = is_admin() && isset( $_GET['page'] ) && 'jetpack' === substr( $_GET['page'], 0, 7 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$refresh_cache = is_admin() && isset( $_GET['page'] ) && is_string( $_GET['page'] ) && str_starts_with( $_GET['page'], 'jetpack' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
 
 		// If we don't need to refresh the cache, and already have the value, short-circuit!
 		if ( ! $refresh_cache && isset( $file_data_option[ $key ] ) ) {
@@ -179,8 +186,12 @@ class Modules {
 
 	/**
 	 * Get a list of activated modules as an array of module slugs.
+	 *
+	 * @param bool $available_only Filter out the unavailable (deleted) modules.
+	 *
+	 * @return array
 	 */
-	public function get_active() {
+	public function get_active( $available_only = true ) {
 		$active = \Jetpack_Options::get_option( 'active_modules' );
 
 		if ( ! is_array( $active ) ) {
@@ -193,14 +204,19 @@ class Modules {
 			$active = array_diff( $active, array( 'vaultpress' ) );
 		}
 
-		// If protect is active on the main site of a multisite, it should be active on all sites.
-		if ( ! in_array( 'protect', $active, true ) && is_multisite() && get_site_option( 'jetpack_protect_active' ) ) {
+		// If protect is active on the main site of a multisite, it should be active on all sites. Doesn't apply to WP.com.
+		if ( ! in_array( 'protect', $active, true )
+			&& ! ( new Host() )->is_wpcom_simple()
+			&& is_multisite()
+			&& get_site_option( 'jetpack_protect_active' ) ) {
 			$active[] = 'protect';
 		}
 
-		// If it's not available, it shouldn't be active.
-		// We don't delete it from the options though, as it will be active again when a plugin gets reactivated.
-		$active = array_intersect( $active, $this->get_available() );
+		if ( $available_only ) {
+			// If it's not available, it shouldn't be active.
+			// We don't delete it from the options though, as it will be active again when a plugin gets reactivated.
+			$active = array_intersect( $active, $this->get_available() );
+		}
 
 		/**
 		 * Allow filtering of the active modules.
@@ -401,7 +417,7 @@ class Modules {
 			$state  = new CookieState();
 
 			if ( ! \Jetpack::is_connection_ready() ) {
-				if ( ! $status->is_offline_mode() && ! $status->is_onboarding() ) {
+				if ( ! $status->is_offline_mode() ) {
 					return false;
 				}
 
@@ -426,36 +442,33 @@ class Modules {
 						}
 					}
 					if ( $deactivated ) {
-						$state->state( 'deactivated_plugins', join( ',', $deactivated ) );
+						$state->state( 'deactivated_plugins', implode( ',', $deactivated ) );
 						wp_safe_redirect( add_query_arg( 'jetpack_restate', 1 ) );
-						exit;
+						exit( 0 );
 					}
 				}
 			}
 
 			// Protect won't work with mis-configured IPs.
-			if ( 'protect' === $module && Constants::is_defined( 'JETPACK__PLUGIN_DIR' ) ) {
-				include_once JETPACK__PLUGIN_DIR . 'modules/protect/shared-functions.php';
-				if ( ! jetpack_protect_get_ip() ) {
+			if ( 'protect' === $module ) {
+				if ( ! IP_Utils::get_ip() ) {
 					$state->state( 'message', 'protect_misconfigured_ip' );
 					return false;
 				}
 			}
 
-			if ( class_exists( 'Jetpack_Plan' ) && ! \Jetpack_Plan::supports( $module ) ) {
+			if ( ! Jetpack_Plan::supports( $module ) ) {
 				return false;
 			}
 
 			// Check the file for fatal errors, a la wp-admin/plugins.php::activate.
-			$errors = new Errors();
 			$state->state( 'module', $module );
 			$state->state( 'error', 'module_activation_failed' ); // we'll override this later if the plugin can be included without fatal error.
-			$errors->catch_errors( true );
 
 			ob_start();
 			$module_path = $this->get_path( $module );
 			if ( file_exists( $module_path ) ) {
-				require $this->get_path( $module ); // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.NotAbsolutePath
+				require_once $this->get_path( $module ); // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.NotAbsolutePath
 			}
 
 			$active[] = $module;
@@ -463,7 +476,6 @@ class Modules {
 
 			$state->state( 'error', false ); // the override.
 			ob_end_clean();
-			$errors->catch_errors( false );
 		} else { // Not a Jetpack plugin.
 			$active[] = $module;
 			$this->update_active( $active );
@@ -473,7 +485,7 @@ class Modules {
 			wp_safe_redirect( ( new Paths() )->admin_url( 'page=jetpack' ) );
 		}
 		if ( $exit ) {
-			exit;
+			exit( 0 );
 		}
 		return true;
 	}
@@ -527,7 +539,7 @@ class Modules {
 	 *
 	 * @param array $modules Array of active modules to be saved in options.
 	 *
-	 * @return $success bool true for success, false for failure.
+	 * @return bool $success true for success, false for failure.
 	 */
 	public function update_active( $modules ) {
 		$current_modules      = \Jetpack_Options::get_option( 'active_modules', array() );

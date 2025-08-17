@@ -8,11 +8,11 @@
 
 namespace Automattic\Jetpack\Stats_Admin;
 
-use Automattic\Jetpack\Connection\Client;
 use Automattic\Jetpack\Constants;
 use Automattic\Jetpack\Stats\WPCOM_Stats;
 use Jetpack_Options;
 use WP_Error;
+use WP_REST_Request;
 use WP_REST_Server;
 
 /**
@@ -20,6 +20,9 @@ use WP_REST_Server;
  * It bascially forwards the requests to the WordPress.com REST API.
  */
 class REST_Controller {
+	const JETPACK_STATS_DASHBOARD_MODULES_CACHE_KEY         = 'jetpack_stats_dashboard_modules_cache_key';
+	const JETPACK_STATS_DASHBOARD_MODULE_SETTINGS_CACHE_KEY = 'jetpack_stats_dashboard_module_settings_cache_key';
+
 	/**
 	 * Namespace for the REST API.
 	 *
@@ -128,6 +131,39 @@ class REST_Controller {
 			)
 		);
 
+		// Subscribers counts.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/subscribers/counts', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_site_subscribers_counts' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Stats Plan Usage.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/jetpack-stats/usage', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_site_plan_usage' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// User feedback endpoint.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/jetpack-stats/user-feedback', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'post_user_feedback' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
 		// WordAds Earnings.
 		register_rest_route(
 			static::$namespace,
@@ -147,6 +183,257 @@ class REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_wordads_stats' ),
 				'permission_callback' => array( $this, 'can_user_view_wordads_stats_callback' ),
+			)
+		);
+
+		// Legacy: Update Stats notices.
+		// TODO: remove this in the next release.
+		register_rest_route(
+			static::$namespace,
+			'/stats/notices',
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_notice_status' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+				'args'                => array(
+					'id'            => array(
+						'required'    => true,
+						'type'        => 'string',
+						'description' => 'ID of the notice',
+					),
+					'status'        => array(
+						'required'    => true,
+						'type'        => 'string',
+						'description' => 'Status of the notice',
+					),
+					'postponed_for' => array(
+						'type'        => 'number',
+						'default'     => null,
+						'description' => 'Postponed for (in seconds)',
+						'minimum'     => 0,
+					),
+				),
+			)
+		);
+
+		// Update Stats notices.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/jetpack-stats-dashboard/notices', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_notice_status' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+				'args'                => array(
+					'id'            => array(
+						'required'    => true,
+						'type'        => 'string',
+						'description' => 'ID of the notice',
+					),
+					'status'        => array(
+						'required'    => true,
+						'type'        => 'string',
+						'description' => 'Status of the notice',
+					),
+					'postponed_for' => array(
+						'type'        => 'number',
+						'default'     => null,
+						'description' => 'Postponed for (in seconds)',
+						'minimum'     => 0,
+					),
+				),
+			)
+		);
+
+		// Get Stats notices.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/jetpack-stats-dashboard/notices', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_notice_status' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Mark referrer spam.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/stats/referrers/spam/new', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'mark_referrer_spam' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+				'args'                => array(
+					'domain' => array(
+						'required'    => true,
+						'type'        => 'string',
+						'description' => 'Domain of the referrer',
+					),
+				),
+			)
+		);
+
+		// Unmark referrer spam.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/stats/referrers/spam/delete', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'unmark_referrer_spam' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+				'args'                => array(
+					'domain' => array(
+						'required'    => true,
+						'type'        => 'string',
+						'description' => 'Domain of the referrer',
+					),
+				),
+			)
+		);
+
+		// Update dashboard modules.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/jetpack-stats-dashboard/modules', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_dashboard_modules' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get dashboard modules.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/jetpack-stats-dashboard/modules', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_dashboard_modules' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Update dashboard module settings.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/jetpack-stats-dashboard/module-settings', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_dashboard_module_settings' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get dashboard module settings.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/jetpack-stats-dashboard/module-settings', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_dashboard_module_settings' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get email stats as a list.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/stats/emails/(?P<resource>[\-\w\d]+)', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_email_stats_list' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get Email opens stats for a single post.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/stats/opens/emails/(?P<post_id>[\d]+)/(?P<resource>[\-\w]+)', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_email_opens_stats_single' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get Email clicks stats for a single post.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/stats/clicks/emails/(?P<post_id>[\d]+)/(?P<resource>[\-\w]+)', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_email_clicks_stats_single' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get Email stats time series.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/stats/(?P<resource>[\-\w]+)/emails/(?P<post_id>[\d]+)', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_email_stats_time_series' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get UTM stats time series.
+		register_rest_route(
+			static::$namespace,
+			// /stats/utm/utm_campaign,utm_source,utm_medium
+			sprintf( '/sites/%d/stats/utm/(?P<utm_params>[_,\-\w]+)', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_utm_stats_time_series' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get Devices stats time series.
+		register_rest_route(
+			static::$namespace,
+			// /stats/devices/screensize
+			sprintf( '/sites/%d/stats/devices/(?P<device_property>[\w]+)', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_devices_stats_time_series' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Rerun commercial classificiation.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/commercial-classification', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'run_commercial_classification' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Purchases endpoint.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/purchases', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_site_purchases' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
+			)
+		);
+
+		// Get Location stats.
+		register_rest_route(
+			static::$namespace,
+			sprintf( '/sites/%d/stats/location-views/(?P<geo_mode>country|region|city)', Jetpack_Options::get_option( 'id' ) ),
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_location_stats' ),
+				'permission_callback' => array( $this, 'can_user_view_general_stats_callback' ),
 			)
 		);
 	}
@@ -208,6 +495,9 @@ class REST_Controller {
 			case 'top-posts':
 				return $this->wpcom_stats->get_top_posts( $req->get_params() );
 
+			case 'archives':
+				return $this->wpcom_stats->get_archives( $req->get_params() );
+
 			case 'publicize':
 				return $this->wpcom_stats->get_publicize_followers( $req->get_params() );
 
@@ -235,6 +525,19 @@ class REST_Controller {
 			case 'highlights':
 				return $this->wpcom_stats->get_highlights( $req->get_params() );
 
+			case 'subscribers':
+				return WPCOM_Client::request_as_blog_cached(
+					sprintf(
+						'/sites/%d/stats/subscribers?%s',
+						Jetpack_Options::get_option( 'id' ),
+						$this->filter_and_build_query_string(
+							$req->get_query_params()
+						)
+					),
+					'v1.1',
+					array( 'timeout' => 5 )
+				);
+
 			default:
 				return $this->get_forbidden_error();
 		}
@@ -252,8 +555,9 @@ class REST_Controller {
 				Constants::get_constant( 'JETPACK__WPCOM_JSON_API_BASE' ),
 				Jetpack_Options::get_option( 'id' ),
 				$req->get_param( 'resource_id' ),
-				http_build_query(
-					$req->get_params()
+				$this->filter_and_build_query_string(
+					$req->get_params(),
+					array( 'resource_id' )
 				)
 			),
 			array( 'timeout' => 5 )
@@ -314,11 +618,19 @@ class REST_Controller {
 			return $post;
 		}
 
-		// It shouldn't be a problem because only title and ID are exposed.
+		// The endpoint should be as compatible as possible with `/sites/$site_id/posts/$post_id`.
+		// The reason we are not forwarding the request is that `/sites/$site_id/posts/$post_id` might require user tokens for private posts/sites, which is not possible for users without a WordPress.com account.
+		// 'like_count' is not included in the response because it's available through another endpoint `/sites/$site_id/posts/$post_id/likes`.
 		return array(
-			'ID'    => $post->ID,
-			'title' => $post->post_title,
-			'URL'   => get_permalink( $post->ID ),
+			'ID'             => $post->ID,
+			'site_ID'        => Jetpack_Options::get_option( 'id' ),
+			'title'          => $post->post_title,
+			'URL'            => get_permalink( $post->ID ),
+			'type'           => $post->post_type,
+			'status'         => $post->post_status,
+			'discussion'     => array( 'comment_count' => intval( $post->comment_count ) ),
+			'date'           => $post->post_date,
+			'post_thumbnail' => array( 'URL' => get_the_post_thumbnail_url( $post->ID ) ),
 		);
 	}
 
@@ -343,11 +655,11 @@ class REST_Controller {
 		$params   = array_merge( array( 'force' => 'wpcom' ), $req->get_params() );
 		$response = wp_remote_get(
 			sprintf(
-				'%s/rest/v1.2/sites/%d/posts?%s',
+				'%s/rest/v1.1/sites/%d/posts?%s',
 				Constants::get_constant( 'JETPACK__WPCOM_JSON_API_BASE' ),
 				Jetpack_Options::get_option( 'id' ),
 				$req->get_param( 'resource_id' ),
-				http_build_query( $params )
+				$this->filter_and_build_query_string( $params, array( 'resource_id' ) )
 			),
 			array( 'timeout' => 5 )
 		);
@@ -371,17 +683,103 @@ class REST_Controller {
 	}
 
 	/**
+	 * Get site subscribers counts.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 *
+	 * @return array
+	 */
+	public function get_site_subscribers_counts( $req ) {
+		return WPCOM_Client::request_as_blog_cached(
+			sprintf(
+				'/sites/%d/subscribers/counts?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v2',
+			array( 'timeout' => 5 ),
+			null,
+			'wpcom'
+		);
+	}
+
+	/**
+	 * Get site plan usage.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 *
+	 * @return array
+	 */
+	public function get_site_plan_usage( $req ) {
+		return WPCOM_Client::request_as_blog_cached(
+			sprintf(
+				'/sites/%d/jetpack-stats/usage?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v2',
+			array( 'timeout' => 5 ),
+			null,
+			'wpcom',
+			false
+		);
+	}
+
+	/**
+	 * Post user feedback for Jetpack Stats.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 *
+	 * @return array
+	 */
+	public function post_user_feedback( $req ) {
+		$current_user  = wp_get_current_user();
+		$body_from_req = json_decode( $req->get_body(), true );
+		$body_data     = is_array( $body_from_req ) ? $body_from_req : array();
+		$user_email    = $current_user->user_email;
+
+		return WPCOM_Client::request_as_blog_cached(
+			sprintf(
+				'/sites/%d/jetpack-stats/user-feedback?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v2',
+			array(
+				'timeout' => 5,
+				'method'  => 'POST',
+				'headers' => array( 'Content-Type' => 'application/json' ),
+			),
+			wp_json_encode(
+				array_merge(
+					$body_data,
+					array(
+						'user_email' => $user_email,
+					)
+				)
+			),
+			'wpcom'
+		);
+	}
+
+	/**
 	 * Whether site has never published post.
 	 *
 	 * @param WP_REST_Request $req The request object.
 	 * @return array
 	 */
 	public function site_has_never_published_post( $req ) {
-		return $this->request_as_blog_cached(
+		return WPCOM_Client::request_as_blog_cached(
 			sprintf(
 				'/sites/%d/site-has-never-published-post?%s',
 				Jetpack_Options::get_option( 'id' ),
-				http_build_query(
+				$this->filter_and_build_query_string(
 					$req->get_params()
 				)
 			),
@@ -399,11 +797,11 @@ class REST_Controller {
 	 * @return array
 	 */
 	public function get_wordads_earnings( $req ) {
-		return $this->request_as_blog_cached(
+		return WPCOM_Client::request_as_blog_cached(
 			sprintf(
 				'/sites/%d/wordads/earnings?%s',
 				Jetpack_Options::get_option( 'id' ),
-				http_build_query(
+				$this->filter_and_build_query_string(
 					$req->get_params()
 				)
 			),
@@ -419,11 +817,11 @@ class REST_Controller {
 	 * @return array
 	 */
 	public function get_wordads_stats( $req ) {
-		return $this->request_as_blog_cached(
+		return WPCOM_Client::request_as_blog_cached(
 			sprintf(
 				'/sites/%d/wordads/stats?%s',
 				Jetpack_Options::get_option( 'id' ),
-				http_build_query(
+				$this->filter_and_build_query_string(
 					$req->get_params()
 				)
 			),
@@ -433,53 +831,397 @@ class REST_Controller {
 	}
 
 	/**
-	 * Query the WordPress.com REST API using the blog token
+	 * Get Email stats as a list.
 	 *
-	 * @param String $path The API endpoint relative path.
-	 * @param String $version The API version.
-	 * @param array  $args Request arguments.
-	 * @param String $body Request body.
-	 * @param String $base_api_path (optional) the API base path override, defaults to 'rest'.
-	 * @param bool   $use_cache (optional) default to true.
-	 * @return array|WP_Error $response Data.
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
 	 */
-	protected function request_as_blog_cached( $path, $version = '1.1', $args = array(), $body = null, $base_api_path = 'rest', $use_cache = true ) {
-		// Arrays are serialized without considering the order of objects, but it's okay atm.
-		$cache_key = 'STATS_REST_RESP_' . md5( implode( '|', array( $path, $version, wp_json_encode( $args ), wp_json_encode( $body ), $base_api_path ) ) );
-
-		if ( $use_cache ) {
-			$response_body = get_transient( $cache_key );
-			if ( false !== $response_body ) {
-				return json_decode( $response_body, true );
-			}
+	public function get_email_stats_list( $req ) {
+		switch ( $req->get_param( 'resource' ) ) {
+			case 'summary':
+				return WPCOM_Client::request_as_blog_cached(
+					sprintf(
+						'/sites/%d/stats/emails/%s?%s',
+						Jetpack_Options::get_option( 'id' ),
+						$req->get_param( 'resource' ),
+						$this->filter_and_build_query_string(
+							$req->get_params()
+						)
+					),
+					'v1.1',
+					array( 'timeout' => 5 )
+				);
+			default:
+				return $this->get_forbidden_error();
 		}
+	}
 
-		$response              = Client::wpcom_json_api_request_as_blog(
-			$path,
-			$version,
-			$args,
-			$body,
-			$base_api_path
+	/**
+	 * Get Email opens stats for a single post.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_email_opens_stats_single( $req ) {
+		switch ( $req->get_param( 'resource' ) ) {
+			case 'client':
+			case 'device':
+			case 'country':
+			case 'rate':
+				return WPCOM_Client::request_as_blog_cached(
+					sprintf(
+						'/sites/%d/stats/opens/emails/%d/%s?%s',
+						Jetpack_Options::get_option( 'id' ),
+						$req->get_param( 'post_id' ),
+						$req->get_param( 'resource' ),
+						$this->filter_and_build_query_string(
+							$req->get_params()
+						)
+					),
+					'v1.1',
+					array( 'timeout' => 5 )
+				);
+			default:
+				return $this->get_forbidden_error();
+		}
+	}
+
+	/**
+	 * Get Email clicks stats for a single post.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_email_clicks_stats_single( $req ) {
+		switch ( $req->get_param( 'resource' ) ) {
+			case 'client':
+			case 'device':
+			case 'country':
+			case 'rate':
+			case 'link':
+			case 'user-content-link':
+				return WPCOM_Client::request_as_blog_cached(
+					sprintf(
+						'/sites/%d/stats/clicks/emails/%d/%s?%s',
+						Jetpack_Options::get_option( 'id' ),
+						$req->get_param( 'post_id' ),
+						$req->get_param( 'resource' ),
+						$this->filter_and_build_query_string(
+							$req->get_params()
+						)
+					),
+					'v1.1',
+					array( 'timeout' => 5 )
+				);
+			default:
+				return $this->get_forbidden_error();
+		}
+	}
+
+	/**
+	 * Get Email stats time series.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_email_stats_time_series( $req ) {
+		switch ( $req->get_param( 'resource' ) ) {
+			case 'opens':
+			case 'clicks':
+				return WPCOM_Client::request_as_blog_cached(
+					sprintf(
+						'/sites/%d/stats/%s/emails/%d?%s',
+						Jetpack_Options::get_option( 'id' ),
+						$req->get_param( 'resource' ),
+						$req->get_param( 'post_id' ),
+						$this->filter_and_build_query_string(
+							$req->get_params()
+						)
+					),
+					'v1.1',
+					array( 'timeout' => 5 )
+				);
+			default:
+				return $this->get_forbidden_error();
+		}
+	}
+
+	/**
+	 * Get UTM stats time series.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_utm_stats_time_series( $req ) {
+		return WPCOM_Client::request_as_blog_cached(
+			sprintf(
+				'/sites/%d/stats/utm/%s?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$req->get_param( 'utm_params' ),
+				$this->filter_and_build_query_string(
+					$req->get_params()
+				)
+			),
+			'v1.1',
+			array( 'timeout' => 10 )
 		);
-		$response_code         = wp_remote_retrieve_response_code( $response );
-		$response_body_content = wp_remote_retrieve_body( $response );
-		$response_body         = json_decode( $response_body, true );
+	}
 
-		if ( is_wp_error( $response ) ) {
-			return $response;
-		}
+	/**
+	 * Get Devices stats time series.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_devices_stats_time_series( $req ) {
+		return WPCOM_Client::request_as_blog_cached(
+			sprintf(
+				'/sites/%d/stats/devices/%s?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$req->get_param( 'device_property' ),
+				$this->filter_and_build_query_string(
+					$req->get_params()
+				)
+			),
+			'v1.1',
+			array( 'timeout' => 10 )
+		);
+	}
 
-		if ( 200 !== $response_code ) {
-			return new WP_Error(
-				isset( $response_body['error'] ) ? 'remote-error-' . $response_body['error'] : 'remote-error',
-				isset( $response_body['message'] ) ? $response_body['message'] : 'unknown remote error',
-				array( 'status' => $response_code )
-			);
-		}
+	/**
+	 * Get Location stats.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_location_stats( $req ) {
+		$params   = $req->get_params();
+		$geo_mode = $params['geo_mode'];
+		unset( $params['geo_mode'] );
 
-		// Cache the successful JSON response for 5 minutes.
-		set_transient( $cache_key, $response_body_content, 5 * MINUTE_IN_SECONDS );
-		return $response_body;
+		return $this->wpcom_stats->get_views_by_location( $geo_mode, $params );
+	}
+
+	/**
+	 * Dismiss or delay stats notices.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function update_notice_status( $req ) {
+		return ( new Notices() )->update_notice( $req->get_param( 'id' ), $req->get_param( 'status' ), $req->get_param( 'postponed_for' ) );
+	}
+
+	/**
+	 * Get stats notices.
+	 *
+	 * @return array
+	 */
+	public function get_notice_status() {
+		return ( new Notices() )->get_notices_to_show();
+	}
+
+	/**
+	 * Mark a referrer as spam.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function mark_referrer_spam( $req ) {
+		return WPCOM_Client::request_as_blog(
+			sprintf(
+				'/sites/%d/stats/referrers/spam/new?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v1.1',
+			array(
+				'timeout' => 5,
+				'method'  => 'POST',
+			)
+		);
+	}
+
+	/**
+	 * Unmark a referrer as spam.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function unmark_referrer_spam( $req ) {
+		return WPCOM_Client::request_as_blog(
+			sprintf(
+				'/sites/%d/stats/referrers/spam/delete?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v1.1',
+			array(
+				'timeout' => 5,
+				'method'  => 'POST',
+			)
+		);
+	}
+
+	/**
+	 * Toggle modules on dashboard.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function update_dashboard_modules( $req ) {
+		// Clear dashboard modules cache.
+		delete_transient( static::JETPACK_STATS_DASHBOARD_MODULES_CACHE_KEY );
+		return WPCOM_Client::request_as_blog(
+			sprintf(
+				'/sites/%d/jetpack-stats-dashboard/modules?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v2',
+			array(
+				'timeout' => 5,
+				'method'  => 'POST',
+				'headers' => array( 'Content-Type' => 'application/json' ),
+			),
+			$req->get_body(),
+			'wpcom'
+		);
+	}
+
+	/**
+	 * Get modules on dashboard.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_dashboard_modules( $req ) {
+		return WPCOM_Client::request_as_blog_cached(
+			sprintf(
+				'/sites/%d/jetpack-stats-dashboard/modules?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v2',
+			array(
+				'timeout' => 5,
+			),
+			null,
+			'wpcom',
+			true,
+			static::JETPACK_STATS_DASHBOARD_MODULES_CACHE_KEY
+		);
+	}
+
+	/**
+	 * Update module settings on dashboard.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function update_dashboard_module_settings( $req ) {
+		// Clear dashboard modules cache.
+		delete_transient( static::JETPACK_STATS_DASHBOARD_MODULE_SETTINGS_CACHE_KEY );
+		return WPCOM_Client::request_as_blog(
+			sprintf(
+				'/sites/%d/jetpack-stats-dashboard/module-settings?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v2',
+			array(
+				'timeout' => 5,
+				'method'  => 'POST',
+				'headers' => array( 'Content-Type' => 'application/json' ),
+			),
+			$req->get_body(),
+			'wpcom'
+		);
+	}
+
+	/**
+	 * Get module settings on dashboard.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_dashboard_module_settings( $req ) {
+		return WPCOM_Client::request_as_blog_cached(
+			sprintf(
+				'/sites/%d/jetpack-stats-dashboard/module-settings?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v2',
+			array(
+				'timeout' => 5,
+			),
+			null,
+			'wpcom',
+			true,
+			static::JETPACK_STATS_DASHBOARD_MODULE_SETTINGS_CACHE_KEY
+		);
+	}
+
+	/**
+	 * Run commercial classification.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function run_commercial_classification( $req ) {
+		return WPCOM_Client::request_as_blog(
+			sprintf(
+				'/sites/%d/commercial-classification?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v2',
+			array(
+				'timeout' => 5,
+				'method'  => 'POST',
+			),
+			null,
+			'wpcom'
+		);
+	}
+
+	/**
+	 * Get purchases array; I don't see anything sensetive in there, so didn't sentinizie it.
+	 * Plus it is the same case as Jetpack.
+	 *
+	 * @param WP_REST_Request $req The request object.
+	 * @return array
+	 */
+	public function get_site_purchases( $req ) {
+		return WPCOM_Client::request_as_blog_cached(
+			sprintf(
+				'/sites/%d/purchases?%s',
+				Jetpack_Options::get_option( 'id' ),
+				$this->filter_and_build_query_string(
+					$req->get_query_params()
+				)
+			),
+			'v1.1',
+			array( 'timeout' => 10 ),
+			null,
+			'rest',
+			false
+		);
 	}
 
 	/**
@@ -492,5 +1234,26 @@ class REST_Controller {
 		);
 
 		return new WP_Error( 'rest_forbidden', $error_msg, array( 'status' => rest_authorization_required_code() ) );
+	}
+
+	/**
+	 * Filter and build query string from all the requested params.
+	 *
+	 * @param array $params The params to filter.
+	 * @param array $keys_to_unset The keys to unset from the params array.
+	 * @return string The filtered and built query string.
+	 */
+	protected function filter_and_build_query_string( $params, $keys_to_unset = array() ) {
+		if ( isset( $params['rest_route'] ) ) {
+			unset( $params['rest_route'] );
+		}
+		if ( ! empty( $keys_to_unset ) && is_array( $keys_to_unset ) ) {
+			foreach ( $keys_to_unset as $key ) {
+				if ( isset( $params[ $key ] ) ) {
+					unset( $params[ $key ] );
+				}
+			}
+		}
+		return http_build_query( $params );
 	}
 }

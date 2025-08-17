@@ -11,27 +11,20 @@ namespace Automattic\Jetpack\Extensions\PaymentButtons;
 
 use Automattic\Jetpack\Blocks;
 
-const FEATURE_NAME = 'payment-buttons';
-const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
-
 /**
  * Registers the block for use in Gutenberg
  * This is done via an action so that we can disable
  * registration if we need to.
  */
 function register_block() {
-	if ( ! ( defined( 'IS_WPCOM' ) && IS_WPCOM ) && ! \Jetpack::is_connection_ready() ) {
-		return;
-	}
-
 	require_once JETPACK__PLUGIN_DIR . '/modules/memberships/class-jetpack-memberships.php';
-	if ( \Jetpack_Memberships::is_enabled_jetpack_recurring_payments() ) {
+	if ( \Jetpack_Memberships::should_enable_monetize_blocks_in_editor() ) {
 		Blocks::jetpack_register_block(
-			BLOCK_NAME,
+			__DIR__,
 			array(
 				'render_callback' => __NAMESPACE__ . '\render_block',
 				'supports'        => array(
-					'__experimentalLayout' => array(
+					'layout' => array(
 						'allowSwitching'  => false,
 						'allowInheriting' => false,
 						'default'         => array(
@@ -44,7 +37,7 @@ function register_block() {
 	} else {
 		$required_plan = ( defined( 'IS_WPCOM' ) && IS_WPCOM ) ? 'personal-bundle' : 'jetpack_personal';
 		\Jetpack_Gutenberg::set_extension_unavailable(
-			BLOCK_NAME,
+			'payment-buttons',
 			'missing_plan',
 			array(
 				'required_feature' => 'memberships',
@@ -64,7 +57,7 @@ add_action( 'init', __NAMESPACE__ . '\register_block' );
  * @return string
  */
 function render_block( $attributes, $content ) {
-	\Jetpack_Gutenberg::load_styles_as_required( FEATURE_NAME );
+	\Jetpack_Gutenberg::load_assets_as_required( __DIR__ );
 
 	return $content;
 }

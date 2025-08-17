@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * List terms endpoint.
  */
@@ -43,6 +47,8 @@ new WPCOM_JSON_API_List_Terms_Endpoint(
  * List terms endpoint class.
  *
  * /sites/%s/taxonomies/%s/terms -> $blog_id, $taxonomy
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_List_Terms_Endpoint extends WPCOM_JSON_API_Endpoint {
 
@@ -76,7 +82,7 @@ class WPCOM_JSON_API_List_Terms_Endpoint extends WPCOM_JSON_API_Endpoint {
 
 		if ( ! empty( $formatted_terms ) ) {
 			/** This action is documented in json-endpoints/class.wpcom-json-api-site-settings-endpoint.php */
-			do_action( 'wpcom_json_api_objects', 'terms', count( $formatted_terms ) );
+			do_action( 'wpcom_json_api_objects', 'terms', is_countable( $formatted_terms ) ? count( $formatted_terms ) : 0 );
 		}
 
 		return array(
@@ -127,7 +133,8 @@ class WPCOM_JSON_API_List_Terms_Endpoint extends WPCOM_JSON_API_Endpoint {
 	 */
 	public function get_found( $taxonomy, $args ) {
 		unset( $args['offset'] );
-		return wp_count_terms( $taxonomy, $args );
+		$args['taxonomy'] = $taxonomy;
+		return wp_count_terms( $args );
 	}
 
 	/**
@@ -137,7 +144,8 @@ class WPCOM_JSON_API_List_Terms_Endpoint extends WPCOM_JSON_API_Endpoint {
 	 * @param array  $args - the arguments.
 	 */
 	public function get_formatted_terms( $taxonomy, $args ) {
-		$terms = get_terms( $taxonomy, $args );
+		$args['taxonomy'] = $taxonomy;
+		$terms            = get_terms( $args );
 
 		$formatted_terms = array();
 		foreach ( $terms as $term ) {

@@ -7,7 +7,7 @@
 
 namespace Automattic\Jetpack\VideoPress;
 
-use Jetpack;
+use Automattic\Jetpack\Modules;
 
 /**
  * The class that provides information about VideoPress Status
@@ -15,21 +15,42 @@ use Jetpack;
 class Status {
 
 	/**
-	 * Returns whether VideoPress is active either as a Jetpack module or as a stand alone plugin
+	 * Returns whether VideoPress is active
+	 * either as a Jetpack module or as a stand alone plugin
 	 *
 	 * @return boolean
 	 */
 	public static function is_active() {
-		return self::is_jetpack_active() || self::is_standalone_plugin_active();
+		return self::is_jetpack_plugin_and_videopress_module_active() || self::is_standalone_plugin_active();
 	}
 
 	/**
-	 * Returns whether the Jetpack plugin and its VideoPress module are active
+	 * Checks whether the Jetpack plugin is active
+	 */
+	public static function is_jetpack_plugin_active() {
+		return class_exists( 'Jetpack' );
+	}
+
+	/**
+	 * Checks whether the Jetpack plugin
+	 * and its VideoPress module are active.
 	 *
 	 * @return boolean
 	 */
-	public static function is_jetpack_active() {
-		return class_exists( 'Jetpack' ) && Jetpack::is_module_active( 'videopress' );
+	public static function is_jetpack_plugin_and_videopress_module_active() {
+		return class_exists( 'Jetpack' ) && ( new Modules() )->is_active( 'videopress' );
+	}
+
+	/**
+	 * Checks whether the Jetpack plugin is active
+	 * but the VideoPress module is not active.
+	 *
+	 * @since 0.28.2
+	 *
+	 * @return boolean
+	 */
+	public static function is_jetpack_plugin_without_videopress_module_active() {
+		return class_exists( 'Jetpack' ) && ! ( new Modules() )->is_active( 'videopress' );
 	}
 
 	/**
@@ -39,5 +60,16 @@ class Status {
 	 */
 	public static function is_standalone_plugin_active() {
 		return class_exists( 'Jetpack_VideoPress_Plugin' );
+	}
+
+	/**
+	 * Checks whether the registrant plugin is active
+	 * either as a Jetpack module (via Jetpack plugin)
+	 * or as a stand-alone plugin.
+	 *
+	 * @return boolean True if the register plugin is active.
+	 */
+	public static function is_registrant_plugin_active() {
+		return self::is_jetpack_plugin_active() || self::is_standalone_plugin_active();
 	}
 }

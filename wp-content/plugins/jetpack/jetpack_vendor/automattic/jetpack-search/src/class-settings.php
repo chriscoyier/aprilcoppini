@@ -9,7 +9,7 @@ namespace Automattic\Jetpack\Search;
 
 // Exit if file is accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+	exit( 0 );
 }
 
 /**
@@ -17,6 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * 1. Settings are synced to WPCOM according to `Automattic\Jetpack\Sync\Modules\Search::$options_to_sync`.
  * 2. All synced options must also be explicitly whitelisted and sanitized on WPCOM; see `PCYsg-sBM-p2`.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Settings {
 
@@ -37,6 +39,7 @@ class Settings {
 		// NOTE: This contains significant code overlap with class-jetpack-search-customize.
 		$setting_prefix = Options::OPTION_PREFIX;
 		$settings       = array(
+			array( $setting_prefix . 'ai_prompt_override', 'string', '' ),
 			array( $setting_prefix . 'color_theme', 'string', 'light' ),
 			array( $setting_prefix . 'result_format', 'string', 'minimal' ),
 			array( $setting_prefix . 'default_sort', 'string', 'relevance' ),
@@ -45,6 +48,8 @@ class Settings {
 			array( $setting_prefix . 'highlight_color', 'string', '#FFC' ),
 			array( $setting_prefix . 'enable_sort', 'boolean', true ),
 			array( $setting_prefix . 'inf_scroll', 'boolean', true ),
+			array( $setting_prefix . 'filtering_opens_overlay', 'boolean', true ),
+			array( $setting_prefix . 'show_post_date', 'boolean', true ),
 			array( $setting_prefix . 'show_powered_by', 'boolean', true ),
 		);
 		foreach ( $settings as $value ) {

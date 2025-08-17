@@ -9,6 +9,11 @@
  *
  * @package automattic/jetpack
  */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 require_once __DIR__ . '/class.json-api-site-base.php';
 
 /**
@@ -317,7 +322,7 @@ abstract class Abstract_Jetpack_Site extends SAL_Site {
 	 * @return bool
 	 */
 	private function is_main_site( $response ) {
-		if ( isset( $response['options']->main_network_site, $response['options']->unmapped_url ) ) {
+		if ( isset( $response['options']->main_network_site ) && isset( $response['options']->unmapped_url ) ) {
 			$main_network_site_url = set_url_scheme( $response['options']->main_network_site, 'http' );
 			$unmapped_url          = set_url_scheme( $response['options']->unmapped_url, 'http' );
 			if ( $unmapped_url === $main_network_site_url ) {

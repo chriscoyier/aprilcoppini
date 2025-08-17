@@ -12,9 +12,6 @@ namespace Automattic\Jetpack\Extensions\Slideshow;
 use Automattic\Jetpack\Blocks;
 use Jetpack_Gutenberg;
 
-const FEATURE_NAME = 'slideshow';
-const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
-
 /**
  * Registers the block for use in Gutenberg
  * This is done via an action so that we can disable
@@ -22,7 +19,7 @@ const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
  */
 function register_block() {
 	Blocks::jetpack_register_block(
-		BLOCK_NAME,
+		__DIR__,
 		array( 'render_callback' => __NAMESPACE__ . '\load_assets' )
 	);
 }
@@ -37,10 +34,16 @@ add_action( 'init', __NAMESPACE__ . '\register_block' );
  * @return string
  */
 function load_assets( $attr, $content ) {
-	Jetpack_Gutenberg::load_assets_as_required( FEATURE_NAME );
+	Jetpack_Gutenberg::load_assets_as_required( __DIR__ );
 	if ( Blocks::is_amp_request() ) {
 		return render_amp( $attr );
 	}
+
+	// Enqueue Swiper bundle for dynamic loading
+	if ( ! is_admin() && ! Blocks::is_amp_request() ) {
+		enqueue_swiper_library();
+	}
+
 	return $content;
 }
 
@@ -66,10 +69,10 @@ function render_amp( $attr ) {
 		$autoplay ? 'wp-block-jetpack-slideshow__autoplay' : null,
 		$autoplay ? 'wp-block-jetpack-slideshow__autoplay-playing' : null,
 	);
-	$classes  = Blocks::classes( FEATURE_NAME, $attr, $extras );
+	$classes  = Blocks::classes( Blocks::get_block_feature( __DIR__ ), $attr, $extras );
 
 	return sprintf(
-		'<div class="%1$s" id="wp-block-jetpack-slideshow__%2$d"><div class="wp-block-jetpack-slideshow_container swiper-container">%3$s%4$s%5$s</div></div>',
+		'<div class="%1$s" id="wp-block-jetpack-slideshow__%2$d"><div class="wp-block-jetpack-slideshow_container swiper">%3$s%4$s%5$s</div></div>',
 		esc_attr( $classes ),
 		absint( $wp_block_jetpack_slideshow_id ),
 		amp_carousel( $attr, $wp_block_jetpack_slideshow_id ),
@@ -225,4 +228,33 @@ function autoplay_ui( $block_ordinal = 0 ) {
 		esc_attr( $block_id )
 	);
 	return $autoplay_pause . $autoplay_play;
+}
+
+/**
+ * Enqueue Swiper library assets for dynamic loading.
+ *
+ * @return void
+ */
+function enqueue_swiper_library() {
+	$swiper_js_path  = Jetpack_Gutenberg::get_blocks_directory() . 'swiper.js';
+	$swiper_css_path = Jetpack_Gutenberg::get_blocks_directory() . 'swiper' . ( is_rtl() ? '.rtl' : '' ) . '.css';
+
+	if ( Jetpack_Gutenberg::block_has_asset( $swiper_js_path ) ) {
+		wp_enqueue_script(
+			'jetpack-swiper-library',
+			plugins_url( $swiper_js_path, JETPACK__PLUGIN_FILE ),
+			array(),
+			JETPACK__VERSION,
+			true
+		);
+	}
+
+	if ( Jetpack_Gutenberg::block_has_asset( $swiper_css_path ) ) {
+		wp_enqueue_style(
+			'jetpack-swiper-library',
+			plugins_url( $swiper_css_path, JETPACK__PLUGIN_FILE ),
+			array(),
+			JETPACK__VERSION
+		);
+	}
 }

@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 require JETPACK__PLUGIN_DIR . '/modules/module-info.php';
 
 /**
@@ -174,5 +178,4 @@ abstract class Jetpack_JSON_API_Endpoint extends WPCOM_JSON_API_Endpoint {
 
 		return true;
 	}
-
 }

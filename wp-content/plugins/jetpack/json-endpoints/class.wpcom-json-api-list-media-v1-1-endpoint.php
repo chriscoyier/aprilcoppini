@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * List Media v1_1 endpoint.
  */
@@ -54,6 +58,8 @@ new WPCOM_JSON_API_List_Media_v1_1_Endpoint(
 
 /**
  * List media v1_1 endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_List_Media_v1_1_Endpoint extends WPCOM_JSON_API_Endpoint { // phpcs:ignore
 
@@ -70,6 +76,13 @@ class WPCOM_JSON_API_List_Media_v1_1_Endpoint extends WPCOM_JSON_API_Endpoint { 
 	 * @var array
 	 */
 	public $page_handle = array();
+
+	/**
+	 * Performed query
+	 *
+	 * @var array
+	 */
+	public $performed_query = array();
 
 	/**
 	 * API callback.
@@ -341,5 +354,4 @@ class WPCOM_JSON_API_List_Media_v1_1_Endpoint extends WPCOM_JSON_API_Endpoint { 
 		$orderby .= " `$wpdb->posts`.ID $order";
 		return $orderby;
 	}
-
 }

@@ -12,8 +12,9 @@ namespace Automattic\Jetpack\Extensions\Rating_Star;
 use Automattic\Jetpack\Blocks;
 use Jetpack_Gutenberg;
 
-const FEATURE_NAME = 'rating-star';
-const BLOCK_NAME   = 'jetpack/' . FEATURE_NAME;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
 
 // Load generic function definitions.
 require_once __DIR__ . '/rating-meta.php';
@@ -25,33 +26,9 @@ require_once __DIR__ . '/rating-meta.php';
  */
 function register_block() {
 	Blocks::jetpack_register_block(
-		BLOCK_NAME,
+		__DIR__,
 		array(
 			'render_callback' => __NAMESPACE__ . '\render_block',
-			'attributes'      => array(
-				'rating'      => array(
-					'type'    => 'number',
-					'default' => 1,
-				),
-				'maxRating'   => array(
-					'type'    => 'number',
-					'default' => 5,
-				),
-				'color'       => array(
-					'type' => 'string',
-				),
-				'ratingStyle' => array(
-					'type'    => 'string',
-					'default' => 'star',
-				),
-				'className'   => array(
-					'type' => 'string',
-				),
-				'align'       => array(
-					'type'    => 'string',
-					'default' => 'left',
-				),
-			),
 		)
 	);
 }
@@ -66,7 +43,7 @@ add_action( 'init', __NAMESPACE__ . '\register_block' );
  */
 function render_block( $attributes ) {
 	// Tell Jetpack to load the assets registered via jetpack_register_block.
-	Jetpack_Gutenberg::load_assets_as_required( FEATURE_NAME );
+	Jetpack_Gutenberg::load_assets_as_required( __DIR__ );
 
 	return jetpack_rating_meta_render_block( $attributes );
 }
@@ -77,7 +54,7 @@ function render_block( $attributes ) {
  */
 function amp_add_inline_css() {
 	if ( defined( 'AMP__VERSION' ) && version_compare( AMP__VERSION, '1.4.1', '>=' ) ) {
-		echo '.wp-block-jetpack-rating-star span.screen-reader-text { border: 0; clip: rect(1px, 1px, 1px, 1px); clip-path: inset(50%); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; word-wrap: normal; }';
+		echo '.wp-block-jetpack-rating-star span.screen-reader-text { border: 0; clip-path: inset(50%); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; word-wrap: normal; }';
 	} else {
 		echo '.wp-block-jetpack-rating-star span:not([aria-hidden="true"]) { display: none; }';
 	}

@@ -106,7 +106,7 @@ class WPSEO_Breadcrumbs {
 	 * @return static The instance.
 	 */
 	public static function get_instance() {
-		if ( is_null( self::$instance ) ) {
+		if ( self::$instance === null ) {
 			self::$instance = new self();
 		}
 
@@ -132,6 +132,7 @@ class WPSEO_Breadcrumbs {
 	private function render() {
 		$presenter = new Breadcrumbs_Presenter();
 		$context   = $this->context_memoizer->for_current_page();
+
 		/** This filter is documented in src/integrations/front-end-integration.php */
 		$presentation            = apply_filters( 'wpseo_frontend_presentation', $context->presentation, $context );
 		$presenter->presentation = $presentation;

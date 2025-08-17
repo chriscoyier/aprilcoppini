@@ -11,6 +11,7 @@ use Automattic\Jetpack\Assets;
 use WP_Block_Parser;
 use WP_Block_Patterns_Registry;
 use WP_Error;
+use WP_Query;
 use WP_REST_Templates_Controller;
 
 /**
@@ -249,6 +250,10 @@ class Instant_Search extends Classic_Search {
 		$response_code = wp_remote_retrieve_response_code( $request );
 		$response      = json_decode( wp_remote_retrieve_body( $request ), true );
 
+		if ( isset( $response['swap_classic_to_inline_search'] ) && $response['swap_classic_to_inline_search'] === false ) {
+			update_option( Module_Control::SEARCH_MODULE_SWAP_CLASSIC_TO_INLINE_OPTION_KEY, false );
+		}
+
 		if ( ! $response_code || $response_code < 200 || $response_code >= 300 ) {
 			/**
 			 * Fires after a search query request has failed
@@ -356,8 +361,8 @@ class Instant_Search extends Classic_Search {
 	 * @since  8.8.0
 	 */
 	public function auto_config_overlay_sidebar_widgets() {
-		$sidebars                              = get_option( 'sidebars_widgets', array() );
-		list(,$sidebar_jp_searchbox_wiget_id ) = $this->get_search_widget_indices( $sidebars, self::INSTANT_SEARCH_SIDEBAR );
+		$sidebars                               = get_option( 'sidebars_widgets', array() );
+		list(, $sidebar_jp_searchbox_wiget_id ) = $this->get_search_widget_indices( $sidebars, self::INSTANT_SEARCH_SIDEBAR );
 		// If there's JP search widget in overly sidebar, abort.
 		if ( false !== $sidebar_jp_searchbox_wiget_id ) {
 			return;
@@ -365,6 +370,7 @@ class Instant_Search extends Classic_Search {
 
 		// Init overlay sidebar if it doesn't exists.
 		if ( ! isset( $sidebars[ self::INSTANT_SEARCH_SIDEBAR ] ) ) {
+			$this->register_jetpack_instant_sidebar();
 			$sidebars[ self::INSTANT_SEARCH_SIDEBAR ] = array();
 		}
 
@@ -373,12 +379,15 @@ class Instant_Search extends Classic_Search {
 
 		$next_id = $this->get_next_jp_search_widget_id( $widget_options );
 
-		list(,$sidebar_jp_searchbox_wiget_id ) = $this->get_search_widget_indices( $sidebars, self::AUTO_CONFIG_SIDEBAR );
+		list(, $sidebar_jp_searchbox_wiget_id ) = $this->get_search_widget_indices( $sidebars, self::AUTO_CONFIG_SIDEBAR );
 		if ( false !== $sidebar_jp_searchbox_wiget_id && isset( $widget_options[ $sidebar_jp_searchbox_wiget_id ] ) ) {
 			// If there is a JP search widget in the theme sidebar, copy it over to the search overlay sidebar.
 			$widget_options[ $next_id ] = $widget_options[ $sidebar_jp_searchbox_wiget_id ];
 		} else {
 			// If JP Search widget doesn't exist in the theme sidebar, we have nothing to copy from, so we create a new one within the overlay sidebar.
+			$search_widget = new Search_Widget();
+			$search_widget->_set( $next_id );
+			$search_widget->_register_one( $next_id );
 			$widget_options[ $next_id ] = $this->get_preconfig_widget_options();
 		}
 		array_unshift( $sidebars[ self::INSTANT_SEARCH_SIDEBAR ], Helper::build_widget_id( $next_id ) );
@@ -388,8 +397,7 @@ class Instant_Search extends Classic_Search {
 	}
 
 	/**
-	 * Add JP Search widget on top of theme sidebar.
-	 * Or Replace core search widget in theme sidebar if exists.
+	 * Replace core search widget in theme sidebar if exists.
 	 */
 	public function auto_config_non_fse_theme_sidebar_search_widget() {
 		$sidebars = get_option( 'sidebars_widgets', array() );
@@ -397,7 +405,7 @@ class Instant_Search extends Classic_Search {
 			return;
 		}
 
-		list( $sidebar_searchbox_idx,$sidebar_jp_searchbox_wiget_id ) = $this->get_search_widget_indices( $sidebars );
+		list( $sidebar_searchbox_idx, $sidebar_jp_searchbox_wiget_id ) = $this->get_search_widget_indices( $sidebars );
 		// If there's JP search widget in theme sidebar, abort.
 		if ( false !== $sidebar_jp_searchbox_wiget_id ) {
 			return;
@@ -415,8 +423,8 @@ class Instant_Search extends Classic_Search {
 			// Replace core search widget with JP search widget.
 			$sidebars[ self::AUTO_CONFIG_SIDEBAR ][ $sidebar_searchbox_idx ] = Helper::build_widget_id( $next_id );
 		} else {
-			// Add JP Search widget to top.
-			array_unshift( $sidebars[ self::AUTO_CONFIG_SIDEBAR ], Helper::build_widget_id( $next_id ) );
+			// No core search widget found, so we don't need to replace anything.
+			return true;
 		}
 
 		update_option( $widget_opt_name, $widget_options );
@@ -459,7 +467,7 @@ class Instant_Search extends Classic_Search {
 					// The array index of wp search widget.
 					$sidebar_searchbox_idx = $idx;
 				}
-				if ( 0 === strpos( $widget_id, Helper::FILTER_WIDGET_BASE ) ) {
+				if ( str_starts_with( $widget_id, Helper::FILTER_WIDGET_BASE ) ) {
 					// The id of Jetpack Search widget.
 					$sidebar_jp_searchbox_id = str_replace( Helper::FILTER_WIDGET_BASE . '-', '', $widget_id );
 				}
@@ -475,18 +483,18 @@ class Instant_Search extends Classic_Search {
 	 */
 	protected function widget_has_search_block( $widget_id ) {
 		// test search widget.
-		if ( 0 === strpos( $widget_id, 'search-' ) ) {
+		if ( str_starts_with( $widget_id, 'search-' ) ) {
 			return true;
 		}
 		// test search block widget.
-		if ( 0 === strpos( $widget_id, 'block-' ) ) {
+		if ( str_starts_with( $widget_id, 'block-' ) ) {
 			$widget_blocks = get_option( 'widget_block', array() );
 			$widget_index  = str_replace( 'block-', '', $widget_id );
 			// A single block could be of type string or array.
-			if ( isset( $widget_blocks[ $widget_index ]['content'] ) && false !== strpos( (string) $widget_blocks[ $widget_index ]['content'], 'wp:search' ) ) {
+			if ( isset( $widget_blocks[ $widget_index ]['content'] ) && str_contains( (string) $widget_blocks[ $widget_index ]['content'], 'wp:search' ) ) {
 				return true;
 			}
-			if ( isset( $widget_blocks[ $widget_index ] ) && is_string( $widget_blocks[ $widget_index ] ) && false !== strpos( $widget_blocks[ $widget_index ], 'wp:search' ) ) {
+			if ( isset( $widget_blocks[ $widget_index ] ) && is_string( $widget_blocks[ $widget_index ] ) && str_contains( $widget_blocks[ $widget_index ], 'wp:search' ) ) {
 				return true;
 			}
 		}
@@ -559,7 +567,7 @@ class Instant_Search extends Classic_Search {
 			return $block_pattern;
 		}
 		$blocks = ( new WP_Block_Parser() )->parse( $block_pattern );
-		if ( 1 === count( $blocks ) && 'core/pattern' === $blocks[0]['blockName'] ) {
+		if ( is_countable( $blocks ) && 1 === count( $blocks ) && 'core/pattern' === $blocks[0]['blockName'] ) {
 			$slug     = $blocks[0]['attrs']['slug'];
 			$registry = WP_Block_Patterns_Registry::get_instance();
 			if ( $registry->is_registered( $slug ) ) {
@@ -610,7 +618,7 @@ class Instant_Search extends Classic_Search {
 	/**
 	 * Append Search block to block if no 'wp:search' exists already.
 	 *
-	 * @param {string} $block_content - the content to append the search block.
+	 * @param string $block_content - the content to append the search block.
 	 */
 	public static function inject_search_widget_to_block( $block_content ) {
 		$search_block = sprintf(
@@ -741,7 +749,7 @@ class Instant_Search extends Classic_Search {
 		if ( ! empty( $enabled_post_types ) ) {
 			$post_types_to_disable = array_diff( $post_types, $enabled_post_types );
 			// better to use `add_option` which wouldn't override option value if exists.
-			add_option( Options::OPTION_PREFIX . 'excluded_post_types', join( ',', $post_types_to_disable ) );
+			add_option( Options::OPTION_PREFIX . 'excluded_post_types', implode( ',', $post_types_to_disable ) );
 		}
 	}
 

@@ -9,15 +9,15 @@
  * Plugin Name:       Jetpack Boost
  * Plugin URI:        https://jetpack.com/boost
  * Description:       Boost your WordPress site's performance, from the creators of Jetpack
- * Version: 1.7.0
+ * Version: 4.3.0
  * Author:            Automattic - Jetpack Site Speed team
  * Author URI:        https://jetpack.com/boost/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       jetpack-boost
  * Domain Path:       /languages
- * Requires at least: 5.5
- * Requires PHP:      7.0
+ * Requires at least: 6.7
+ * Requires PHP:      7.2
  *
  * @package automattic/jetpack-boost
  */
@@ -26,10 +26,10 @@ namespace Automattic\Jetpack_Boost;
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-	die;
+	die( 0 );
 }
 
-define( 'JETPACK_BOOST_VERSION', '1.7.0' );
+define( 'JETPACK_BOOST_VERSION', '4.3.0' );
 define( 'JETPACK_BOOST_SLUG', 'jetpack-boost' );
 
 if ( ! defined( 'JETPACK_BOOST_CLIENT_NAME' ) ) {
@@ -41,6 +41,10 @@ define( 'JETPACK_BOOST_PATH', __FILE__ );
 
 if ( ! defined( 'JETPACK_BOOST_PLUGIN_BASE' ) ) {
 	define( 'JETPACK_BOOST_PLUGIN_BASE', plugin_basename( __FILE__ ) );
+}
+
+if ( ! defined( 'JETPACK_BOOST_PLUGIN_FILENAME' ) ) {
+	define( 'JETPACK_BOOST_PLUGIN_FILENAME', basename( __FILE__ ) );
 }
 
 if ( ! defined( 'JETPACK_BOOST_REST_NAMESPACE' ) ) {
@@ -59,6 +63,7 @@ if ( ! defined( 'JETPACK__WPCOM_JSON_API_BASE' ) ) {
 if ( ! defined( 'JETPACK_BOOST_PLUGINS_DIR_URL' ) ) {
 	define( 'JETPACK_BOOST_PLUGINS_DIR_URL', plugin_dir_url( __FILE__ ) );
 }
+
 /**
  * Setup autoloading
  */
@@ -70,6 +75,7 @@ if ( is_readable( $boost_packages_path ) ) {
 	}
 } else {
 	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		/** @noinspection ForgottenDebugOutputInspection */
 		error_log( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			sprintf(
 			/* translators: Placeholder is a link to a support document. */
@@ -79,38 +85,75 @@ if ( is_readable( $boost_packages_path ) ) {
 		);
 	}
 
+	// Add a red bubble notification to My Jetpack if the installation is bad.
+	add_filter(
+		'my_jetpack_red_bubble_notification_slugs',
+		function ( $slugs ) {
+			$slugs['jetpack-boost-plugin-bad-installation'] = array(
+				'data' => array(
+					'plugin' => 'Jetpack Boost',
+				),
+			);
+
+			return $slugs;
+		}
+	);
+
 	/**
 	 * Outputs an admin notice for folks running Jetpack Boost without having run composer install.
 	 *
 	 * @since 1.2.0
 	 */
 	function jetpack_boost_admin_missing_files() {
-		?>
-		<div class="notice notice-error is-dismissible">
-			<p>
-				<?php
-				printf(
-					wp_kses(
-					/* translators: Placeholder is a link to a support document. */
-						__( 'Your installation of Jetpack Boost is incomplete. If you installed Jetpack Boost from GitHub, please refer to <a href="%1$s" target="_blank" rel="noopener noreferrer">this document</a> to set up your development environment. Jetpack Boost must have Composer dependencies installed and built via the build command.', 'jetpack-boost' ),
-						array(
-							'a' => array(
-								'href'   => array(),
-								'target' => array(),
-								'rel'    => array(),
-							),
-						)
+		if ( get_current_screen()->id !== 'plugins' ) {
+			return;
+		}
+		$message = sprintf(
+			wp_kses(
+				/* translators: Placeholder is a link to a support document. */
+				__( 'Your installation of Jetpack Boost is incomplete. If you installed Jetpack Boost from GitHub, please refer to <a href="%1$s" target="_blank" rel="noopener noreferrer">this document</a> to set up your development environment. Jetpack Boost must have Composer dependencies installed and built via the build command.', 'jetpack-boost' ),
+				array(
+					'a' => array(
+						'href'   => array(),
+						'target' => array(),
+						'rel'    => array(),
 					),
-					'https://github.com/Automattic/jetpack/blob/trunk/docs/development-environment.md#building-your-project'
-				);
-				?>
-			</p>
-		</div>
-		<?php
+				)
+			),
+			'https://github.com/Automattic/jetpack/blob/trunk/docs/development-environment.md#building-your-project'
+		);
+		wp_admin_notice(
+			$message,
+			array(
+				'type'        => 'error',
+				'dismissible' => true,
+			)
+		);
 	}
 
-	add_action( 'admin_notices', 'jetpack_boost_admin_missing_files' );
+	add_action( 'admin_notices', __NAMESPACE__ . '\\jetpack_boost_admin_missing_files' );
 	return;
+}
+
+/**
+ * Setup Minify service.
+ */
+require_once JETPACK_BOOST_DIR_PATH . '/app/lib/minify/loader.php';
+
+// Potential improvement: Make concat URL dir configurable
+// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+if ( isset( $_SERVER['REQUEST_URI'] ) ) {
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+	$request_path = explode( '?', wp_unslash( $_SERVER['REQUEST_URI'] ) )[0];
+
+	// Handling JETPACK_BOOST_STATIC_PREFIX constant inline to avoid loading the minify module until we know we want it.
+	$static_prefix = defined( 'JETPACK_BOOST_STATIC_PREFIX' ) ? JETPACK_BOOST_STATIC_PREFIX : '/_jb_static/';
+	if ( $static_prefix === substr( $request_path, -strlen( $static_prefix ) ) ) {
+		define( 'JETPACK_BOOST_CONCAT_USE_WP', true );
+
+		require_once JETPACK_BOOST_DIR_PATH . '/serve-minified-content.php';
+		exit( 0 );
+	}
 }
 
 require plugin_dir_path( __FILE__ ) . 'app/class-jetpack-boost.php';
@@ -142,12 +185,25 @@ add_action( 'activated_plugin', __NAMESPACE__ . '\jetpack_boost_plugin_activatio
 function jetpack_boost_plugin_activation( $plugin ) {
 	if (
 		JETPACK_BOOST_PLUGIN_BASE === $plugin &&
-		\Automattic\Jetpack\Plugins_Installer::is_current_request_activating_plugin_from_plugins_screen( JETPACK_BOOST_PLUGIN_BASE )
+		( new \Automattic\Jetpack\Paths() )->is_current_request_activating_plugin_from_plugins_screen( JETPACK_BOOST_PLUGIN_BASE )
 	) {
 		wp_safe_redirect( esc_url( admin_url( 'admin.php?page=jetpack-boost' ) ) );
-		exit;
+		exit( 0 );
 	}
 }
+
+/**
+ * Extra tweaks to make Jetpack Boost work better with others, that need to be loaded early.
+ */
+function include_compatibility_files_early() {
+	// Since Page Optimize allows its functionality to be disabled on plugins_loaded (10)
+	// we need to do this earlier.
+	if ( function_exists( 'page_optimize_init' ) ) {
+		require_once __DIR__ . '/compatibility/page-optimize.php';
+	}
+}
+
+add_action( 'plugins_loaded', __NAMESPACE__ . '\include_compatibility_files_early', 1 );
 
 /**
  * Extra tweaks to make Jetpack Boost work better with others.
@@ -165,17 +221,41 @@ function include_compatibility_files() {
 		require_once __DIR__ . '/compatibility/web-stories.php';
 	}
 
-	if ( class_exists( '\Elementor\TemplateLibrary\Source_Local' ) ) {
+	if ( defined( '\Elementor\TemplateLibrary\Source_Local::CPT' ) || defined( '\Elementor\Modules\LandingPages\Module::CPT' ) || defined( '\Elementor\Modules\FloatingButtons\Module::CPT_FLOATING_BUTTONS' ) ) {
 		require_once __DIR__ . '/compatibility/elementor.php';
 	}
 
 	if ( function_exists( 'amp_is_request' ) ) {
-		require_once __DIR__ . '/compatibility/amp.php';
+		require_once __DIR__ . '/compatibility/class-amp.php';
 	}
 
 	if ( function_exists( 'wp_cache_is_enabled' ) ) {
 		require_once __DIR__ . '/compatibility/wp-super-cache.php';
 	}
+
+	if ( class_exists( '\Yoast\WP\SEO\Main' ) ) {
+		require_once __DIR__ . '/compatibility/yoast.php';
+	}
+
+	if ( function_exists( 'aioseo' ) ) {
+		require_once __DIR__ . '/compatibility/aioseo.php';
+	}
+
+	// Exclude Beaver Builder custom post types.
+	if ( class_exists( 'FLBuilderLoader' ) ) {
+		require_once __DIR__ . '/compatibility/beaver-builder.php';
+	}
+
+	// Exclude Breakdance custom post types.
+	if ( defined( 'BREAKDANCE_ALL_EDITABLE_POST_TYPES' ) ) {
+		require_once __DIR__ . '/compatibility/breakdance.php';
+	}
+
+	// Exclude known scripts that causes problem when concatenated.
+	require_once __DIR__ . '/compatibility/js-concatenate.php';
+
+	// Migrate from WP Super Cache
+	require_once __DIR__ . '/compatibility/wp-super-cache-migration.php';
 }
 
 add_action( 'plugins_loaded', __NAMESPACE__ . '\include_compatibility_files' );
@@ -190,6 +270,6 @@ function jetpack_boost_uninstall() {
 }
 
 /**
- * Previous version compatibility files
+ * Initialize Data Sync
  */
-require_once __DIR__ . '/compatibility/boost-1.3.1.php';
+require_once __DIR__ . '/wp-js-data-sync.php';

@@ -121,7 +121,7 @@ class Classic_Search {
 	/**
 	 * Performs setup tasks for the singleton. To be used exclusively after singleton instantitaion.
 	 *
-	 * @param string $blog_id Blog id.
+	 * @param string|int $blog_id Blog id.
 	 */
 	public function setup( $blog_id ) {
 		if ( ! $blog_id ) {
@@ -389,6 +389,9 @@ class Classic_Search {
 		}
 
 		$response = json_decode( wp_remote_retrieve_body( $request ), true );
+		if ( isset( $response['swap_classic_to_inline_search'] ) && $response['swap_classic_to_inline_search'] === true ) {
+			update_option( Module_Control::SEARCH_MODULE_SWAP_CLASSIC_TO_INLINE_OPTION_KEY, true );
+		}
 
 		$took = is_array( $response ) && ! empty( $response['took'] )
 			? $response['took']
@@ -474,6 +477,9 @@ class Classic_Search {
 		}
 
 		// If no results, nothing to do.
+		if ( ! is_countable( $this->search_result['results']['hits'] ) ) {
+			return array();
+		}
 		if ( ! count( $this->search_result['results']['hits'] ) ) {
 			return array();
 		}
@@ -1216,8 +1222,8 @@ class Classic_Search {
 	 *
 	 * @since 5.0.0
 	 *
-	 * @param array                                        $aggregations Array of aggregations (filters) to add to the query builder.
-	 * @param Automattic\Jetpack\Search\WPES\Query_Builder $builder      The builder instance that is creating the Elasticsearch query.
+	 * @param array                                         $aggregations Array of aggregations (filters) to add to the query builder.
+	 * @param \Automattic\Jetpack\Search\WPES\Query_Builder $builder      The builder instance that is creating the Elasticsearch query.
 	 */
 	public function add_aggregations_to_es_query_builder( array $aggregations, $builder ) {
 		foreach ( $aggregations as $label => $aggregation ) {
@@ -1253,9 +1259,9 @@ class Classic_Search {
 	 *
 	 * @since 5.0.0
 	 *
-	 * @param array                                        $aggregation The aggregation to add to the query builder.
-	 * @param string                                       $label       The 'label' (unique id) for this aggregation.
-	 * @param Automattic\Jetpack\Search\WPES\Query_Builder $builder     The builder instance that is creating the Elasticsearch query.
+	 * @param array                                         $aggregation The aggregation to add to the query builder.
+	 * @param string                                        $label       The 'label' (unique id) for this aggregation.
+	 * @param \Automattic\Jetpack\Search\WPES\Query_Builder $builder     The builder instance that is creating the Elasticsearch query.
 	 */
 	public function add_taxonomy_aggregation_to_es_query_builder( array $aggregation, $label, $builder ) {
 		$field = null;
@@ -1290,9 +1296,9 @@ class Classic_Search {
 	 *
 	 * @since 5.0.0
 	 *
-	 * @param array                                        $aggregation The aggregation to add to the query builder.
-	 * @param string                                       $label       The 'label' (unique id) for this aggregation.
-	 * @param Automattic\Jetpack\Search\WPES\Query_Builder $builder     The builder instance that is creating the Elasticsearch query.
+	 * @param array                                         $aggregation The aggregation to add to the query builder.
+	 * @param string                                        $label       The 'label' (unique id) for this aggregation.
+	 * @param \Automattic\Jetpack\Search\WPES\Query_Builder $builder     The builder instance that is creating the Elasticsearch query.
 	 */
 	public function add_post_type_aggregation_to_es_query_builder( array $aggregation, $label, $builder ) {
 		$builder->add_aggs(
@@ -1311,9 +1317,9 @@ class Classic_Search {
 	 *
 	 * @since 0.20.0
 	 *
-	 * @param array                                        $aggregation The aggregation to add to the query builder.
-	 * @param string                                       $label       The 'label' (unique id) for this aggregation.
-	 * @param Automattic\Jetpack\Search\WPES\Query_Builder $builder     The builder instance that is creating the Elasticsearch query.
+	 * @param array                                         $aggregation The aggregation to add to the query builder.
+	 * @param string                                        $label       The 'label' (unique id) for this aggregation.
+	 * @param \Automattic\Jetpack\Search\WPES\Query_Builder $builder     The builder instance that is creating the Elasticsearch query.
 	 */
 	public function add_author_aggregation_to_es_query_builder( array $aggregation, $label, $builder ) {
 		$builder->add_aggs(
@@ -1332,9 +1338,9 @@ class Classic_Search {
 	 *
 	 * @since 5.0.0
 	 *
-	 * @param array                                        $aggregation The aggregation to add to the query builder.
-	 * @param string                                       $label       The 'label' (unique id) for this aggregation.
-	 * @param Automattic\Jetpack\Search\WPES\Query_Builder $builder     The builder instance that is creating the Elasticsearch query.
+	 * @param array                                         $aggregation The aggregation to add to the query builder.
+	 * @param string                                        $label       The 'label' (unique id) for this aggregation.
+	 * @param \Automattic\Jetpack\Search\WPES\Query_Builder $builder     The builder instance that is creating the Elasticsearch query.
 	 */
 	public function add_date_histogram_aggregation_to_es_query_builder( array $aggregation, $label, $builder ) {
 		$args = array(
@@ -1369,7 +1375,7 @@ class Classic_Search {
 	 * @return array The resulting merged filters.
 	 */
 	public static function and_es_filters( array $curr_filter, array $filters ) {
-		if ( ! is_array( $curr_filter ) || isset( $curr_filter['match_all'] ) ) {
+		if ( isset( $curr_filter['match_all'] ) ) {
 			if ( 1 === count( $filters ) ) {
 				return $filters[0];
 			}
@@ -1401,7 +1407,7 @@ class Classic_Search {
 	 * @param array $aggregations Array of filters (aggregations) to apply to the search.
 	 */
 	public function set_filters( array $aggregations ) {
-		foreach ( (array) $aggregations as $key => $agg ) {
+		foreach ( $aggregations as $key => $agg ) {
 			if ( empty( $agg['name'] ) ) {
 				$aggregations[ $key ]['name'] = $key;
 			}
@@ -1445,7 +1451,7 @@ class Classic_Search {
 	 *
 	 * @return array Array of filters applied and info about them.
 	 */
-	public function get_filters( WP_Query $query = null ) {
+	public function get_filters( ?WP_Query $query = null ) {
 		if ( ! $query instanceof WP_Query ) {
 			global $wp_query;
 
@@ -1867,7 +1873,7 @@ class Classic_Search {
 		$changed = false;
 
 		foreach ( $sidebars_widgets as $sidebar => $widgets ) {
-			if ( 'wp_inactive_widgets' === $sidebar || 'orphaned_widgets' === substr( $sidebar, 0, 16 ) ) {
+			if ( 'wp_inactive_widgets' === $sidebar || str_starts_with( $sidebar, 'orphaned_widgets' ) ) {
 				continue;
 			}
 

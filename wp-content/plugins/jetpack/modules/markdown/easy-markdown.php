@@ -33,6 +33,10 @@
  * **********************************************************************
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * WPCom_Markdown class.
  */
@@ -75,6 +79,13 @@ class WPCom_Markdown {
 	);
 
 	/**
+	 * Whether or not kses filters were removed. Only set if removal was attempted.
+	 *
+	 * @var ?bool
+	 */
+	public $kses;
+
+	/**
 	 * Yay singletons!
 	 *
 	 * @return object WPCom_Markdown instance
@@ -93,6 +104,7 @@ class WPCom_Markdown {
 		$this->add_default_post_type_support();
 		$this->maybe_load_actions_and_filters();
 		if ( defined( 'REST_API_REQUEST' ) && REST_API_REQUEST ) {
+			// phpcs:ignore WPCUT.SwitchBlog.SwitchBlog -- wpcom flags **every** use of switch_blog, apparently expecting valid instances to ignore or suppress the sniff.
 			add_action( 'switch_blog', array( $this, 'maybe_load_actions_and_filters' ), 10, 2 );
 		}
 		add_action( 'admin_init', array( $this, 'register_setting' ) );
@@ -170,10 +182,10 @@ class WPCom_Markdown {
 		remove_filter( 'wp_kses_allowed_html', array( $this, 'wp_kses_allowed_html' ) );
 		remove_action( 'after_wp_tiny_mce', array( $this, 'after_wp_tiny_mce' ) );
 		remove_action( 'wp_insert_post', array( $this, 'wp_insert_post' ) );
-		remove_filter( 'wp_insert_post_data', array( $this, 'wp_insert_post_data' ), 10, 2 );
-		remove_filter( 'edit_post_content', array( $this, 'edit_post_content' ), 10, 2 );
-		remove_filter( 'edit_post_content_filtered', array( $this, 'edit_post_content_filtered' ), 10, 2 );
-		remove_action( 'wp_restore_post_revision', array( $this, 'wp_restore_post_revision' ), 10, 2 );
+		remove_filter( 'wp_insert_post_data', array( $this, 'wp_insert_post_data' ), 10 );
+		remove_filter( 'edit_post_content', array( $this, 'edit_post_content' ), 10 );
+		remove_filter( 'edit_post_content_filtered', array( $this, 'edit_post_content_filtered' ), 10 );
+		remove_action( 'wp_restore_post_revision', array( $this, 'wp_restore_post_revision' ), 10 );
 		remove_filter( '_wp_post_revision_fields', array( $this, 'wp_post_revision_fields' ) );
 		remove_action( 'xmlrpc_call', array( $this, 'xmlrpc_actions' ) );
 		remove_filter( 'content_save_pre', array( $this, 'preserve_code_blocks' ), 1 );
@@ -305,7 +317,7 @@ class WPCom_Markdown {
 			esc_attr( self::POST_OPTION ),
 			checked( $this->is_posting_enabled(), true, false ),
 			esc_html__( 'Use Markdown for posts and pages.', 'jetpack' ),
-			sprintf( '<a href="%s">%s</a>', esc_url( $this->get_support_url() ), esc_html__( 'Learn more about Markdown.', 'jetpack' ) )
+			sprintf( '<a href="%s" data-target="wpcom-help-center">%s</a>', esc_url( $this->get_support_url() ), esc_html__( 'Learn more about Markdown.', 'jetpack' ) )
 		);
 	}
 
@@ -318,7 +330,7 @@ class WPCom_Markdown {
 			esc_attr( self::COMMENT_OPTION ),
 			checked( $this->is_commenting_enabled(), true, false ),
 			esc_html__( 'Use Markdown for comments.', 'jetpack' ),
-			sprintf( '<a href="%s">%s</a>', esc_url( $this->get_support_url() ), esc_html__( 'Learn more about Markdown.', 'jetpack' ) )
+			sprintf( '<a href="%s" data-target="wpcom-help-center">%s</a>', esc_url( $this->get_support_url() ), esc_html__( 'Learn more about Markdown.', 'jetpack' ) )
 		);
 	}
 
@@ -480,6 +492,12 @@ class WPCom_Markdown {
 
 		$re = '/' . $this->get_parser()->contain_span_tags_re . '/';
 		foreach ( $tags as $tag => $attributes ) {
+
+			// In case other filters have changed the value to a non-array, we skip it.
+			if ( ! is_array( $attributes ) ) {
+				continue;
+			}
+
 			if ( preg_match( $re, $tag ) ) {
 				$attributes['markdown'] = true;
 				$tags[ $tag ]           = $attributes;
@@ -537,7 +555,7 @@ jQuery( function() {
 		// rejigger post_content and post_content_filtered
 		// revisions are already in the right place, except when we're restoring, but that's taken care of elsewhere
 		// also prevent quick edit feature from overriding already-saved markdown (issue https://github.com/Automattic/jetpack/issues/636).
-		if ( 'revision' !== $post_data['post_type'] && ! isset( $_POST['_inline_edit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing 
+		if ( 'revision' !== $post_data['post_type'] && ! isset( $_POST['_inline_edit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			/**
 			 * Filter the original post content passed to Markdown.
 			 *
@@ -551,7 +569,7 @@ jQuery( function() {
 			$post_data['post_content']          = $this->transform( $post_data['post_content'], array( 'id' => $post_id ) );
 			/** This filter is already documented in core/wp-includes/default-filters.php */
 			$post_data['post_content'] = apply_filters( 'content_save_pre', $post_data['post_content'] );
-		} elseif ( 0 === strpos( $post_data['post_name'], $post_data['post_parent'] . '-autosave' ) ) {
+		} elseif ( str_starts_with( $post_data['post_name'], $post_data['post_parent'] . '-autosave' ) ) {
 			// autosaves for previews are weird.
 			/** This filter is already documented in modules/markdown/easy-markdown.php */
 			$post_data['post_content_filtered'] = apply_filters( 'wpcom_untransformed_content', $post_data['post_content'] );
@@ -660,7 +678,7 @@ jQuery( function() {
 		 * @param string $text Content to be run through Markdown
 		 * @param array $args Array of Markdown options.
 		 */
-		$text = apply_filters( 'wpcom_markdown_transform_pre', $text, $args );
+		$text = apply_filters( 'wpcom_markdown_transform_pre', $text, $args ) ?? '';
 		// ensure our paragraphs are separated.
 		$text = str_replace( array( '</p><p>', "</p>\n<p>" ), "</p>\n\n<p>", $text );
 		// visual editor likes to add <p>s. Buh-bye.
@@ -773,15 +791,15 @@ jQuery( function() {
 	 */
 	protected function check_for_early_methods() {
 		$raw_post_data = file_get_contents( 'php://input' );
-		if ( false === strpos( $raw_post_data, 'metaWeblog.getPost' )
-			&& false === strpos( $raw_post_data, 'wp.getPage' ) ) {
+		if ( ! str_contains( $raw_post_data, 'metaWeblog.getPost' )
+			&& ! str_contains( $raw_post_data, 'wp.getPage' ) ) {
 			return;
 		}
 		include_once ABSPATH . WPINC . '/class-IXR.php';
 		$message = new IXR_Message( $raw_post_data );
 		$message->parse();
 		$post_id_position = 'metaWeblog.getPost' === $message->methodName ? 0 : 1; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-		$this->prime_post_cache( $message->params[ $post_id_position ] );
+		$this->prime_post_cache( $message->params[ $post_id_position ] ?? false );
 	}
 
 	/**
@@ -793,7 +811,11 @@ jQuery( function() {
 	private function prime_post_cache( $post_id = false ) {
 		global $wp_xmlrpc_server;
 		if ( ! $post_id ) {
-			$post_id = $wp_xmlrpc_server->message->params[3];
+			if ( isset( $wp_xmlrpc_server->message->params[3] ) ) {
+				$post_id = $wp_xmlrpc_server->message->params[3];
+			} else {
+				return; // Exit early if we can't get a valid post_id
+			}
 		}
 
 		// prime the post cache.

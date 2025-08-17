@@ -3,6 +3,11 @@
  * Endpoints: /sites/%s/comments/status
  *            /sites/%s/comments/delete
  */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Bulk_Update_Comments_Endpoint(
 	array(
 		'description'          => 'Update multiple comment\'s status.',
@@ -68,6 +73,8 @@ new WPCOM_JSON_API_Bulk_Update_Comments_Endpoint(
 
 /**
  * Bulk update comments endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Bulk_Update_Comments_Endpoint extends WPCOM_JSON_API_Endpoint {
 	/**
@@ -224,7 +231,7 @@ class WPCOM_JSON_API_Bulk_Update_Comments_Endpoint extends WPCOM_JSON_API_Endpoi
 		$delete_time = gmdate( 'Y-m-d H:i:s' );
 		$comment_ids = $wpdb->get_col( $wpdb->prepare( "SELECT comment_ID FROM $wpdb->comments WHERE comment_approved = %s AND %s > comment_date_gmt", $status, $delete_time ) );
 
-		if ( count( $comment_ids ) < 1 ) {
+		if ( ! is_countable( $comment_ids ) || array() === $comment_ids ) {
 			return array();
 		}
 

@@ -1,7 +1,7 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
  * Module Name: Jetpack Social
- * Module Description: Jetpack Social makes it easy to share your site’s posts on several social media networks automatically when you publish a new post.
+ * Module Description: Auto‑share your posts to social networks and track engagement in one place.
  * Sort Order: 10
  * Recommendation Order: 7
  * First Introduced: 2.0
@@ -10,41 +10,29 @@
  * Auto Activate: No
  * Module Tags: Social, Recommended
  * Feature: Engagement
- * Additional Search Queries: facebook, jetpack publicize, twitter, tumblr, linkedin, social, tweet, connections, sharing, social media, automated, automated sharing, auto publish, auto tweet and like, auto tweet, facebook auto post, facebook posting
+ * Additional Search Queries: facebook, bluesky, threads, mastodon, instagram, jetpack publicize, tumblr, linkedin, social, tweet, connections, sharing, social media, automated, automated sharing, auto publish, auto tweet and like, auto tweet, facebook auto post, facebook posting
  *
  * @package automattic/jetpack
  */
 
 // phpcs:disable Universal.Files.SeparateFunctionsFromOO.Mixed -- TODO: Move classes to appropriately-named class files.
 
+use Automattic\Jetpack\Status\Host;
+
 /**
  * Class Jetpack_Publicize
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_Publicize {
-
-	/**
-	 * If Publicize is executing within Jetpack.
-	 *
-	 * @var bool
-	 */
-	public $in_jetpack = true;
-
 	/**
 	 * Jetpack_Publicize constructor.
 	 */
 	public function __construct() {
 		global $publicize_ui;
 
-		$this->modules    = new Automattic\Jetpack\Modules();
-		$this->in_jetpack = ( class_exists( 'Jetpack' ) && method_exists( 'Jetpack', 'enable_module_configurable' ) ) ? true : false;
-
-		if ( $this->in_jetpack ) {
+		if ( ! ( new Host() )->is_wpcom_simple() ) {
 			Jetpack::enable_module_configurable( __FILE__ );
-
-			// if sharedaddy isn't active, the sharing menu hasn't been added yet.
-			if ( $this->modules->is_active( 'publicize' ) && ! $this->modules->is_active( 'sharedaddy' ) ) {
-				add_action( 'admin_menu', array( &$publicize_ui, 'sharing_menu' ) );
-			}
 
 			/*
 			 * The Publicize Options array does not currently have UI since it is being added
@@ -83,22 +71,9 @@ class Jetpack_Publicize {
 			global $publicize;
 			require_once WP_CONTENT_DIR . '/mu-plugins/keyring/keyring.php';
 			require_once WP_CONTENT_DIR . '/admin-plugins/publicize/publicize-wpcom.php';
-			$publicize    = new Publicize();
+			$publicize    = new \Publicize();
 			$publicize_ui = new Automattic\Jetpack\Publicize\Publicize_UI();
 		}
-
-		add_action(
-			'jetpack_register_gutenberg_extensions',
-			function () {
-				global $publicize;
-				if ( $publicize->current_user_can_access_publicize_data() ) {
-					Jetpack_Gutenberg::set_extension_available( 'jetpack/publicize' );
-				} else {
-					Jetpack_Gutenberg::set_extension_unavailable( 'jetpack/publicize', 'unauthorized' );
-				}
-			}
-		);
-		$publicize_ui->in_jetpack = $this->in_jetpack;
 	}
 }
 
@@ -109,7 +84,7 @@ if ( ! ( defined( 'IS_WPCOM' ) && IS_WPCOM ) ) {
 	// None of this should be the case, but we can get here with a broken user connection. If that's the case
 	// then we want to stop loading any more of the module code.
 	if (
-		! ( new Automattic\Jetpack\Modules() )->is_active( 'publicize' )
+		! Jetpack::is_module_active( 'publicize' )
 		|| ! Jetpack::connection()->has_connected_user()
 		|| ! $publicize
 	) {
@@ -125,7 +100,7 @@ if ( ! ( defined( 'IS_WPCOM' ) && IS_WPCOM ) ) {
 		 * set up that you might need to do if you want to use it on the front end.
 		 * Just call this function and it returns a Publicize object.
 		 *
-		 * @return Publicize Object
+		 * @return \Automattic\Jetpack\Publicize\Publicize|\Publicize Object
 		 */
 		function publicize_init() {
 			global $publicize;

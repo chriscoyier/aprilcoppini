@@ -64,7 +64,7 @@ class Plan {
 	/**
 	 * Get plan info.
 	 *
-	 * @param {bool} $force_refresh - Default to false. Set true to load from WPCOM.
+	 * @param bool $force_refresh - Default to false. Set true to load from WPCOM.
 	 */
 	public function get_plan_info( $force_refresh = false ) {
 		if ( $force_refresh ) {
@@ -91,7 +91,7 @@ class Plan {
 	 */
 	public function supports_instant_search() {
 		$plan_info = $this->get_plan_info();
-		return ( isset( $plan_info['supports_instant_search'] ) && $plan_info['supports_instant_search'] ) || $this->has_jetpack_search_product();
+		return ( isset( $plan_info['supports_instant_search'] ) && $plan_info['supports_instant_search'] );
 	}
 
 	/**
@@ -99,7 +99,7 @@ class Plan {
 	 */
 	public function supports_search() {
 		$plan_info = $this->get_plan_info();
-		return ( isset( $plan_info['supports_search'] ) && $plan_info['supports_search'] ) || $this->has_jetpack_search_product();
+		return ( isset( $plan_info['supports_search'] ) && $plan_info['supports_search'] );
 	}
 
 	/**
@@ -159,6 +159,9 @@ class Plan {
 	 * @param array $plan_info - the decoded plan info array.
 	 */
 	public function set_plan_options( $plan_info ) {
+		if ( isset( $plan_info['swap_classic_to_inline_search'] ) && is_bool( $plan_info['swap_classic_to_inline_search'] ) ) {
+			update_option( Module_Control::SEARCH_MODULE_SWAP_CLASSIC_TO_INLINE_OPTION_KEY, (bool) $plan_info['swap_classic_to_inline_search'] );
+		}
 		if ( ! isset( $plan_info['supports_instant_search'] ) ) {
 			return false;
 		}
@@ -174,5 +177,4 @@ class Plan {
 		update_option( self::JETPACK_SEARCH_PLAN_INFO_OPTION_KEY, $plan_info );
 		return true;
 	}
-
 }

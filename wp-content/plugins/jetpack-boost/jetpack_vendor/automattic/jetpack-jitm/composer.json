@@ -4,19 +4,23 @@
 	"type": "jetpack-library",
 	"license": "GPL-2.0-or-later",
 	"require": {
-		"automattic/jetpack-a8c-mc-stats": "^1.4.18",
-		"automattic/jetpack-assets": "^1.17.29",
-		"automattic/jetpack-connection": "^1.49.0",
-		"automattic/jetpack-device-detection": "^1.4.23",
-		"automattic/jetpack-logo": "^1.5.20",
-		"automattic/jetpack-partner": "^1.7.21",
-		"automattic/jetpack-redirect": "^1.7.23",
-		"automattic/jetpack-status": "^1.15.4"
+		"php": ">=7.2",
+		"automattic/jetpack-a8c-mc-stats": "^3.0.5",
+		"automattic/jetpack-assets": "^4.3.2",
+		"automattic/jetpack-connection": "^6.17.0",
+		"automattic/jetpack-device-detection": "^3.0.9",
+		"automattic/jetpack-logo": "^3.0.5",
+		"automattic/jetpack-redirect": "^3.0.8",
+		"automattic/jetpack-status": "^6.0.1"
 	},
 	"require-dev": {
-		"brain/monkey": "2.6.1",
-		"yoast/phpunit-polyfills": "1.0.4",
-		"automattic/jetpack-changelogger": "^3.3.1"
+		"brain/monkey": "^2.6.2",
+		"yoast/phpunit-polyfills": "^4.0.0",
+		"automattic/jetpack-changelogger": "^6.0.5",
+		"automattic/phpunit-select-config": "^1.0.3"
+	},
+	"suggest": {
+		"automattic/jetpack-autoloader": "Allow for better interoperability with other plugins that use this package."
 	},
 	"autoload": {
 		"classmap": [
@@ -31,13 +35,17 @@
 			"pnpm run build"
 		],
 		"phpunit": [
-			"./vendor/phpunit/phpunit/phpunit --colors=always"
+			"phpunit-select-config phpunit.#.xml.dist --colors=always"
 		],
 		"test-coverage": [
-			"php -dpcov.directory=. ./vendor/bin/phpunit --coverage-clover \"$COVERAGE_DIR/clover.xml\""
+			"php -dpcov.directory=. ./vendor/bin/phpunit-select-config phpunit.#.xml.dist --coverage-php \"$COVERAGE_DIR/php.cov\""
 		],
 		"test-php": [
 			"@composer phpunit"
+		],
+		"watch": [
+			"Composer\\Config::disableProcessTimeout",
+			"pnpm run watch"
 		]
 	},
 	"minimum-stability": "dev",
@@ -53,7 +61,7 @@
 			"link-template": "https://github.com/Automattic/jetpack-jitm/compare/v${old}...v${new}"
 		},
 		"branch-alias": {
-			"dev-trunk": "2.2.x-dev"
+			"dev-trunk": "4.3.x-dev"
 		}
 	}
 }

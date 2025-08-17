@@ -7,6 +7,7 @@
 
 namespace Automattic\Jetpack\Sync\Modules;
 
+use Automattic\Jetpack\Sync\Defaults;
 use Automattic\Jetpack\Sync\Functions;
 use Automattic\Jetpack\Sync\Listener;
 use Automattic\Jetpack\Sync\Replicastore;
@@ -29,6 +30,35 @@ abstract class Module {
 	const ARRAY_CHUNK_SIZE = 10;
 
 	/**
+	 * Max query length for DB queries.
+	 *
+	 * @access public
+	 *
+	 * @var int
+	 */
+	const MAX_DB_QUERY_LENGTH = 15 * 1024;
+
+	/**
+	 * Max bytes allowed for full sync upload for the module.
+	 * Default Setting : 7MB.
+	 *
+	 * @access public
+	 *
+	 * @var int
+	 */
+	const MAX_SIZE_FULL_SYNC = 7000000;
+
+	/**
+	 * Max bytes allowed for post meta_value => length.
+	 * Default Setting : 2MB.
+	 *
+	 * @access public
+	 *
+	 * @var int
+	 */
+	const MAX_META_LENGTH = 2000000;
+
+	/**
 	 * Sync module name.
 	 *
 	 * @access public
@@ -49,14 +79,38 @@ abstract class Module {
 	}
 
 	/**
-	 * The table in the database.
+	 * The table name.
+	 *
+	 * @access public
+	 *
+	 * @return string|bool
+	 * @deprecated since 3.11.0 Use table() instead.
+	 */
+	public function table_name() {
+		_deprecated_function( __METHOD__, '3.11.0', 'Automattic\\Jetpack\\Sync\\Module->table' );
+		return false;
+	}
+
+	/**
+	 * The table in the database with the prefix.
 	 *
 	 * @access public
 	 *
 	 * @return string|bool
 	 */
-	public function table_name() {
+	public function table() {
 		return false;
+	}
+
+	/**
+	 * The full sync action name for this module.
+	 *
+	 * @access public
+	 *
+	 * @return string
+	 */
+	public function full_sync_action_name() {
+		return 'jetpack_full_sync_' . $this->name();
 	}
 
 	// phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
@@ -250,7 +304,7 @@ abstract class Module {
 		$listener              = Listener::get_instance();
 
 		// Count down from max_id to min_id so we get newest posts/comments/etc first.
-		// phpcs:ignore WordPress.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		while ( $ids = $wpdb->get_col( "SELECT {$id_field} FROM {$table_name} WHERE {$where_sql} AND {$id_field} < {$previous_interval_end} ORDER BY {$id_field} DESC LIMIT {$items_per_page}" ) ) {
 			// Request posts in groups of N for efficiency.
 			$chunked_ids = array_chunk( $ids, self::ARRAY_CHUNK_SIZE );
@@ -293,19 +347,41 @@ abstract class Module {
 	 * @return array|object|null
 	 */
 	public function get_next_chunk( $config, $status, $chunk_size ) {
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
 		global $wpdb;
 		return $wpdb->get_col(
-			<<<SQL
-SELECT {$this->id_field()}
-FROM {$wpdb->{$this->table_name()}}
-WHERE {$this->get_where_sql( $config )}
-AND {$this->id_field()} < {$status['last_sent']}
-ORDER BY {$this->id_field()}
-DESC LIMIT {$chunk_size}
-SQL
+			"
+			SELECT {$this->id_field()}
+			FROM {$this->table()}
+			WHERE {$this->get_where_sql( $config )}
+			AND {$this->id_field()} < {$status['last_sent']}
+			ORDER BY {$this->id_field()}
+			DESC LIMIT {$chunk_size}
+			"
 		);
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+	}
+
+	/**
+	 * Return last_item to send for Module Full Sync Configuration.
+	 *
+	 * @param array $config This module Full Sync configuration.
+	 *
+	 * @return array|object|null
+	 */
+	public function get_last_item( $config ) {
+		global $wpdb;
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		return $wpdb->get_var(
+			"
+			SELECT {$this->id_field()}
+			FROM {$this->table()}
+			WHERE {$this->get_where_sql( $config )}
+			ORDER BY {$this->id_field()}
+			LIMIT 1
+			"
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery
 	}
 
 	/**
@@ -325,40 +401,135 @@ SQL
 	 * @param string $config Full sync configuration for this module.
 	 * @param array  $status the current module full sync status.
 	 * @param float  $send_until timestamp until we want this request to send full sync events.
+	 * @param int    $started The timestamp when the full sync started.
 	 *
 	 * @return array Status, the module full sync status updated.
 	 */
-	public function send_full_sync_actions( $config, $status, $send_until ) {
+	public function send_full_sync_actions( $config, $status, $send_until, $started ) {
 		global $wpdb;
 
 		if ( empty( $status['last_sent'] ) ) {
 			$status['last_sent'] = $this->get_initial_last_sent();
 		}
 
-		$limits = Settings::get_setting( 'full_sync_limits' )[ $this->name() ];
+		$limits               = Settings::get_setting( 'full_sync_limits' )[ $this->name() ] ??
+			Defaults::get_default_setting( 'full_sync_limits' )[ $this->name() ] ??
+			array(
+				'max_chunks' => 10,
+				'chunk_size' => 100,
+			);
+		$limits['chunk_size'] = $this->adjust_chunk_size_if_stuck( $status['last_sent'], $limits['chunk_size'], $started );
 
 		$chunks_sent = 0;
-		// phpcs:ignore WordPress.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition
-		while ( $objects = $this->get_next_chunk( $config, $status, $limits['chunk_size'] ) ) {
-			if ( $chunks_sent++ === $limits['max_chunks'] || microtime( true ) >= $send_until ) {
-				return $status;
-			}
 
-			$result = $this->send_action( 'jetpack_full_sync_' . $this->name(), array( $objects, $status['last_sent'] ) );
+		$last_item = $this->get_last_item( $config );
 
-			if ( is_wp_error( $result ) || $wpdb->last_error ) {
+		while ( $chunks_sent < $limits['max_chunks'] && microtime( true ) < $send_until ) {
+			$objects = $this->get_next_chunk( $config, $status, $limits['chunk_size'] );
+
+			if ( $wpdb->last_error ) {
 				$status['error'] = true;
 				return $status;
 			}
-			// The $ids are ordered in descending order.
-			$status['last_sent'] = end( $objects );
-			$status['sent']     += count( $objects );
+
+			if ( empty( $objects ) ) {
+				$status['finished'] = true;
+				return $status;
+			}
+			// If we have objects as a key it means get_next_chunk is being overridden, we need to check for it being an empty array.
+			// In case it is an empty array, we should not send the action or increase the chunks_sent, we just need to update the status.
+			if ( ! isset( $objects['objects'] ) || array() !== $objects['objects'] ) {
+				$key    = $this->full_sync_action_name() . '_' . crc32( wp_json_encode( $status['last_sent'] ) );
+				$result = $this->send_action( $this->full_sync_action_name(), array( $objects, $status['last_sent'] ), $key );
+				if ( is_wp_error( $result ) || $wpdb->last_error ) {
+					$status['error'] = true;
+					return $status;
+				}
+				++$chunks_sent;
+			}
+
+			// Updated the sent and last_sent status.
+			$status = $this->set_send_full_sync_actions_status( $status, $objects );
+			if ( $last_item === $status['last_sent'] ) {
+				$status['finished'] = true;
+				return $status;
+			}
 		}
 
-		if ( ! $wpdb->last_error ) {
-			$status['finished'] = true;
+		return $status;
+	}
+
+	/**
+	 * Adjust chunk size using adaptive logic and update transient for tracking stuck state.
+	 *
+	 * @param string $last_sent The current last_sent marker.
+	 * @param int    $default_chunk_size The default chunk size.
+	 * @param int    $started The timestamp when the full sync started.
+	 * @return int Adjusted chunk size.
+	 */
+	private function adjust_chunk_size_if_stuck( $last_sent, $default_chunk_size, $started ) {
+		$transient_key       = 'jetpack_sync_last_sent_' . $this->name() . '_' . $started;
+		$stuck_data          = get_transient( $transient_key );
+		$stuck_count         = 0;
+		$adjusted_chunk_size = $default_chunk_size;
+		$is_stuck            = isset( $stuck_data['last_sent'] ) && $stuck_data['last_sent'] === $last_sent;
+		if ( $is_stuck && $stuck_data['adjusted_chunk_size'] === 1 ) {
+			return 1; // If we are already at the minimum chunk size, do not adjust further.
 		}
 
+		// We will adjust if it is stuck after 10 minutes.
+		if (
+			$is_stuck &&
+			( time() - $stuck_data['timestamp'] ) >= 10 * MINUTE_IN_SECONDS
+		) {
+			$stuck_count         = ++$stuck_data['stuck_count'];
+			$adjusted_chunk_size = max( 1, (int) ( $default_chunk_size / ( 2 ** $stuck_count ) ) ); // Halve the chunk size for each stuck iteration.
+			// If we are stuck, we will send an action to notify about the adjustment.
+			$this->send_action(
+				'jetpack_full_sync_stuck_adjustment',
+				array(
+					'module'              => $this->name(),
+					'last_sent'           => $last_sent,
+					'stuck_count'         => $stuck_count,
+					'adjusted_chunk_size' => $adjusted_chunk_size,
+				)
+			);
+		}
+
+		// Set or update the transient with the new last_sent, timestamp, and stuck_count.
+		// If we are not stuck, reset the timestamp and stuck_count.
+		set_transient(
+			$transient_key,
+			array(
+				'last_sent'           => $last_sent,
+				'timestamp'           => $is_stuck ? $stuck_data['timestamp'] : time(),
+				'stuck_count'         => $stuck_count,
+				'adjusted_chunk_size' => $adjusted_chunk_size,
+			),
+			HOUR_IN_SECONDS
+		);
+
+		return $adjusted_chunk_size;
+	}
+
+	/**
+	 * Set the status of the full sync action based on the objects that were sent.
+	 * Used to update the status of the module after sending a chunk of objects.
+	 * Since Full Sync logic chunking relies on order of items being processed in descending order, we need to sort
+	 * due to some modules (e.g. WooCommerce) changing the order while getting the objects.
+	 *
+	 * @access protected
+	 *
+	 * @param array $status This module Full Sync status.
+	 * @param array $objects This module Full Sync objects.
+	 *
+	 * @return array The updated status.
+	 */
+	protected function set_send_full_sync_actions_status( $status, $objects ) {
+
+		$object_ids          = $objects['object_ids'] ?? $objects;
+		$status['last_sent'] = end( $object_ids );
+		$status['sent']     += count( $object_ids );
 		return $status;
 	}
 
@@ -367,10 +538,11 @@ SQL
 	 *
 	 * @param string $action_name The action.
 	 * @param array  $data The data associated with the action.
+	 * @param string $key The key to use for the action.
 	 */
-	public function send_action( $action_name, $data = null ) {
+	public function send_action( $action_name, $data = null, $key = null ) {
 		$sender = Sender::get_instance();
-		return $sender->send_action( $action_name, $data );
+		return $sender->send_action( $action_name, $data, $key );
 	}
 
 	/**
@@ -525,14 +697,13 @@ SQL
 	 * @return array|bool An array of min and max ids for each batch. FALSE if no table can be found.
 	 */
 	public function get_min_max_object_ids_for_batches( $batch_size, $where_sql = false ) {
-		global $wpdb;
 
-		if ( ! $this->table_name() ) {
+		if ( ! $this->table() ) {
 			return false;
 		}
 
 		$results      = array();
-		$table        = $wpdb->{$this->table_name()};
+		$table        = $this->table();
 		$current_max  = 0;
 		$current_min  = 1;
 		$id_field     = $this->id_field();
@@ -582,11 +753,11 @@ SQL
 	 */
 	public function total( $config ) {
 		global $wpdb;
-		$table = $wpdb->{$this->table_name()};
+		$table = $this->table();
 		$where = $this->get_where_sql( $config );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return $wpdb->get_var( "SELECT COUNT(*) FROM $table WHERE $where" );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM $table WHERE $where" );
 	}
 
 	/**
@@ -601,4 +772,64 @@ SQL
 		return '1=1';
 	}
 
+	/**
+	 * Filters objects and metadata based on maximum size constraints.
+	 * It always allows the first object with its metadata, even if they exceed the limit.
+	 *
+	 * @access public
+	 *
+	 * @param string $type The type of objects to filter (e.g., 'post' or 'comment').
+	 * @param array  $objects The array of objects to filter (e.g., posts or comments).
+	 * @param array  $metadata The array of metadata to filter.
+	 * @param int    $max_meta_size Maximum size for individual objects.
+	 * @param int    $max_total_size Maximum combined size for objects and metadata.
+	 * @return array An array containing the filtered object IDs, filtered objects, and filtered metadata.
+	 */
+	public function filter_objects_and_metadata_by_size( $type, $objects, $metadata, $max_meta_size, $max_total_size ) {
+		$filtered_objects    = array();
+		$filtered_metadata   = array();
+		$filtered_object_ids = array();
+		$current_size        = 0;
+
+		foreach ( $objects as $object ) {
+			$object_size      = strlen( (string) maybe_serialize( $object ) );
+			$current_metadata = array();
+			$metadata_size    = 0;
+			$id_field         = $this->id_field();
+			$object_id        = (int) ( is_object( $object ) ? $object->{$id_field} : $object[ $id_field ] );
+
+			foreach ( $metadata as $key => $metadata_item ) {
+				if ( (int) $metadata_item->{$type . '_id'} === $object_id ) {
+					$metadata_item_size = strlen( (string) maybe_serialize( $metadata_item ) );
+					if ( $metadata_item_size >= $max_meta_size ) {
+						$metadata_item->meta_value = ''; // Trim metadata if too large.
+						$metadata_item_size        = strlen( (string) maybe_serialize( $metadata_item ) );
+					}
+					$current_metadata[] = $metadata_item;
+					$metadata_size     += $metadata_item_size;
+
+					if ( ! empty( $filtered_object_ids ) && ( $current_size + $object_size + $metadata_size ) > $max_total_size ) {
+						break 2; // Exit both loops.
+					}
+					unset( $metadata[ $key ] );
+				}
+			}
+
+			// Always allow the first object with metadata.
+			if ( empty( $filtered_object_ids ) || ( $current_size + $object_size + $metadata_size ) <= $max_total_size ) {
+				$filtered_object_ids[] = strval( is_object( $object ) ? $object->{$id_field} : $object[ $id_field ] );
+				$filtered_objects[]    = $object;
+				$filtered_metadata     = array_merge( $filtered_metadata, $current_metadata );
+				$current_size         += $object_size + $metadata_size;
+			} else {
+				break;
+			}
+		}
+
+		return array(
+			$filtered_object_ids,
+			$filtered_objects,
+			$filtered_metadata,
+		);
+	}
 }

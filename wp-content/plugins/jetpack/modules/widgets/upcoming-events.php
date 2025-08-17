@@ -60,7 +60,7 @@ class Jetpack_Upcoming_Events_Widget extends WP_Widget {
 	 *
 	 * @param array $instance Instance configuration.
 	 *
-	 * @return void
+	 * @return string|void
 	 */
 	public function form( $instance ) {
 		$defaults = array(
@@ -120,9 +120,12 @@ class Jetpack_Upcoming_Events_Widget extends WP_Widget {
 	public function widget( $args, $instance ) {
 		require_once JETPACK__PLUGIN_DIR . '/_inc/lib/icalendar-reader.php';
 
-		$ical           = new iCalendarReader();
-		$events         = $ical->get_events( $instance['feed-url'], $instance['count'] );
-		$events         = $this->apply_timezone_offset( $events );
+		$ical   = new iCalendarReader();
+		$events = array();
+		if ( ! empty( $instance['feed-url'] ) ) {
+			$events = $ical->get_events( $instance['feed-url'], $instance['count'] );
+			$events = $this->apply_timezone_offset( $events );
+		}
 		$ical->timezone = null;
 
 		echo $args['before_widget']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -132,18 +135,24 @@ class Jetpack_Upcoming_Events_Widget extends WP_Widget {
 			echo $args['after_title']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 
-		if ( ! $events ) : // nothing to display?
-			?>
-			<p><?php esc_html_e( 'No upcoming events', 'jetpack' ); ?></p>
-			<?php
-		else :
+		if ( empty( $instance['feed-url'] ) ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				echo '<div class="error-message">';
+				esc_html_e( 'The events feed URL is not properly set up in this widget.', 'jetpack' );
+				echo '</div>';
+			}
+		} elseif ( ! $events ) {
+			echo '<p>';
+			esc_html_e( 'No upcoming events', 'jetpack' );
+			echo '</p>';
+		} else {
 			?>
 			<ul class="upcoming-events">
 				<?php foreach ( $events as $event ) : ?>
 				<li>
 					<strong class="event-summary">
 						<?php
-						echo $ical->escape( stripslashes( $event['SUMMARY'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- this method is built to escape.
+						echo $ical->escape( stripslashes( $event['SUMMARY'] ?? '' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- this method is built to escape.
 						?>
 					</strong>
 					<span class="event-when"><?php echo esc_html( $ical->formatted_date( $event ) ); ?></span>
@@ -165,7 +174,7 @@ class Jetpack_Upcoming_Events_Widget extends WP_Widget {
 				<?php endforeach; ?>
 			</ul>
 			<?php
-		endif;
+		}
 
 		echo $args['after_widget']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 

@@ -1,13 +1,11 @@
-/* globals wp, lodash */
 window.videoPressUploadPoster = function ( guid, data ) {
-	// eslint-disable-next-line no-undef
 	return new Promise( function ( resolve, reject ) {
 		wp.media.ajax( 'videopress-get-upload-token', { async: true } ).done( function ( response ) {
 			// Set auth header with upload token.
 			var headers = {},
 				options = {};
 			var body = new FormData();
-			headers[ 'Authorization' ] =
+			headers.Authorization =
 				'X_UPLOAD_TOKEN token="' +
 				response.upload_token +
 				'" blog_id="' +
@@ -74,7 +72,6 @@ window.videoPressGetPoster = function ( guid ) {
 };
 
 window.videoPressUploadTrack = function ( guid, kind, srcLang, label, vttFile ) {
-	// eslint-disable-next-line no-undef
 	return new Promise( function ( resolve, reject ) {
 		wp.media
 			.ajax( 'videopress-get-upload-token', { async: true, data: { filename: vttFile.name } } ) // todo: maybe remove filename from here (not needed)
@@ -83,7 +80,7 @@ window.videoPressUploadTrack = function ( guid, kind, srcLang, label, vttFile ) 
 				var headers = {},
 					options = {};
 				var body = new FormData();
-				headers[ 'Authorization' ] =
+				headers.Authorization =
 					'X_UPLOAD_TOKEN token="' +
 					response.upload_token +
 					'" blog_id="' +
@@ -115,14 +112,13 @@ window.videoPressUploadTrack = function ( guid, kind, srcLang, label, vttFile ) 
 };
 
 window.videoPressDeleteTrack = function ( guid, kind, srcLang ) {
-	// eslint-disable-next-line no-undef
 	return new Promise( function ( resolve, reject ) {
 		wp.media.ajax( 'videopress-get-upload-token', { async: true } ).done( function ( response ) {
 			// Set auth header with upload token.
 			var headers = {},
 				options = {};
 			var body = new FormData();
-			headers[ 'Authorization' ] =
+			headers.Authorization =
 				'X_UPLOAD_TOKEN token="' +
 				response.upload_token +
 				'" blog_id="' +
@@ -206,8 +202,8 @@ wp.apiFetch.use( function ( options, next ) {
 				return response; // if not a response object, then its our parsed body so return that
 			} )
 			.then( function ( data ) {
-				var wpcomMediaObject = lodash.get( data, 'media[0]' );
-				var id = lodash.get( wpcomMediaObject, 'ID' );
+				var wpcomMediaObject = data?.media?.[ 0 ];
+				var id = wpcomMediaObject?.ID;
 				var gutenbergMediaObject = wp.apiFetch( {
 					path: '/wp/v2/media/' + id,
 				} );

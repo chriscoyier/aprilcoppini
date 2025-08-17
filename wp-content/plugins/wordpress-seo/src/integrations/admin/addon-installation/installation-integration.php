@@ -16,6 +16,7 @@ use Yoast\WP\SEO\Exceptions\Addon_Installation\Addon_Installation_Error_Exceptio
 use Yoast\WP\SEO\Exceptions\Addon_Installation\User_Cannot_Activate_Plugins_Exception;
 use Yoast\WP\SEO\Exceptions\Addon_Installation\User_Cannot_Install_Plugins_Exception;
 use Yoast\WP\SEO\Integrations\Integration_Interface;
+use Yoast\WP\SEO\Plans\User_Interface\Plans_Page_Integration;
 
 /**
  * Represents the Addon installation feature.
@@ -73,6 +74,8 @@ class Installation_Integration implements Integration_Interface {
 
 	/**
 	 * Registers all hooks to WordPress.
+	 *
+	 * @return void
 	 */
 	public function register_hooks() {
 		\add_action( 'wpseo_install_and_activate_addons', [ $this, 'install_and_activate_addons' ] );
@@ -84,7 +87,13 @@ class Installation_Integration implements Integration_Interface {
 	 * @return void
 	 */
 	public function install_and_activate_addons() {
-		if ( \filter_input( \INPUT_GET, 'action' ) !== 'install' ) {
+		if ( ! isset( $_GET['action'] ) || ! \is_string( $_GET['action'] ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reason: We are only strictly comparing action below.
+		$action = \wp_unslash( $_GET['action'] );
+		if ( $action !== 'install' ) {
 			return;
 		}
 
@@ -102,7 +111,7 @@ class Installation_Integration implements Integration_Interface {
 		foreach ( $licensed_addons as $addon ) {
 			\printf( '<p><strong>%s</strong></p>', \esc_html( $addon->product->name ) );
 
-			list( $installed, $output ) = $this->install_addon( $addon->product->slug, $addon->product->download );
+			[ $installed, $output ] = $this->install_addon( $addon->product->slug, $addon->product->download );
 
 			if ( $installed ) {
 				$activation_output = $this->activate_addon( $addon->product->slug );
@@ -118,7 +127,7 @@ class Installation_Integration implements Integration_Interface {
 		\printf(
 			/* translators: %1$s expands to an anchor tag to the admin premium page, %2$s expands to Yoast SEO Premium, %3$s expands to a closing anchor tag */
 			\esc_html__( '%1$s Continue to %2$s%3$s', 'wordpress-seo' ),
-			'<a href="' . \esc_url( \admin_url( 'admin.php?page=wpseo_licenses' ) ) . '">',
+			'<a href="' . \esc_url( \admin_url( 'admin.php?page=' . Plans_Page_Integration::PAGE ) ) . '">',
 			'Yoast SEO Premium',
 			'</a>'
 		);

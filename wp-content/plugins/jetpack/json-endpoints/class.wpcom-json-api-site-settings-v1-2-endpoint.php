@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Site_Settings_V1_2_Endpoint(
 	array(
 		'description'      => 'Get detailed settings information about a site.',
@@ -50,7 +54,7 @@ new WPCOM_JSON_API_Site_Settings_V1_2_Endpoint(
 			'instant_search_enabled'                  => '(bool) Enable the new Jetpack Instant Search interface',
 			'jetpack_search_enabled'                  => '(bool) Enable Jetpack Search',
 			'jetpack_search_supported'                => '(bool) Jetpack Search supported',
-			'jetpack_protect_whitelist'               => '(array) List of IP addresses to whitelist',
+			'jetpack_protect_whitelist'               => '(array) List of IP addresses to always allow',
 			'infinite_scroll'                         => '(bool) Support infinite scroll of posts?',
 			'default_category'                        => '(int) Default post category',
 			'default_post_format'                     => '(string) Default post format',
@@ -68,7 +72,7 @@ new WPCOM_JSON_API_Site_Settings_V1_2_Endpoint(
 			'moderation_notify'                       => '(bool) Email me when a comment is helf for moderation?',
 			'social_notifications_like'               => '(bool) Email me when someone likes my post?',
 			'social_notifications_reblog'             => '(bool) Email me when someone reblogs my post?',
-			'social_notifications_subscribe'          => '(bool) Email me when someone follows my blog?',
+			'social_notifications_subscribe'          => '(bool) Email me when someone subscribes to my blog?',
 			'comment_moderation'                      => '(bool) Moderate comments for manual approval?',
 			'comment_previously_approved'             => '(bool) Moderate comments unless author has a previously-approved comment?',
 			'comment_max_links'                       => '(int) Moderate comments that contain X or more links',
@@ -99,7 +103,6 @@ new WPCOM_JSON_API_Site_Settings_V1_2_Endpoint(
 			Jetpack_SEO_Utils::FRONT_PAGE_META_OPTION => '(string) The SEO meta description for the site.',
 			Jetpack_SEO_Titles::TITLE_FORMATS_OPTION  => '(array) SEO meta title formats. Allowed keys: front_page, posts, pages, groups, archives',
 			'verification_services_codes'             => '(array) Website verification codes. Allowed keys: google, pinterest, bing, yandex, facebook',
-			'amp_is_enabled'                          => '(bool) Whether AMP is enabled for this site',
 			'podcasting_archive'                      => '(string) The post category, if any, used for publishing podcasts',
 			'site_icon'                               => '(int) Media attachment ID to use as site icon. Set to zero or an otherwise empty value to clear',
 			'api_cache'                               => '(bool) Turn on/off the Jetpack JSON API cache',
@@ -120,6 +123,8 @@ new WPCOM_JSON_API_Site_Settings_V1_2_Endpoint(
 
 /**
  * Site settings v1_2 endpoint.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Site_Settings_V1_2_Endpoint extends WPCOM_JSON_API_Site_Settings_Endpoint {
 

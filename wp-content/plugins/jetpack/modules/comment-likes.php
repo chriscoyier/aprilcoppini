@@ -1,7 +1,7 @@
 <?php //phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
  * Module Name: Comment Likes
- * Module Description: Increase visitor engagement by adding a Like button to comments.
+ * Module Description: Enable visitors to like individual comments and boost engagement.
  * Sort Order: 39
  * Recommendation Order: 17
  * First Introduced: 5.1
@@ -73,11 +73,6 @@ class Jetpack_Comment_Likes {
 
 		if ( ! Jetpack::is_module_active( 'likes' ) ) {
 			$active = Jetpack::get_active_modules();
-
-			if ( ! in_array( 'sharedaddy', $active, true ) && ! in_array( 'publicize', $active, true ) ) {
-				// we don't have a sharing page yet.
-				add_action( 'admin_menu', array( $this->settings, 'sharing_menu' ) );
-			}
 
 			if ( in_array( 'publicize', $active, true ) && ! in_array( 'sharedaddy', $active, true ) ) {
 				// we have a sharing page but not the global options area.
@@ -167,7 +162,7 @@ class Jetpack_Comment_Likes {
 	 * Initialize front end
 	 */
 	public function frontend_init() {
-		if ( Jetpack_AMP_Support::is_amp_request() ) {
+		if ( class_exists( Jetpack_AMP_Support::class ) && Jetpack_AMP_Support::is_amp_request() ) {
 			return;
 		}
 
@@ -211,6 +206,10 @@ class Jetpack_Comment_Likes {
 		}
 
 		if ( empty( $content ) || empty( $comment_id ) ) {
+			return $content;
+		}
+
+		if ( empty( $comment->comment_approved ) ) {
 			return $content;
 		}
 

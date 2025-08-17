@@ -1,4 +1,4 @@
-/* global pluploadL10n, plupload, _wpPluploadSettings, JSON */
+/* global pluploadL10n, plupload, _wpPluploadSettings */
 
 window.wp = window.wp || {};
 
@@ -99,7 +99,7 @@ window.wp = window.wp || {};
 			! isIE &&
 			'flash' === plupload.predictRuntime( this.plupload ) &&
 			( ! this.plupload.required_features ||
-				! this.plupload.required_features.hasOwnProperty( 'send_binary_string' ) )
+				! Object.hasOwn( this.plupload.required_features, 'send_binary_string' ) )
 		) {
 			this.plupload.required_features = this.plupload.required_features || {};
 			this.plupload.required_features.send_binary_string = true;
@@ -127,9 +127,9 @@ window.wp = window.wp || {};
 		 * Add a new error to the errors collection, so other modules can track
 		 * and display errors. @see wp.Uploader.errors.
 		 *
-		 * @param  {string}        message
-		 * @param  {object}        data
-		 * @param  {plupload.File} file     File that was uploaded.
+		 * @param {string}        message
+		 * @param {object}        data
+		 * @param {plupload.File} file    File that was uploaded.
 		 */
 		error = function ( message, data, file ) {
 			if ( file.attachment ) {
@@ -222,7 +222,7 @@ window.wp = window.wp || {};
 		 * @param {Array}             files    Array of file objects that were added to queue by the user.
 		 */
 		this.uploader.bind( 'FilesAdded', function ( up, files ) {
-			_.each( files, function ( file ) {
+			for ( const file of files ) {
 				var attributes, image;
 
 				// Ignore failed uploads.
@@ -231,17 +231,19 @@ window.wp = window.wp || {};
 				}
 
 				// Generate attributes for a new `Attachment` model.
-				attributes = _.extend(
-					{
-						file: file,
-						uploading: true,
-						date: new Date(),
-						filename: file.name,
-						menuOrder: 0,
-						uploadedTo: wp.media.model.settings.post.id,
-					},
-					_.pick( file, 'loaded', 'size', 'percent' )
-				);
+				attributes = {
+					file: file,
+					uploading: true,
+					date: new Date(),
+					filename: file.name,
+					menuOrder: 0,
+					uploadedTo: wp.media.model.settings.post.id,
+					...Object.fromEntries(
+						Object.entries( file ).filter(
+							( [ k ] ) => k === 'loaded' || k === 'size' || k === 'percent'
+						)
+					),
+				};
 
 				// Handle early mime type scanning for images.
 				image = /(?:jpe?g|png|gif|webp)$/i.exec( file.name );
@@ -261,14 +263,18 @@ window.wp = window.wp || {};
 				Uploader.queue.add( file.attachment );
 
 				self.added( file.attachment );
-			} );
+			}
 
 			up.refresh();
 			up.start();
 		} );
 
 		this.uploader.bind( 'UploadProgress', function ( up, file ) {
-			file.attachment.set( _.pick( file, 'loaded', 'percent' ) );
+			file.attachment.set(
+				Object.fromEntries(
+					Object.entries( file ).filter( ( [ k ] ) => k === 'loaded' || k === 'percent' )
+				)
+			);
 			self.progress( file.attachment );
 		} );
 
@@ -295,11 +301,11 @@ window.wp = window.wp || {};
 				response = vp.handleStandardResponse( response, file );
 			}
 
-			_.each( [ 'file', 'loaded', 'size', 'percent' ], function ( key ) {
-				file.attachment.unset( key );
-			} );
+			for ( const k of [ 'file', 'loaded', 'size', 'percent' ] ) {
+				file.attachment.unset( k );
+			}
 
-			file.attachment.set( _.extend( response.data, { uploading: false } ) );
+			file.attachment.set( { ...response.data, uploading: false } );
 			var att = wp.media.model.Attachment.get( response.data.id, file.attachment );
 
 			/* Once the new "empty" attachment is added to the collection above, check if it exists on the server, then set the new data.
@@ -336,11 +342,11 @@ window.wp = window.wp || {};
 			var message = pluploadL10n.default_error;
 
 			// Check for plupload errors.
-			for ( var key in Uploader.errorMap ) {
-				if ( pluploadError.code === plupload[ key ] ) {
-					message = Uploader.errorMap[ key ];
+			for ( var k in Uploader.errorMap ) {
+				if ( pluploadError.code === plupload[ k ] ) {
+					message = Uploader.errorMap[ k ];
 
-					if ( _.isFunction( message ) ) {
+					if ( typeof message === 'function' ) {
 						message = message( pluploadError.file, pluploadError );
 					}
 
@@ -363,7 +369,7 @@ window.wp = window.wp || {};
 							message = pluploadResponseObject.message;
 						}
 					}
-				} catch ( e ) {
+				} catch {
 					// Do nothing ...
 				}
 			}

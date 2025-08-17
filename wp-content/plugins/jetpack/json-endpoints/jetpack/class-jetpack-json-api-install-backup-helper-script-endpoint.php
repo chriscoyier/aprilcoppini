@@ -6,11 +6,17 @@
  * @package automattic/jetpack
  */
 
-use Automattic\Jetpack\Backup\Helper_Script_Manager;
+use Automattic\Jetpack\Backup\V0005\Helper_Script_Manager;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
 
 /**
  * API endpoint /sites/%s/install-backup-helper-script
  * This API endpoint installs a Helper Script to assist Jetpack Backup fetch data
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Install_Backup_Helper_Script_Endpoint extends Jetpack_JSON_API_Endpoint {
 	/**
@@ -72,19 +78,17 @@ class Jetpack_JSON_API_Install_Backup_Helper_Script_Endpoint extends Jetpack_JSO
 	}
 
 	/**
-	 * Returns the result of Helper Script installation. Returns one of:
-	 * - WP_Error on failure, or
-	 * - An array containing the access url ('url') and installation path ('path') on success.
+	 * Return the success or failure of the backup helper script installation operation.
 	 *
-	 * @return array|WP_Error Success or failure information.
+	 * @return array|WP_Error An array with installation info on success:
+	 *
+	 *   'path'    (string) Helper script installation path on the filesystem.
+	 *   'url'     (string) URL to the helper script.
+	 *   'abspath' (string) WordPress root.
+	 *
+	 *   or an instance of WP_Error on failure.
 	 */
 	protected function result() {
-		// Include ABSPATH with successful result.
-		if ( ! is_wp_error( $this->result ) ) {
-			$this->result['abspath'] = ABSPATH;
-		}
-
 		return $this->result;
 	}
-
 }

@@ -9,12 +9,18 @@ use Automattic\Jetpack\Sync\Replicastore;
 use Automattic\Jetpack\Sync\Sender;
 use Automattic\Jetpack\Sync\Settings;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 // phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound
 
 /**
  * Sync endpoint class.
  *
  * POST /sites/%s/sync
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Endpoint extends Jetpack_JSON_API_Endpoint {
 
@@ -59,7 +65,7 @@ class Jetpack_JSON_API_Sync_Endpoint extends Jetpack_JSON_API_Endpoint {
 				$modules['users'] = 'initial';
 			} elseif ( isset( $args[ $module_name ] ) ) {
 				$ids = explode( ',', $args[ $module_name ] );
-				if ( count( $ids ) > 0 ) {
+				if ( is_countable( $ids ) && count( $ids ) > 0 ) {
 					$modules[ $module_name ] = $ids;
 				}
 			}
@@ -68,7 +74,7 @@ class Jetpack_JSON_API_Sync_Endpoint extends Jetpack_JSON_API_Endpoint {
 		if ( empty( $modules ) ) {
 			$modules = null;
 		}
-		return array( 'scheduled' => Actions::do_full_sync( $modules ) );
+		return array( 'scheduled' => Actions::do_full_sync( $modules, 'jetpack_json_api_sync_endpoint' ) );
 	}
 
 	/**
@@ -94,6 +100,8 @@ class Jetpack_JSON_API_Sync_Endpoint extends Jetpack_JSON_API_Endpoint {
  * Sync status endpoint class.
  *
  * GET /sites/%s/sync/status
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Status_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -111,6 +119,8 @@ class Jetpack_JSON_API_Sync_Status_Endpoint extends Jetpack_JSON_API_Sync_Endpoi
 /**
  * Sync Check Endpoint class.
  * GET /sites/%s/data-check
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Check_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -128,6 +138,8 @@ class Jetpack_JSON_API_Sync_Check_Endpoint extends Jetpack_JSON_API_Sync_Endpoin
 /**
  * Sync histogram endpoint.
  * GET /sites/%s/data-histogram
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Histogram_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -179,6 +191,8 @@ class Jetpack_JSON_API_Sync_Histogram_Endpoint extends Jetpack_JSON_API_Sync_End
 
 /**
  * POST /sites/%s/sync/health
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Modify_Health_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 
@@ -208,6 +222,8 @@ class Jetpack_JSON_API_Sync_Modify_Health_Endpoint extends Jetpack_JSON_API_Sync
 
 /**
  * POST /sites/%s/sync/settings
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Modify_Settings_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -244,6 +260,8 @@ class Jetpack_JSON_API_Sync_Modify_Settings_Endpoint extends Jetpack_JSON_API_Sy
 
 /**
  * GET /sites/%s/sync/settings
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Get_Settings_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -259,6 +277,8 @@ class Jetpack_JSON_API_Sync_Get_Settings_Endpoint extends Jetpack_JSON_API_Sync_
 
 /**
  * GET /sites/%s/sync/object
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Object extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -295,6 +315,8 @@ class Jetpack_JSON_API_Sync_Object extends Jetpack_JSON_API_Sync_Endpoint {
 
 /**
  * Sync Now endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Now_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -321,6 +343,8 @@ class Jetpack_JSON_API_Sync_Now_Endpoint extends Jetpack_JSON_API_Sync_Endpoint 
 
 /**
  * Sync checkout endpoint.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -477,6 +501,8 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 
 /**
  * Close endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -511,6 +537,7 @@ class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoin
 		// Update Full Sync Status if queue is "full_sync".
 		if ( 'full_sync' === $queue_name ) {
 			$full_sync_module = Modules::get_module( 'full-sync' );
+			'@phan-var \Automattic\Jetpack\Sync\Modules\Full_Sync_Immediately|\Automattic\Jetpack\Sync\Modules\Full_Sync $full_sync_module';
 
 			$full_sync_module->update_sent_progress_action( $items );
 		}
@@ -548,7 +575,7 @@ class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoin
 	 */
 	protected static function sanitize_item_ids( $item ) {
 		// lets not delete any options that don't start with jpsq_sync-
-		if ( ! is_string( $item ) || substr( $item, 0, 5 ) !== 'jpsq_' ) {
+		if ( ! is_string( $item ) || ! str_starts_with( $item, 'jpsq_' ) ) {
 			return null;
 		}
 		// Limit to A-Z,a-z,0-9,_,-,.
@@ -557,7 +584,9 @@ class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoin
 }
 
 /**
- * Unlock ednpoint class.
+ * Unlock endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Unlock_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	/**
@@ -588,6 +617,8 @@ class Jetpack_JSON_API_Sync_Unlock_Endpoint extends Jetpack_JSON_API_Sync_Endpoi
 
 /**
  * Object ID range class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_JSON_API_Sync_Object_Id_Range extends Jetpack_JSON_API_Sync_Endpoint {
 	/**

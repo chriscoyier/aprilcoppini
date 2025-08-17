@@ -2,39 +2,31 @@
 
 namespace Yoast\WP\SEO\Integrations\Third_Party;
 
-use Elementor\Controls_Manager;
-use Elementor\Core\DocumentTypes\PageBase;
 use WP_Post;
 use WP_Screen;
 use WPSEO_Admin_Asset_Manager;
 use WPSEO_Admin_Recommended_Replace_Vars;
-use WPSEO_Language_Utils;
 use WPSEO_Meta;
+use WPSEO_Metabox_Analysis_Inclusive_Language;
 use WPSEO_Metabox_Analysis_Readability;
 use WPSEO_Metabox_Analysis_SEO;
-use WPSEO_Metabox_Analysis_Inclusive_Language;
 use WPSEO_Metabox_Formatter;
 use WPSEO_Post_Metabox_Formatter;
 use WPSEO_Replace_Vars;
-use WPSEO_Shortlinker;
 use WPSEO_Utils;
-use Yoast\WP\SEO\Actions\Alert_Dismissal_Action;
-use Yoast\WP\SEO\Conditionals\Admin\Estimated_Reading_Time_Conditional;
 use Yoast\WP\SEO\Conditionals\Third_Party\Elementor_Edit_Conditional;
+use Yoast\WP\SEO\Editors\Application\Site\Website_Information_Repository;
+use Yoast\WP\SEO\Elementor\Infrastructure\Request_Post;
 use Yoast\WP\SEO\Helpers\Capability_Helper;
 use Yoast\WP\SEO\Helpers\Options_Helper;
 use Yoast\WP\SEO\Integrations\Integration_Interface;
 use Yoast\WP\SEO\Presenters\Admin\Meta_Fields_Presenter;
+use Yoast\WP\SEO\Promotions\Application\Promotion_Manager;
 
 /**
  * Integrates the Yoast SEO metabox in the Elementor editor.
  */
 class Elementor implements Integration_Interface {
-
-	/**
-	 * The identifier for the elementor tab.
-	 */
-	const YOAST_TAB = 'yoast-tab';
 
 	/**
 	 * Represents the post.
@@ -63,6 +55,13 @@ class Elementor implements Integration_Interface {
 	 * @var Capability_Helper
 	 */
 	protected $capability;
+
+	/**
+	 * Holds the Request_Post.
+	 *
+	 * @var Request_Post
+	 */
+	private $request_post;
 
 	/**
 	 * Holds whether the socials are enabled.
@@ -100,11 +99,11 @@ class Elementor implements Integration_Interface {
 	protected $inclusive_language_analysis;
 
 	/**
-	 * Represents the estimated_reading_time_conditional.
+	 * Holds the promotion manager.
 	 *
-	 * @var Estimated_Reading_Time_Conditional
+	 * @var Promotion_Manager
 	 */
-	protected $estimated_reading_time_conditional;
+	protected $promotion_manager;
 
 	/**
 	 * Returns the conditionals based in which this loadable should be active.
@@ -118,28 +117,27 @@ class Elementor implements Integration_Interface {
 	/**
 	 * Constructor.
 	 *
-	 * @param WPSEO_Admin_Asset_Manager          $asset_manager                      The asset manager.
-	 * @param Options_Helper                     $options                            The options helper.
-	 * @param Capability_Helper                  $capability                         The capability helper.
-	 * @param Estimated_Reading_Time_Conditional $estimated_reading_time_conditional The Estimated Reading Time
-	 *                                                                               conditional.
+	 * @param WPSEO_Admin_Asset_Manager $asset_manager The asset manager.
+	 * @param Options_Helper            $options       The options helper.
+	 * @param Capability_Helper         $capability    The capability helper.
+	 * @param Request_Post              $request_post  The Request_Post.
 	 */
 	public function __construct(
 		WPSEO_Admin_Asset_Manager $asset_manager,
 		Options_Helper $options,
 		Capability_Helper $capability,
-		Estimated_Reading_Time_Conditional $estimated_reading_time_conditional
+		Request_Post $request_post
 	) {
 		$this->asset_manager = $asset_manager;
 		$this->options       = $options;
 		$this->capability    = $capability;
+		$this->request_post  = $request_post;
 
-		$this->seo_analysis                       = new WPSEO_Metabox_Analysis_SEO();
-		$this->readability_analysis               = new WPSEO_Metabox_Analysis_Readability();
-		$this->inclusive_language_analysis        = new WPSEO_Metabox_Analysis_Inclusive_Language();
-		$this->social_is_enabled                  = $this->options->get( 'opengraph', false ) || $this->options->get( 'twitter', false );
-		$this->is_advanced_metadata_enabled       = $this->capability->current_user_can( 'wpseo_edit_advanced_metadata' ) || $this->options->get( 'disableadvanced_meta' ) === false;
-		$this->estimated_reading_time_conditional = $estimated_reading_time_conditional;
+		$this->seo_analysis                 = new WPSEO_Metabox_Analysis_SEO();
+		$this->readability_analysis         = new WPSEO_Metabox_Analysis_Readability();
+		$this->inclusive_language_analysis  = new WPSEO_Metabox_Analysis_Inclusive_Language();
+		$this->social_is_enabled            = $this->options->get( 'opengraph', false ) || $this->options->get( 'twitter', false );
+		$this->is_advanced_metadata_enabled = $this->capability->current_user_can( 'wpseo_edit_advanced_metadata' ) || $this->options->get( 'disableadvanced_meta' ) === false;
 	}
 
 	/**
@@ -158,22 +156,16 @@ class Elementor implements Integration_Interface {
 
 	/**
 	 * Registers our Elementor hooks.
+	 * This is done for pages with metabox on page load and not on ajax request.
+	 *
+	 * @return void
 	 */
 	public function register_elementor_hooks() {
-		if ( ! $this->display_metabox( $this->get_metabox_post()->post_type ) ) {
+		if ( $this->get_metabox_post() === null || ! $this->display_metabox( $this->get_metabox_post()->post_type ) ) {
 			return;
 		}
 
 		\add_action( 'elementor/editor/before_enqueue_scripts', [ $this, 'init' ] );
-
-		// We are too late for elementor/init. We should see if we can be on time, or else this workaround works (we do always get the "else" though).
-		if ( ! \did_action( 'elementor/init' ) ) {
-			\add_action( 'elementor/init', [ $this, 'add_yoast_panel_tab' ] );
-		}
-		else {
-			$this->add_yoast_panel_tab();
-		}
-		\add_action( 'elementor/documents/register_controls', [ $this, 'register_document_controls' ] );
 	}
 
 	/**
@@ -187,47 +179,17 @@ class Elementor implements Integration_Interface {
 		$this->render_hidden_fields();
 	}
 
-	/**
-	 * Register a panel tab slug, in order to allow adding controls to this tab.
-	 */
-	public function add_yoast_panel_tab() {
-		Controls_Manager::add_tab( $this::YOAST_TAB, 'Yoast SEO' );
-	}
-
-	/**
-	 * Register additional document controls.
-	 *
-	 * @param PageBase $document The PageBase document.
-	 */
-	public function register_document_controls( $document ) {
-		// PageBase is the base class for documents like `post` `page` and etc.
-		if ( ! $document instanceof PageBase || ! $document::get_property( 'has_elements' ) ) {
-			return;
-		}
-
-		// This is needed to get the tab to appear, but will be overwritten in the JavaScript.
-		$document->start_controls_section(
-			'yoast_temporary_section',
-			[
-				'label' => 'Yoast SEO',
-				'tab'   => self::YOAST_TAB,
-			]
-		);
-
-		$document->end_controls_section();
-	}
-
 	// Below is mostly copied from `class-metabox.php`. That constructor has side-effects we do not need.
 
 	/**
 	 * Determines whether the metabox should be shown for the passed identifier.
 	 *
-	 * By default the check is done for post types, but can also be used for taxonomies.
+	 * By default, the check is done for post types, but can also be used for taxonomies.
 	 *
 	 * @param string|null $identifier The identifier to check.
 	 * @param string      $type       The type of object to check. Defaults to post_type.
 	 *
-	 * @return bool Whether or not the metabox should be displayed.
+	 * @return bool Whether the metabox should be displayed.
 	 */
 	public function display_metabox( $identifier = null, $type = 'post_type' ) {
 		return WPSEO_Utils::is_metabox_active( $identifier, $type );
@@ -245,7 +207,16 @@ class Elementor implements Integration_Interface {
 	public function save_postdata() {
 		global $post;
 
-		$post_id = \filter_input( \INPUT_POST, 'post_id', \FILTER_SANITIZE_NUMBER_INT );
+		if ( ! isset( $_POST['post_id'] ) || ! \is_string( $_POST['post_id'] ) ) {
+			\wp_send_json_error( 'Bad Request', 400 );
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reason: No sanitization needed because we cast to an integer.
+		$post_id = (int) \wp_unslash( $_POST['post_id'] );
+
+		if ( $post_id <= 0 ) {
+			\wp_send_json_error( 'Bad Request', 400 );
+		}
 
 		if ( ! \current_user_can( 'edit_post', $post_id ) ) {
 			\wp_send_json_error( 'Forbidden', 403 );
@@ -327,23 +298,23 @@ class Elementor implements Integration_Interface {
 			}
 		}
 
-		// Saving the WP post to save the slug.
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- This deprecation will be addressed later.
-		$slug = \filter_input( \INPUT_POST, WPSEO_Meta::$form_prefix . 'slug', @\FILTER_SANITIZE_STRING );
-		if ( $post->post_name !== $slug ) {
-			$post_array              = $post->to_array();
-			$post_array['post_name'] = $slug;
+		if ( isset( $_POST[ WPSEO_Meta::$form_prefix . 'slug' ] ) && \is_string( $_POST[ WPSEO_Meta::$form_prefix . 'slug' ] ) ) {
+			$slug = \sanitize_title( \wp_unslash( $_POST[ WPSEO_Meta::$form_prefix . 'slug' ] ) );
+			if ( $post->post_name !== $slug ) {
+				$post_array              = $post->to_array();
+				$post_array['post_name'] = $slug;
 
-			$save_successful = \wp_insert_post( $post_array );
-			if ( \is_wp_error( $save_successful ) ) {
-				\wp_send_json_error( 'Slug not saved', 400 );
-			}
+				$save_successful = \wp_insert_post( $post_array );
+				if ( \is_wp_error( $save_successful ) ) {
+					\wp_send_json_error( 'Slug not saved', 400 );
+				}
 
-			// Update the post object to ensure we have the actual slug.
-			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Updating the post is needed to get the current slug.
-			$post = \get_post( $post_id );
-			if ( ! \is_object( $post ) ) {
-				\wp_send_json_error( 'Updated slug not found', 400 );
+				// Update the post object to ensure we have the actual slug.
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Updating the post is needed to get the current slug.
+				$post = \get_post( $post_id );
+				if ( ! \is_object( $post ) ) {
+					\wp_send_json_error( 'Updated slug not found', 400 );
+				}
 			}
 		}
 
@@ -384,7 +355,12 @@ class Elementor implements Integration_Interface {
 	public function enqueue() {
 		$post_id = \get_queried_object_id();
 		if ( empty( $post_id ) ) {
-			$post_id = \sanitize_text_field( \filter_input( \INPUT_GET, 'post' ) );
+			$post_id = 0;
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reason: We are not processing form information.
+			if ( isset( $_GET['post'] ) && \is_string( $_GET['post'] ) ) {
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Recommended -- Reason: No sanitization needed because we cast to an integer,We are not processing form information.
+				$post_id = (int) \wp_unslash( $_GET['post'] );
+			}
 		}
 
 		if ( $post_id !== 0 ) {
@@ -397,6 +373,7 @@ class Elementor implements Integration_Interface {
 		$this->asset_manager->enqueue_style( 'scoring' );
 		$this->asset_manager->enqueue_style( 'monorepo' );
 		$this->asset_manager->enqueue_style( 'admin-css' );
+		$this->asset_manager->enqueue_style( 'ai-generator' );
 		$this->asset_manager->enqueue_style( 'elementor' );
 
 		$this->asset_manager->enqueue_script( 'admin-global' );
@@ -408,7 +385,6 @@ class Elementor implements Integration_Interface {
 
 		$plugins_script_data = [
 			'replaceVars' => [
-				'no_parent_text'           => \__( '(no parent)', 'wordpress-seo' ),
 				'replace_vars'             => $this->get_replace_vars(),
 				'recommended_replace_vars' => $this->get_recommended_replace_vars(),
 				'hidden_replace_vars'      => $this->get_hidden_replace_vars(),
@@ -416,8 +392,8 @@ class Elementor implements Integration_Interface {
 				'has_taxonomies'           => $this->current_post_type_has_taxonomies(),
 			],
 			'shortcodes'  => [
-				'wpseo_filter_shortcodes_nonce' => \wp_create_nonce( 'wpseo-filter-shortcodes' ),
 				'wpseo_shortcode_tags'          => $this->get_valid_shortcode_tags(),
+				'wpseo_filter_shortcodes_nonce' => \wp_create_nonce( 'wpseo-filter-shortcodes' ),
 			],
 		];
 
@@ -430,35 +406,60 @@ class Elementor implements Integration_Interface {
 			'enabled_features'        => WPSEO_Utils::retrieve_enabled_features(),
 		];
 
-		$alert_dismissal_action = \YoastSEO()->classes->get( Alert_Dismissal_Action::class );
-		$dismissed_alerts       = $alert_dismissal_action->all_dismissed();
+		$permalink        = $this->get_permalink();
+		$page_on_front    = (int) \get_option( 'page_on_front' );
+		$homepage_is_page = \get_option( 'show_on_front' ) === 'page';
+		$is_front_page    = $homepage_is_page && $page_on_front === $post_id;
 
 		$script_data = [
-			'media'                    => [ 'choose_image' => \__( 'Use Image', 'wordpress-seo' ) ],
-			'metabox'                  => $this->get_metabox_script_data(),
-			'userLanguageCode'         => WPSEO_Language_Utils::get_language( \get_user_locale() ),
-			'isPost'                   => true,
-			'isBlockEditor'            => WP_Screen::get()->is_block_editor(),
-			'isElementorEditor'        => true,
-			'postStatus'               => \get_post_status( $post_id ),
-			'analysis'                 => [
+			'metabox'                   => $this->get_metabox_script_data( $permalink ),
+			'isPost'                    => true,
+			'isBlockEditor'             => WP_Screen::get()->is_block_editor(),
+			'isElementorEditor'         => true,
+			'isAlwaysIntroductionV2'    => $this->is_elementor_version_compatible_with_introduction_v2(),
+			'postStatus'                => \get_post_status( $post_id ),
+			'postType'                  => \get_post_type( $post_id ),
+			'analysis'                  => [
 				'plugins' => $plugins_script_data,
 				'worker'  => $worker_script_data,
 			],
-			'dismissedAlerts'          => $dismissed_alerts,
-			'webinarIntroElementorUrl' => WPSEO_Shortlinker::get( 'https://yoa.st/webinar-intro-elementor' ),
+			'usedKeywordsNonce'         => \wp_create_nonce( 'wpseo-keyword-usage-and-post-types' ),
+			'isFrontPage'               => $is_front_page,
 		];
 
-		if ( \post_type_supports( $this->get_metabox_post()->post_type, 'thumbnail' ) ) {
-			$this->asset_manager->enqueue_style( 'featured-image' );
-
-			$script_data['featuredImage'] = [
-				'featured_image_notice' => \__( 'SEO issue: The featured image should be at least 200 by 200 pixels to be picked up by Facebook and other social media sites.', 'wordpress-seo' ),
-			];
-		}
+		/**
+		 * The website information repository.
+		 *
+		 * @var Website_Information_Repository $repo
+		 */
+		$repo             = \YoastSEO()->classes->get( Website_Information_Repository::class );
+		$site_information = $repo->get_post_site_information();
+		$site_information->set_permalink( $permalink );
+		$script_data = \array_merge_recursive( $site_information->get_legacy_site_information(), $script_data );
 
 		$this->asset_manager->localize_script( 'elementor', 'wpseoScriptData', $script_data );
 		$this->asset_manager->enqueue_user_language_script();
+	}
+
+	/**
+	 * Checks whether the current Elementor version is compatible with our introduction v2.
+	 *
+	 * In version 3.30.0, Elementor removed the experimental flag for the editor v2.
+	 * Resulting in the editor v2 being the default.
+	 *
+	 * @return bool Whether the Elementor version is compatible with introduction v2.
+	 */
+	private function is_elementor_version_compatible_with_introduction_v2(): bool {
+		if ( ! \defined( 'ELEMENTOR_VERSION' ) ) {
+			return false;
+		}
+
+		// Take the semver version from their version string.
+		$matches = [];
+		$version = ( \preg_match( '/^([0-9]+.[0-9]+.[0-9]+)/', \ELEMENTOR_VERSION, $matches ) > 0 ) ? $matches[1] : \ELEMENTOR_VERSION;
+
+		// Check if the version is 3.30.0 or higher. This is where the editor v2 was taken out of the experimental into the default state.
+		return \version_compare( $version, '3.30.0', '>=' );
 	}
 
 	/**
@@ -494,40 +495,18 @@ class Elementor implements Integration_Interface {
 		\printf(
 			'<input type="hidden" id="%1$s" name="%1$s" value="%2$s" />',
 			\esc_attr( WPSEO_Meta::$form_prefix . 'slug' ),
-			\esc_attr( $this->get_post_slug() )
+			/**
+			 * It is important that this slug value is the same as in the database.
+			 * If the DB value is empty we can auto-generate a slug.
+			 * But if not empty, we should not touch it anymore.
+			 */
+			\esc_attr( $this->get_metabox_post()->post_name )
 		);
 
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output should be escaped in the filter.
 		echo \apply_filters( 'wpseo_elementor_hidden_fields', '' );
 
 		echo '</form>';
-	}
-
-	/**
-	 * Returns the slug for the post being edited.
-	 *
-	 * @return string
-	 */
-	protected function get_post_slug() {
-		$post = $this->get_metabox_post();
-
-		// In case get_metabox_post returns null for whatever reason.
-		if ( ! $post instanceof WP_Post ) {
-			return '';
-		}
-
-		// Drafts might not have a post_name unless the slug has been manually changed.
-		// In this case we get it using get_sample_permalink.
-		if ( ! $post->post_name ) {
-			$sample = \get_sample_permalink( $post );
-
-			// Since get_sample_permalink runs through filters, ensure that it has the expected return value.
-			if ( \is_array( $sample ) && \count( $sample ) === 2 && \is_string( $sample[1] ) ) {
-				return $sample[1];
-			}
-		}
-
-		return $post->post_name;
 	}
 
 	/**
@@ -540,37 +519,19 @@ class Elementor implements Integration_Interface {
 			return $this->post;
 		}
 
-		$post = \filter_input( \INPUT_GET, 'post' );
-		if ( ! empty( $post ) ) {
-			$post_id = (int) WPSEO_Utils::validate_int( $post );
+		$this->post = $this->request_post->get_post();
 
-			$this->post = \get_post( $post_id );
-
-			return $this->post;
-		}
-
-		if ( isset( $GLOBALS['post'] ) ) {
-			$this->post = $GLOBALS['post'];
-
-			return $this->post;
-		}
-
-		return null;
+		return $this->post;
 	}
 
 	/**
 	 * Passes variables to js for use with the post-scraper.
 	 *
+	 * @param string $permalink The permalink.
+	 *
 	 * @return array
 	 */
-	protected function get_metabox_script_data() {
-		$permalink = '';
-
-		if ( \is_object( $this->get_metabox_post() ) ) {
-			$permalink = \get_sample_permalink( $this->get_metabox_post()->ID );
-			$permalink = $permalink[0];
-		}
-
+	protected function get_metabox_script_data( $permalink ) {
 		$post_formatter = new WPSEO_Metabox_Formatter(
 			new WPSEO_Post_Metabox_Formatter( $this->get_metabox_post(), [], $permalink )
 		);
@@ -583,7 +544,39 @@ class Elementor implements Integration_Interface {
 			$values['cornerstoneActive'] = false;
 		}
 
+		$values['elementorMarkerStatus'] = $this->is_highlighting_available() ? 'enabled' : 'hidden';
+
 		return $values;
+	}
+
+	/**
+	 * Gets the permalink.
+	 *
+	 * @return string
+	 */
+	protected function get_permalink(): string {
+		$permalink = '';
+
+		if ( \is_object( $this->get_metabox_post() ) ) {
+			$permalink = \get_sample_permalink( $this->get_metabox_post()->ID );
+			$permalink = $permalink[0];
+		}
+
+		return $permalink;
+	}
+
+	/**
+	 * Checks whether the highlighting functionality is available for Elementor:
+	 * - in Free it's always available (as an upsell).
+	 * - in Premium it's available as long as the version is 21.8-RC0 or above.
+	 *
+	 * @return bool Whether the highlighting functionality is available.
+	 */
+	private function is_highlighting_available() {
+		$is_premium      = \YoastSEO()->helpers->product->is_premium();
+		$premium_version = \YoastSEO()->helpers->product->get_premium_version();
+
+		return ! $is_premium || \version_compare( $premium_version, '21.8-RC0', '>=' );
 	}
 
 	/**

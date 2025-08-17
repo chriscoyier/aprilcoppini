@@ -36,7 +36,7 @@ class Excluded_Post_Types_Control extends WP_Customize_Control {
 			__FILE__,
 			array(
 				'css_path'     => 'class-excluded-post-types-control.css',
-				'dependencies' => array( 'customize-controls' ),
+				'dependencies' => array( 'jquery', 'customize-controls' ),
 				'in_footer'    => true,
 				'textdomain'   => 'jetpack-search-pkg',
 			)
@@ -93,6 +93,9 @@ class Excluded_Post_Types_Control extends WP_Customize_Control {
 	 */
 	protected function render_content() {
 		$post_types = get_post_types( array( 'exclude_from_search' => false ), 'objects' );
+		if ( ! is_countable( $post_types ) ) {
+			return;
+		}
 		if ( count( $post_types ) === 0 ) {
 			return;
 		}
