@@ -12,7 +12,7 @@ body {
   margin: 0;
   font: 110%/1.5 system-ui;
   padding: 40px;
-  border: 20px solid black;
+  border: 5px solid black;
   min-height: 100dvh;
 }
 
@@ -64,6 +64,9 @@ a {
 }
 .main-menu li a {
   padding: 1rem;
+}
+[aria-current="page"] {
+  text-decoration-thickness: 5px;
 }
 
 p,
