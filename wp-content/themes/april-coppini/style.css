@@ -23,6 +23,12 @@ Version: 1.0.0
   font-weight: 100;
   src: url("fonts/Editor'sNoteText-Thin.woff") format("woff");
 }
+@font-face {
+  font-family: "Editor's Note";
+  font-weight: 100;
+  font-style: italic;
+  src: url("fonts/Editor'sNoteText-ThinItalic.woff") format("woff");
+}
 
 * {
   box-sizing: border-box;
@@ -41,7 +47,8 @@ h3 {
 }
 h1 {
   font-weight: 100;
-  font-size: 3rem;
+  font-style: italic;
+  font-size: 2.5rem;
   letter-spacing: 0.05em;
   line-height: 1;
   margin: 0;
@@ -72,7 +79,11 @@ a {
   .site-header {
     flex-direction: column;
     gap: 0;
+    padding-block: 1rem;
     margin: 0 0 20px 0;
+  }
+  .main-menu {
+    margin-block-start: 1rem;
   }
 }
 
@@ -88,9 +99,29 @@ a {
 }
 .main-menu li a {
   padding: 1rem;
+  position: relative;
+  text-decoration: none;
+  &:hover,
+  &:active {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
 [aria-current="page"] {
-  text-decoration-thickness: 5px;
+  &::after {
+    content: "";
+    display: block;
+    height: 40px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    background: #999;
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(50%);
+    opacity: 0.5;
+    mix-blend-mode: lighten;
+  }
 }
 
 .main-content {
@@ -101,7 +132,7 @@ p,
 ul,
 ol,
 dl {
-  max-width: 70ch;
+  max-width: 66ch;
 }
 
 /* Home */
