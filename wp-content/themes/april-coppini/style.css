@@ -30,7 +30,7 @@ Version: 1.0.0
 
 body {
   margin: 0;
-  font: 110%/1.5 "Editor's Note", system-ui;
+  font: 120%/1.5 "Editor's Note", system-ui;
 }
 
 h1,
@@ -41,13 +41,16 @@ h3 {
 }
 h1 {
   font-weight: 100;
-  font-size: 2rem;
+  font-size: 3rem;
   letter-spacing: 0.05em;
   line-height: 1;
   margin: 0;
 }
 h2 {
-  font-size: clamp(14px, 1rem + 3vw, 60px);
+  font-size: 3rem;
+}
+h3 {
+  font-size: 2rem;
 }
 
 a {
@@ -99,4 +102,29 @@ ul,
 ol,
 dl {
   max-width: 70ch;
+}
+
+/* CV */
+body.page-id-20 {
+  main {
+    p:has(strong:first-child) {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      strong:first-child {
+        grid-row: 1 / 5;
+        grid-column: 1 / 2;
+      }
+      > *:not(strong:first-child) {
+        display: contents;
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+      }
+    }
+  }
+
+  div:has(p > strong:first-child) {
+    p:not(:first-child) {
+      margin-left: 100px;
+    }
+  }
 }
