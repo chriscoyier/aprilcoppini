@@ -104,6 +104,17 @@ dl {
   max-width: 70ch;
 }
 
+/* Home */
+
+body.page-id-13 {
+  main {
+    img {
+      width: 80vw;
+      display: block;
+      margin: 0 auto 6rem;
+    }
+  }
+}
 /* CV */
 body.page-id-20 {
   main {
