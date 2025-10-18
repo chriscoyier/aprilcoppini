@@ -4,29 +4,47 @@ Theme URI: https://github.com/digitoimistodude/air-light
 Author: Chris Coyier
 Version: 1.0.0
 */
+@font-face {
+  font-family: "Editor's Note";
+  src: url("fonts/Editor'sNoteText-Regular.woff") format("woff");
+}
+@font-face {
+  font-family: "Editor's Note";
+  font-weight: bold;
+  src: url("fonts/Editor'sNoteText-Bold.woff") format("woff");
+}
+@font-face {
+  font-family: "Editor's Note";
+  font-style: italic;
+  src: url("fonts/Editor'sNoteText-Italic.woff") format("woff");
+}
+@font-face {
+  font-family: "Editor's Note";
+  font-weight: 100;
+  src: url("fonts/Editor'sNoteText-Thin.woff") format("woff");
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font: 110%/1.5 system-ui;
-  padding: 40px;
-  border: 5px solid black;
-  min-height: 100dvh;
+  font: 110%/1.5 "Editor's Note", system-ui;
 }
 
 h1,
 h2,
 h3 {
-  font-family: "Alumni Sans", sans-serif;
   font-weight: 500;
-  text-transform: uppercase;
   margin: 0 0 1rem 0;
 }
 h1 {
-  font-size: clamp(16px, 1rem + 5vw, 72px);
+  font-weight: 100;
+  font-size: 2rem;
+  letter-spacing: 0.05em;
   line-height: 1;
+  margin: 0;
 }
 h2 {
   font-size: clamp(14px, 1rem + 3vw, 60px);
@@ -37,10 +55,13 @@ a {
 }
 
 .site-header {
+  background: black;
+  color: white;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
+  padding: 2rem;
   justify-content: space-between;
 }
 
@@ -69,19 +90,13 @@ a {
   text-decoration-thickness: 5px;
 }
 
+.main-content {
+  padding: 2rem;
+}
+
 p,
 ul,
 ol,
 dl {
   max-width: 70ch;
-}
-
-.wp-block-jetpack-slideshow {
-  img {
-    padding: 40px;
-    border: 2vw solid black;
-  }
-}
-.swiper-pagination-custom {
-  justify-content: center !important;
 }
