@@ -46,10 +46,10 @@ h3 {
   margin: 0 0 1rem 0;
 }
 h1 {
+  font-size: 2rem;
   font-weight: 100;
-  font-style: italic;
-  font-size: 2.5rem;
-  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
   line-height: 1;
   margin: 0;
 }
@@ -64,9 +64,11 @@ a {
   color: inherit;
 }
 
+img {
+  max-width: 100%;
+}
+
 .site-header {
-  background: black;
-  color: white;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -136,16 +138,27 @@ dl {
 }
 
 /* Home */
-
 body.page-id-13 {
   main {
-    img {
-      width: 80vw;
+    .wp-block-image:has(figcaption) {
+      width: min(90vw, 1000px);
       display: block;
-      margin: 0 auto 6rem;
+      margin-block-end: 10rem;
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: fit-content(100%) 200px;
+
+      @media (width < 600px) {
+        grid-template-columns: 1fr;
+        gap: 1px;
+      }
+    }
+    .wp-block-column .wp-block-image {
+      width: 100%;
     }
   }
 }
+
 /* CV */
 body.page-id-20 {
   main {
