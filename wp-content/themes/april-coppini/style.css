@@ -140,10 +140,12 @@ dl {
 /* Home */
 body.page-id-13 {
   main {
+    > .wp-block-image:has(figcaption),
+    .wp-block-group {
+      margin: 0 auto 10rem auto;
+    }
     .wp-block-image:has(figcaption) {
-      width: min(90vw, 1000px);
-      display: block;
-      margin-block-end: 10rem;
+      width: fit-content;
       display: grid;
       gap: 1rem;
       grid-template-columns: fit-content(100%) 200px;
@@ -151,6 +153,11 @@ body.page-id-13 {
       @media (width < 600px) {
         grid-template-columns: 1fr;
         gap: 1px;
+      }
+
+      &.alignwide {
+        width: min(100%, 1400px);
+        display: block;
       }
     }
     .wp-block-column .wp-block-image {
